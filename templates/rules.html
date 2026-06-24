@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>룰 관리 - 호반건설 FDS</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        .rules-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:16px}
+        .rules-grid .category-label{grid-column:span 2}
+        .rule-card{background:white;border-radius:12px;box-shadow:0 2px 8px rgba(87,85,83,0.08);padding:14px 16px;border:1px solid rgba(0,0,0,0.04);border-left:4px solid var(--gray-300);transition:all 0.2s}
+        @media(max-width:900px){.rules-grid{grid-template-columns:1fr}}
+        .rule-card.severity-High{border-left-color:#E53935}.rule-card.severity-Medium{border-left-color:#FB8C00}.rule-card.severity-Low{border-left-color:#0097A7}
+        .rule-card.disabled{opacity:0.45}
+        .rule-card .rule-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+        .rule-card .rule-id{font-family:monospace;font-size:12px;color:var(--gray-500);background:var(--gray-100);padding:2px 7px;border-radius:4px}
+        .rule-card .rule-name{font-weight:600;font-size:14px;margin-left:6px}
+        .rule-card .rule-desc{font-size:12px;color:var(--gray-600);margin-bottom:6px}
+        .rule-card .rule-meta{display:flex;gap:6px;flex-wrap:wrap;font-size:11px}
+        .rule-card .rule-meta span{padding:2px 8px;border-radius:10px;background:var(--gray-100);color:var(--gray-600)}
+        .rule-card .hit-count{font-weight:700;color:var(--hoban-orange);background:#FFF3E6;padding:2px 10px;border-radius:10px;font-size:12px}
+        .rule-card .rule-actions{display:flex;gap:4px;align-items:center}
+        .toggle{position:relative;width:40px;height:22px;cursor:pointer;display:inline-block}
+        .toggle input{opacity:0;width:0;height:0}
+        .toggle .slider{position:absolute;top:0;left:0;right:0;bottom:0;background:var(--gray-300);border-radius:11px;transition:0.2s}
+        .toggle .slider:before{content:"";position:absolute;height:16px;width:16px;left:3px;bottom:3px;background:white;border-radius:50%;transition:0.2s}
+        .toggle input:checked+.slider{background:var(--hoban-orange)}.toggle input:checked+.slider:before{transform:translateX(18px)}
+
+        /* 재분석 바 */
+        .reanalyze-bar{background:white;border-radius:12px;box-shadow:0 2px 8px rgba(87,85,83,0.08);padding:16px 20px;margin-bottom:20px;border:1px solid rgba(0,0,0,0.04);display:flex;align-items:center;gap:16px}
+        .reanalyze-bar .progress-wrap{flex:1;height:8px;background:var(--gray-200);border-radius:4px;overflow:hidden}
+        .reanalyze-bar .progress-fill{height:100%;background:var(--hoban-orange);border-radius:4px;transition:width 0.3s ease;width:0}
+        .reanalyze-bar .status-text{font-size:13px;color:var(--gray-600);min-width:120px;text-align:right}
+        .reanalyze-bar.done .progress-fill{background:var(--success)}
+        .reanalyze-bar .done-icon{color:var(--success);font-weight:700;font-size:16px}
+        .alert-banner{background:#FFF3E0;border:1px solid #FFE0B2;border-left:4px solid var(--hoban-orange);border-radius:8px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:10px;font-size:13px;color:#E65100}
+        .alert-banner .alert-icon{font-size:18px}
+
+        /* 대화형 룰 빌더 */
+        .rule-builder{background:white;border-radius:16px;box-shadow:0 2px 8px rgba(87,85,83,0.08);padding:24px;margin-bottom:24px;border:1px solid rgba(0,0,0,0.04)}
+        .builder-chat{display:flex;gap:16px}
+        .builder-left{flex:1}
+        .builder-right{flex:1;background:var(--gray-50);border-radius:12px;padding:16px;border:1px solid var(--gray-200)}
+        .builder-chat-box{height:240px;overflow-y:auto;border:1px solid var(--gray-200);border-radius:10px;padding:12px;background:var(--gray-50);margin-bottom:10px}
+        .builder-chat-box .chat-msg{padding:8px 12px;margin-bottom:8px;font-size:13px;border-radius:12px;max-width:85%}
+        .builder-chat-box .chat-msg.user{background:var(--hoban-orange);color:white;margin-left:auto;border-bottom-right-radius:4px}
+        .builder-chat-box .chat-msg.ai{background:white;border:1px solid var(--gray-200);border-bottom-left-radius:4px}
+        .builder-field{margin-bottom:10px}
+        .builder-field label{font-size:11px;font-weight:600;color:var(--gray-500);display:block;margin-bottom:3px}
+        .builder-field input,.builder-field select{width:100%;padding:7px 10px;border:1px solid var(--gray-300);border-radius:6px;font-size:13px}
+        .builder-field input:focus,.builder-field select:focus{border-color:var(--hoban-orange);outline:none}
+        .builder-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+        .category-label{font-size:13px;font-weight:700;color:var(--hoban-dark);padding:8px 0 4px;border-bottom:2px solid var(--hoban-orange);margin:16px 0 10px;display:inline-block}
+        .examples-bar{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+        .examples-bar button{background:var(--gray-50);border:1px solid var(--gray-200);border-radius:16px;padding:4px 12px;font-size:11px;cursor:pointer;color:var(--gray-600);transition:all 0.15s}
+        .examples-bar button:hover{background:var(--hoban-orange);color:white;border-color:var(--hoban-orange)}
+    </style>
+</head>
+<body>
+    <header class="navbar">
+        <a href="/" class="logo"><img src="/static/hoban_logo.png" alt="HOBAN"><div class="divider"></div><span class="app-name">전표 이상탐지</span><span class="app-badge">FDS</span></a>
+        <nav>
+            <a href="/">대시보드</a>
+            <a href="/create">전표 생성</a>
+            <a href="/review">전표 검토</a>
+            <a href="/rules" class="active">룰 관리</a>
+        </nav>
+    </header>
+
+    <div class="container">
+        <div class="page-header">
+            <h1>이상탐지 룰 관리</h1>
+            <p>자연어 대화로 룰을 생성하고, 전표 데이터에 즉시 적용합니다</p>
+        </div>
+
+        <!-- 룰 변경 알림 -->
+        <div class="alert-banner" id="changeAlert" style="display:none">
+            <span class="alert-icon">!</span>
+            <span>룰이 수정/추가되었습니다. <strong>전체 재분석</strong>을 실행하여 변경 사항을 반영하세요.</span>
+            <button class="btn btn-primary btn-sm" onclick="startReanalyze()" style="margin-left:auto">재분석 실행</button>
+        </div>
+
+        <!-- 재분석 진행률 바 -->
+        <div class="reanalyze-bar" id="reanalyzeBar" style="display:none">
+            <div style="font-size:14px;font-weight:600;white-space:nowrap">재분석</div>
+            <div class="progress-wrap"><div class="progress-fill" id="progressFill"></div></div>
+            <div class="status-text" id="reanalyzeStatus">준비중...</div>
+        </div>
+
+        <!-- ────── 대화형 룰 빌더 ────── -->
+        <div class="rule-builder">
+            <div style="font-size:16px;font-weight:700;margin-bottom:4px;color:var(--hoban-dark)">AI 룰 빌더</div>
+            <p style="font-size:12px;color:var(--gray-500);margin-bottom:12px">대화로 조건을 설명하면 AI가 룰을 구성합니다. 오른쪽 필드를 직접 수정할 수도 있습니다.</p>
+            <div class="builder-chat">
+                <!-- 좌: 대화 -->
+                <div class="builder-left">
+                    <div class="builder-chat-box" id="builderChatBox">
+                        <div class="chat-msg ai">
+                            어떤 이상 전표를 탐지하고 싶으세요?<br>자연어로 설명하면 룰 조건을 구성해 드립니다.
+                            <div class="examples-bar" style="margin-top:8px">
+                                <button onclick="builderChat('금액이 3억원 이상인 전표')">금액 3억 이상</button>
+                                <button onclick="builderChat('주말에 기표된 전표')">주말 기표</button>
+                                <button onclick="builderChat('적요에 가지급금 포함')">적요 키워드</button>
+                                <button onclick="builderChat('개인거래처 고액 전표')">개인거래처 고액</button>
+                                <button onclick="builderChat('전표 항목이 10개 이상')">다건 항목</button>
+                                <button onclick="builderChat('미분류 전표 중 5천만원 초과')">미분류 고액</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="chat-input">
+                        <input type="text" id="builderInput" placeholder="예: 금액이 5억 이상이고 주말에 기표된 전표를 탐지해줘" onkeypress="if(event.key==='Enter') builderChat()" style="font-size:13px;padding:10px 16px">
+                        <button class="btn btn-primary btn-sm" onclick="builderChat()">전송</button>
+                    </div>
+                </div>
+                <!-- 우: 룰 필드 편집 -->
+                <div class="builder-right">
+                    <div style="font-size:13px;font-weight:600;margin-bottom:10px;color:var(--hoban-dark)">룰 조건 편집</div>
+                    <div class="builder-field"><label>룰 이름</label><input type="text" id="bName" placeholder="룰 이름"></div>
+                    <div class="builder-field"><label>설명</label><input type="text" id="bDesc" placeholder="상세 설명"></div>
+                    <div class="builder-grid">
+                        <div class="builder-field"><label>검사 필드</label>
+                            <select id="bField">
+                                <option value="max_line_amount">최대 항목 금액</option>
+                                <option value="total_amount">총 금액</option>
+                                <option value="balance">차대변 잔액</option>
+                                <option value="is_weekend">주말 여부</option>
+                                <option value="day_of_month">일자 (월기준)</option>
+                                <option value="doc_type_contains">전표유형 포함</option>
+                                <option value="description_contains">적요 포함</option>
+                                <option value="account_code_contains">계정코드 포함</option>
+                                <option value="vendor_name_contains">거래처 포함</option>
+                                <option value="line_count">항목 수</option>
+                                <option value="odd_amount">단수 금액</option>
+                                <option value="off_hours">근무시간 외</option>
+                                <option value="personal_vendor_high">거래처유형+고액 (복합)</option>
+                                <option value="empty_description">적요 미입력</option>
+                                <option value="unclassified_high">전표유형+고액 (복합)</option>
+                                <option value="duplicate">중복 전표</option>
+                                <option value="account_mismatch">계정과목 착오</option>
+                                <option value="account_pattern_mismatch">반복거래 계정 이탈</option>
+                                <option value="revenue_expense_side_error">수익/비용 차대변 오류</option>
+                                <option value="invalid_account_pair">비인가 계정 조합</option>
+                            </select>
+                        </div>
+                        <div class="builder-field"><label>연산자</label>
+                            <select id="bOp">
+                                <option value=">">> 초과</option><option value=">=">>= 이상</option>
+                                <option value="<">< 미만</option><option value="<="><= 이하</option>
+                                <option value="==">== 일치</option><option value="!=">!= 불일치</option>
+                                <option value="contains">포함</option>
+                                <option value="compound">복합 조건</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="builder-field"><label>값</label><input type="text" id="bValue" placeholder="조건 값 (숫자 또는 키워드)"></div>
+                    <div class="builder-grid">
+                        <div class="builder-field"><label>위험등급</label>
+                            <select id="bSeverity"><option value="High">High</option><option value="Medium" selected>Medium</option><option value="Low">Low</option></select>
+                        </div>
+                        <div class="builder-field"><label>점수 (0~1)</label>
+                            <input type="number" id="bScore" step="0.05" min="0" max="1" value="0.15">
+                        </div>
+                    </div>
+                    <div class="builder-field"><label>카테고리</label>
+                        <select id="bCategory"><option>금액</option><option>시점</option><option>유형</option><option>내용</option><option>계정</option><option>거래처</option><option>정합성</option><option>증빙</option><option>기타</option></select>
+                    </div>
+                    <div style="display:flex;gap:8px;margin-top:12px">
+                        <button class="btn btn-outline btn-sm" onclick="clearBuilder()">초기화</button>
+                        <button class="btn btn-primary btn-sm" style="flex:1" onclick="saveBuilderRule(false)">룰 저장</button>
+                        <button class="btn btn-success btn-sm" onclick="saveBuilderRule(true)">저장 + 재분석</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ────── 룰 목록 ────── -->
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+            <h2 style="font-size:18px;font-weight:700">등록된 룰 ({{ rules|length }}개)</h2>
+            <div style="display:flex;gap:8px">
+                <button class="btn btn-outline btn-sm" onclick="addManualRule()">+ 수동 추가</button>
+                <button class="btn btn-primary btn-sm" onclick="startReanalyze()">전체 재분석</button>
+            </div>
+        </div>
+
+        <div class="rules-grid">
+        {% set current_cat = namespace(value='') %}
+        {% for rule in rules %}
+            {% if rule.category != current_cat.value %}
+                {% set current_cat.value = rule.category %}
+                <div class="category-label">{{ rule.category or '기타' }}</div>
+            {% endif %}
+            <div class="rule-card severity-{{ rule.severity }} {{ 'disabled' if not rule.enabled }}" id="rule-{{ rule.id }}">
+                <div class="rule-header" style="flex-wrap:wrap;gap:4px">
+                    <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;flex:1;min-width:0">
+                        <span class="rule-id">{{ rule.id }}</span>
+                        <span class="rule-name" style="font-size:13px">{{ rule.name }}</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:4px">
+                        <span class="risk-badge {{ rule.severity }}" style="font-size:10px;padding:2px 7px">{{ rule.severity }}</span>
+                        {% if rule.hit_count > 0 %}
+                        <span class="hit-count" style="font-size:11px">{{ rule.hit_count }}건</span>
+                        {% else %}
+                        <span style="font-size:10px;color:var(--gray-400);background:var(--gray-50);padding:2px 6px;border-radius:8px">0건</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="rule-desc" style="font-size:11px;margin-bottom:6px;line-height:1.4">{{ rule.description[:80] }}{% if rule.description|length > 80 %}...{% endif %}</div>
+                <div style="display:flex;justify-content:space-between;align-items:center">
+                    <div class="rule-meta">
+                        <span>{{ rule.field }}</span><span>점수 {{ rule.score }}</span>
+                    </div>
+                    <div class="rule-actions">
+                        <label class="toggle"><input type="checkbox" {{ 'checked' if rule.enabled }} onchange="toggleRule('{{ rule.id }}',this.checked)"><span class="slider"></span></label>
+                        <button class="btn btn-sm btn-outline" onclick="editRule('{{ rule.id }}')" style="font-size:11px;padding:3px 8px">수정</button>
+                        <button class="btn btn-sm btn-outline" onclick="deleteRule('{{ rule.id }}')" style="font-size:11px;padding:3px 8px;color:var(--danger)">삭제</button>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+        </div>
+    </div>
+
+    <!-- 수동 편집 모달 -->
+    <div class="modal-overlay" id="ruleModal">
+        <div class="modal" style="max-width:600px">
+            <div class="modal-header"><h3 id="ruleModalTitle">룰 편집</h3><button class="modal-close" onclick="closeModal()">&times;</button></div>
+            <div class="modal-body">
+                <input type="hidden" id="editRuleId">
+                <div class="form-group"><label>룰 이름</label><input type="text" id="mName"></div>
+                <div class="form-group"><label>설명</label><input type="text" id="mDesc"></div>
+                <div class="form-row">
+                    <div class="form-group"><label>필드</label><select id="mField"><option value="max_line_amount">최대 항목 금액</option><option value="total_amount">총 금액</option><option value="balance">차대변 잔액</option><option value="is_weekend">주말</option><option value="day_of_month">일자</option><option value="doc_type_contains">전표유형 포함</option><option value="description_contains">적요 포함</option><option value="account_code_contains">계정코드 포함</option><option value="vendor_name_contains">거래처 포함</option><option value="line_count">항목 수</option><option value="odd_amount">단수금액</option><option value="off_hours">근무시간외</option><option value="personal_vendor_high">개인거래처고액</option><option value="empty_description">적요미입력</option><option value="unclassified_high">미분류고액</option></select></div>
+                    <div class="form-group"><label>연산자</label><select id="mOp"><option value=">">> 초과</option><option value=">=">>= 이상</option><option value="<">< 미만</option><option value="==">==</option><option value="contains">포함</option></select></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>값</label><input type="text" id="mValue"></div>
+                    <div class="form-group"><label>임계값</label><input type="text" id="mThreshold"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>위험등급</label><select id="mSeverity"><option value="High">High</option><option value="Medium" selected>Medium</option><option value="Low">Low</option></select></div>
+                    <div class="form-group"><label>점수</label><input type="number" id="mScore" step="0.05" min="0" max="1" value="0.15"></div>
+                    <div class="form-group"><label>카테고리</label><select id="mCategory"><option>금액</option><option>시점</option><option>유형</option><option>내용</option><option>계정</option><option>거래처</option><option>정합성</option><option>증빙</option><option>기타</option></select></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal()">취소</button>
+                <button class="btn btn-primary" onclick="saveModal(false)">저장</button>
+                <button class="btn btn-success" onclick="saveModal(true)">저장 + 재분석</button>
+            </div>
+        </div>
+    </div>
+    <div class="toast" id="toast"></div>
+
+    <script>
+    let rulesData = {{ rules | tojson }};
+    let builderHistory = [];
+
+    // ══════ 재분석 ══════
+    async function startReanalyze() {
+        const res = await fetch('/api/rules/reanalyze', {method:'POST'});
+        const d = await res.json();
+        if(d.success) {
+            document.getElementById('reanalyzeBar').style.display='flex';
+            document.getElementById('changeAlert').style.display='none';
+            pollProgress();
+        } else { showToast(d.message,'error'); }
+    }
+
+    async function pollProgress() {
+        const bar = document.getElementById('reanalyzeBar');
+        const fill = document.getElementById('progressFill');
+        const status = document.getElementById('reanalyzeStatus');
+        const poll = async () => {
+            const res = await fetch('/api/rules/reanalyze/status');
+            const d = await res.json();
+            fill.style.width = d.percent + '%';
+            if(d.running) {
+                status.textContent = `${d.progress}/${d.total} (${d.percent}%)`;
+                setTimeout(poll, 300);
+            } else if(d.done) {
+                fill.style.width = '100%';
+                bar.classList.add('done');
+                if(d.result && !d.result.error) {
+                    status.innerHTML = `<span class="done-icon">V</span> 완료! H:${d.result.high} M:${d.result.medium} L:${d.result.low} 정상:${d.result.normal}`;
+                } else {
+                    status.textContent = '오류: ' + (d.result?.error || '');
+                }
+                setTimeout(() => location.reload(), 2000);
+            }
+        };
+        poll();
+    }
+
+    // 페이지 로드 시 상태 확인
+    (async () => {
+        const res = await fetch('/api/rules/reanalyze/status');
+        const d = await res.json();
+        if(d.running) { document.getElementById('reanalyzeBar').style.display='flex'; pollProgress(); }
+        if(d.rules_changed) { document.getElementById('changeAlert').style.display='flex'; }
+    })();
+
+    // ══════ 대화형 룰 빌더 ══════
+    async function builderChat(text) {
+        const input = document.getElementById('builderInput');
+        const msg = text || input.value.trim(); if(!msg) return; input.value='';
+        appendBuilder('user', msg);
+        appendBuilder('ai', '<div style="color:var(--gray-500)">Gemini AI로 룰을 생성하고 있습니다... (10~30초 소요)</div>');
+        builderHistory.push({role:'user', content:msg});
+
+        try {
+            const res = await fetch('/api/rules/parse-nl', {
+                method:'POST', headers:{'Content-Type':'application/json'},
+                body:JSON.stringify({text:msg})
+            });
+            const d = await res.json();
+            // 로딩 메시지 제거 (마지막 ai 메시지)
+            const chatBox = document.getElementById('builderChatBox');
+            const lastAi = chatBox.querySelector('.chat-msg.ai:last-child');
+            if(lastAi && lastAi.textContent.includes('생성하고 있습니다')) lastAi.remove();
+
+            if(d.success) {
+                const r = d.rule;
+                // 안전하게 필드 설정 (select에 option이 없으면 추가)
+                function safeSetSelect(selectId, value, label) {
+                    const sel = document.getElementById(selectId);
+                    if(!value) return;
+                    // 해당 value가 option에 있는지 확인
+                    let found = false;
+                    for(let opt of sel.options) { if(opt.value === value) { found = true; break; } }
+                    if(!found) {
+                        // 없으면 동적 추가
+                        const newOpt = document.createElement('option');
+                        newOpt.value = value;
+                        newOpt.textContent = label || value;
+                        sel.appendChild(newOpt);
+                    }
+                    sel.value = value;
+                }
+
+                document.getElementById('bName').value = r.name || '';
+                document.getElementById('bDesc').value = r.description || '';
+                safeSetSelect('bField', r.field, r.field);
+                safeSetSelect('bOp', r.operator, r.operator);
+                document.getElementById('bValue').value = (r.value !== undefined && r.value !== null) ? (typeof r.value === 'object' ? JSON.stringify(r.value) : String(r.value)) : '';
+                safeSetSelect('bSeverity', r.severity, r.severity);
+                document.getElementById('bScore').value = r.score || 0.15;
+                safeSetSelect('bCategory', r.category, r.category);
+
+                const valDisplay = (r.value !== undefined && r.value !== null) ? (typeof r.value === 'object' ? JSON.stringify(r.value) : String(r.value)) : '-';
+                let reply = `룰을 구성했습니다:<br>`;
+                reply += `<strong>${r.name || '(이름 미정)'}</strong><br>`;
+                reply += `<table style="font-size:12px;margin:6px 0"><tr><td style="color:var(--gray-500);padding-right:8px">필드</td><td><strong>${r.field || '-'}</strong></td></tr>`;
+                reply += `<tr><td style="color:var(--gray-500);padding-right:8px">연산자</td><td><strong>${r.operator || '-'}</strong></td></tr>`;
+                reply += `<tr><td style="color:var(--gray-500);padding-right:8px">값</td><td><strong>${valDisplay}</strong></td></tr>`;
+                reply += `<tr><td style="color:var(--gray-500);padding-right:8px">등급</td><td><strong>${r.severity || 'Medium'}</strong></td></tr>`;
+                reply += `<tr><td style="color:var(--gray-500);padding-right:8px">점수</td><td><strong>${r.score || 0.15}</strong></td></tr></table>`;
+                reply += `<div style="font-size:11px;color:var(--gray-500)">오른쪽에서 조건을 수정하거나, 추가 설명을 입력하세요.</div>`;
+                appendBuilder('ai', reply);
+                builderHistory.push({role:'assistant', content:'룰 구성 완료'});
+            } else {
+                appendBuilder('ai', d.message || '조건을 이해하지 못했습니다. 더 구체적으로 설명해주세요.');
+            }
+        } catch(e) { appendBuilder('ai','오류: '+e.message + '<br><span style="font-size:11px;color:var(--gray-500)">LLM 호출 시간이 초과되었을 수 있습니다. 다시 시도해주세요.</span>'); }
+    }
+
+    function appendBuilder(role, html) {
+        const box = document.getElementById('builderChatBox');
+        const div = document.createElement('div');
+        div.className = `chat-msg ${role}`;
+        div.innerHTML = html;
+        box.appendChild(div);
+        box.scrollTop = box.scrollHeight;
+    }
+
+    function clearBuilder() {
+        ['bName','bDesc','bValue'].forEach(id => document.getElementById(id).value='');
+        document.getElementById('bField').value='max_line_amount';
+        document.getElementById('bOp').value='>';
+        document.getElementById('bSeverity').value='Medium';
+        document.getElementById('bScore').value='0.15';
+        document.getElementById('bCategory').value='기타';
+    }
+
+    async function saveBuilderRule(reanalyze) {
+        let val = document.getElementById('bValue').value;
+        try{val=JSON.parse(val)}catch(e){if(!isNaN(Number(val)))val=Number(val);else if(val==='true')val=true;else if(val==='false')val=false;}
+        const rule = {
+            name:document.getElementById('bName').value, description:document.getElementById('bDesc').value,
+            field:document.getElementById('bField').value, operator:document.getElementById('bOp').value,
+            value:val, severity:document.getElementById('bSeverity').value,
+            score:parseFloat(document.getElementById('bScore').value),
+            category:document.getElementById('bCategory').value, enabled:true, threshold:null
+        };
+        if(!rule.name){showToast('룰 이름을 입력하세요','error');return;}
+        const res = await fetch('/api/rules',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(rule)});
+        const d = await res.json();
+        if(d.success) {
+            appendBuilder('ai',`룰 <strong>${d.rule.id}</strong> 저장 완료!${reanalyze?' 재분석을 시작합니다...':''}`);
+            if(reanalyze) { await startReanalyze(); }
+            else { setTimeout(()=>location.reload(),1000); }
+        }
+    }
+
+    // ══════ 수동 편집 모달 ══════
+    function addManualRule() {
+        document.getElementById('ruleModalTitle').textContent='룰 추가';
+        document.getElementById('editRuleId').value='';
+        ['mName','mDesc','mValue','mThreshold'].forEach(id=>document.getElementById(id).value='');
+        document.getElementById('mSeverity').value='Medium';document.getElementById('mScore').value='0.15';
+        document.getElementById('ruleModal').classList.add('show');
+    }
+    function editRule(id) {
+        const r=rulesData.find(x=>x.id===id); if(!r) return;
+        document.getElementById('ruleModalTitle').textContent=`룰 수정: ${id}`;
+        document.getElementById('editRuleId').value=id;
+        document.getElementById('mName').value=r.name||'';document.getElementById('mDesc').value=r.description||'';
+        document.getElementById('mField').value=r.field||'';document.getElementById('mOp').value=r.operator||'>';
+        document.getElementById('mValue').value=typeof r.value==='object'?JSON.stringify(r.value):r.value;
+        document.getElementById('mThreshold').value=r.threshold||'';
+        document.getElementById('mSeverity').value=r.severity||'Medium';document.getElementById('mScore').value=r.score||0.15;
+        document.getElementById('mCategory').value=r.category||'기타';
+        document.getElementById('ruleModal').classList.add('show');
+    }
+    function closeModal(){document.getElementById('ruleModal').classList.remove('show');}
+
+    async function saveModal(reanalyze) {
+        let val=document.getElementById('mValue').value;
+        try{val=JSON.parse(val)}catch(e){if(!isNaN(Number(val)))val=Number(val);else if(val==='true')val=true;}
+        let thr=document.getElementById('mThreshold').value;
+        if(thr){thr=isNaN(Number(thr))?thr:Number(thr);}else{thr=null;}
+        const rule={name:document.getElementById('mName').value,description:document.getElementById('mDesc').value,
+            field:document.getElementById('mField').value,operator:document.getElementById('mOp').value,
+            value:val,threshold:thr,severity:document.getElementById('mSeverity').value,
+            score:parseFloat(document.getElementById('mScore').value),
+            category:document.getElementById('mCategory').value,enabled:true};
+        const editId=document.getElementById('editRuleId').value;
+        const res = editId ?
+            await fetch(`/api/rules/${editId}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(rule)}) :
+            await fetch('/api/rules',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(rule)});
+        const d=await res.json();
+        if(d.success){
+            closeModal();
+            showToast(`룰 ${editId||d.rule.id} 저장 완료!`,'success');
+            if(reanalyze){await startReanalyze();}
+            else{setTimeout(()=>location.reload(),800);}
+        }
+    }
+
+    async function toggleRule(id,enabled){
+        const r=rulesData.find(x=>x.id===id);if(!r)return;r.enabled=enabled;
+        await fetch(`/api/rules/${id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(r)});
+        document.getElementById(`rule-${id}`).classList.toggle('disabled',!enabled);
+        showToast(`${id} ${enabled?'활성화':'비활성화'}`,'success');
+    }
+    async function deleteRule(id){
+        if(!confirm(`룰 ${id}을 삭제하시겠습니까?`))return;
+        await fetch(`/api/rules/${id}`,{method:'DELETE'});
+        showToast(`${id} 삭제`,'success');setTimeout(()=>location.reload(),500);
+    }
+
+    function showToast(m,t){const e=document.getElementById('toast');e.textContent=m;e.className=`toast show ${t||''}`;setTimeout(()=>e.className='toast',3000);}
+    document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
+    document.getElementById('ruleModal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal();});
+    </script>
+</body>
+</html>

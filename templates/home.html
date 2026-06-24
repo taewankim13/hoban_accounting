@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>호반건설 FDS - 전표 이상탐지</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <header class="navbar">
+        <a href="/" class="logo"><img src="/static/hoban_logo.png" alt="HOBAN"><div class="divider"></div><span class="app-name">전표 이상탐지</span><span class="app-badge">FDS</span></a>
+        <nav>
+            <a href="/" class="active">대시보드</a>
+            <a href="/create">전표 생성</a>
+            <a href="/review">전표 검토</a>
+            <a href="/rules">룰 관리</a>
+        </nav>
+    </header>
+
+    <div class="container">
+        <div class="page-header">
+            <h1>전표 이상탐지 대시보드</h1>
+            <p>호반건설 2026년 3월 전표 AI 전수 분석 현황</p>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card"><div class="stat-value">{{ total }}</div><div class="stat-label">전체 전표</div></div>
+            <div class="stat-card high"><div class="stat-value">{{ high }}</div><div class="stat-label">고위험 (High)</div></div>
+            <div class="stat-card medium"><div class="stat-value">{{ medium }}</div><div class="stat-label">주의 (Medium)</div></div>
+            <div class="stat-card low"><div class="stat-value">{{ low }}</div><div class="stat-label">참고 (Low)</div></div>
+            <div class="stat-card normal"><div class="stat-value">{{ normal }}</div><div class="stat-label">정상</div></div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:2fr 1fr; gap:24px;">
+            <!-- 현장별 현황 -->
+            <div class="card">
+                <div class="card-header"><h2>현장(프로젝트)별 전표 현황</h2></div>
+                <table class="lines-table">
+                    <thead>
+                        <tr><th>현장명</th><th style="text-align:right">전표 수</th><th style="text-align:right">고위험</th><th style="text-align:right">총 금액</th><th></th></tr>
+                    </thead>
+                    <tbody>
+                        {% for ps in project_stats[:15] %}
+                        <tr>
+                            <td><strong>{{ ps.name[:20] }}</strong></td>
+                            <td style="text-align:right">{{ ps.total }}건</td>
+                            <td style="text-align:right">{% if ps.high > 0 %}<span style="color:var(--danger);font-weight:700">{{ ps.high }}건</span>{% else %}<span style="color:var(--gray-500)">0건</span>{% endif %}</td>
+                            <td style="text-align:right;font-size:13px">{{ "{:,.0f}".format(ps.amount) }}원</td>
+                            <td><a href="/review?project={{ ps.code }}" class="btn btn-sm btn-outline">검토</a></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- 전표유형별 -->
+            <div>
+                <div class="card">
+                    <div class="card-header"><h2>전표유형별 현황</h2></div>
+                    {% for ts in type_stats %}
+                    <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--gray-100); font-size:14px">
+                        <span>{{ ts.name[:15] }}</span>
+                        <span style="font-weight:600">{{ ts.count }}건</span>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:16px;">
+                    <a href="/create" class="card" style="text-decoration:none;color:inherit;padding:20px;text-align:center">
+                        <div style="font-size:28px;margin-bottom:8px">+</div>
+                        <div style="font-weight:600;font-size:15px">전표 생성</div>
+                        <div style="color:var(--gray-500);font-size:12px;margin-top:4px">챗/영수증으로 입력</div>
+                    </a>
+                    <a href="/review?risk=High" class="card" style="text-decoration:none;color:inherit;padding:20px;text-align:center;border-left:3px solid var(--danger)">
+                        <div style="font-size:28px;color:var(--danger);margin-bottom:8px">!</div>
+                        <div style="font-weight:600;font-size:15px">긴급 검토</div>
+                        <div style="color:var(--danger);font-size:12px;margin-top:4px">{{ high }}건 고위험</div>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

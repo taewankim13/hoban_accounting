@@ -1,0 +1,33 @@
+# Database
+*.db
+*.sqlite3
+
+# Environment
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Uploads (user-generated)
+static/uploads/*.png
+static/uploads/*.jpg
+static/uploads/*.jpeg
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Claude Code
+.claude/settings.local.json

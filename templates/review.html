@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>전표 검토 - 호반건설 FDS</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        .pagination{display:flex;gap:4px;justify-content:center;margin-top:16px}
+        .pagination a{padding:6px 14px;border:1px solid var(--gray-300);border-radius:6px;text-decoration:none;font-size:13px;color:var(--gray-700);background:white}
+        .pagination a.active{background:var(--hoban-orange);color:white;border-color:var(--hoban-orange)}
+        .pagination a:hover{border-color:var(--hoban-orange)}
+        /* 보기 전환 */
+        .view-toggle{display:flex;gap:4px;margin-left:auto}
+        .view-toggle button{padding:6px 14px;border:1px solid var(--gray-300);border-radius:6px;background:white;font-size:13px;cursor:pointer;color:var(--gray-600)}
+        .view-toggle button.active{background:var(--hoban-orange);color:white;border-color:var(--hoban-orange)}
+        /* 카드 그리드 (3열) */
+        .card-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+        .card-grid .journal-card{margin-bottom:0}
+        .card-grid .journal-card .jc-title{font-size:13px}
+        .card-grid .journal-card .jc-meta{font-size:11px;gap:8px}
+        .card-grid .journal-card .jc-meta span{white-space:nowrap}
+        /* 테이블 뷰 */
+        .table-view{display:none}
+        .table-view table{width:100%;border-collapse:collapse;font-size:13px;background:white;border-radius:10px;overflow:hidden;box-shadow:0 2px 8px rgba(87,85,83,0.08)}
+        .table-view th{background:var(--hoban-dark);color:white;padding:10px 12px;text-align:left;font-weight:500;font-size:12px;white-space:nowrap;cursor:pointer;user-select:none;position:relative}
+        .table-view th:hover{background:#6D6B69}
+        .table-view th .sort-icon{margin-left:4px;font-size:10px;opacity:0.5}
+        .table-view th.sort-asc .sort-icon{opacity:1}
+        .table-view th.sort-desc .sort-icon{opacity:1}
+        .table-view th.drag-over{background:#EE7500}
+        .table-view th.dragging{opacity:0.5}
+        .table-view td{padding:9px 12px;border-bottom:1px solid var(--gray-200);cursor:pointer}
+        .table-view tr:hover td{background:#FFF7ED}
+        .table-view .amt{text-align:right;font-variant-numeric:tabular-nums}
+        @media(max-width:1024px){.card-grid{grid-template-columns:repeat(2,1fr)}}
+        @media(max-width:640px){.card-grid{grid-template-columns:1fr}}
+    </style>
+</head>
+<body>
+    <header class="navbar">
+        <a href="/" class="logo"><img src="/static/hoban_logo.png" alt="HOBAN"><div class="divider"></div><span class="app-name">전표 이상탐지</span><span class="app-badge">FDS</span></a>
+        <nav>
+            <a href="/">대시보드</a>
+            <a href="/create">전표 생성</a>
+            <a href="/review" class="active">전표 검토</a>
+            <a href="/rules">룰 관리</a>
+        </nav>
+    </header>
+
+    <div class="container">
+        <div class="page-header">
+            <h1>전표 검토</h1>
+            <p>AI가 분석한 {{ total_filtered }}건의 전표 (전체 {{ total }}건 중)</p>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+            <span style="font-size:14px;font-weight:600;color:var(--hoban-dark)">위험등급 분류</span>
+            <button onclick="document.getElementById('criteriaModal').classList.add('show')" style="background:none;border:1px solid var(--gray-300);border-radius:50%;width:22px;height:22px;font-size:12px;cursor:pointer;color:var(--gray-500);display:flex;align-items:center;justify-content:center" title="분류 기준 보기">?</button>
+        </div>
+        <div class="stats-grid">
+            <div class="stat-card high"><div class="stat-value">{{ high }}</div><div class="stat-label">고위험 (High)</div></div>
+            <div class="stat-card medium"><div class="stat-value">{{ medium }}</div><div class="stat-label">주의 (Medium)</div></div>
+            <div class="stat-card low"><div class="stat-value">{{ low }}</div><div class="stat-label">참고 (Low)</div></div>
+        </div>
+
+        <!-- 위험등급 분류 기준 모달 -->
+        <div class="modal-overlay" id="criteriaModal">
+            <div class="modal" style="max-width:700px">
+                <div class="modal-header">
+                    <h3>위험등급 분류 기준</h3>
+                    <button class="modal-close" onclick="document.getElementById('criteriaModal').classList.remove('show')">&times;</button>
+                </div>
+                <div class="modal-body" style="padding:24px">
+                    <p style="font-size:13px;color:var(--gray-600);margin-bottom:16px">각 전표는 등록된 이상탐지 룰에 의해 분석되며, 룰별 위험 점수의 합산으로 최종 등급이 결정됩니다.</p>
+
+                    <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:20px">
+                        <thead>
+                            <tr style="background:var(--hoban-dark);color:white">
+                                <th style="padding:10px 14px;text-align:left">등급</th>
+                                <th style="padding:10px 14px;text-align:left">점수 기준</th>
+                                <th style="padding:10px 14px;text-align:left">의미</th>
+                                <th style="padding:10px 14px;text-align:left">조치</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr style="background:#FFEBEE">
+                                <td style="padding:10px 14px"><span class="risk-badge High">High</span></td>
+                                <td style="padding:10px 14px;font-weight:600">점수 합계 &ge; 0.8</td>
+                                <td style="padding:10px 14px">고위험 — 중대한 오류 또는 부정 가능성</td>
+                                <td style="padding:10px 14px">즉시 확인 및 조치 필요</td>
+                            </tr>
+                            <tr style="background:#FFF3E0">
+                                <td style="padding:10px 14px"><span class="risk-badge Medium">Medium</span></td>
+                                <td style="padding:10px 14px;font-weight:600">0.3 &le; 점수 &lt; 0.8</td>
+                                <td style="padding:10px 14px">주의 — 확인이 필요한 이상 징후</td>
+                                <td style="padding:10px 14px">검토 후 판단</td>
+                            </tr>
+                            <tr style="background:#E0F7FA">
+                                <td style="padding:10px 14px"><span class="risk-badge Low">Low</span></td>
+                                <td style="padding:10px 14px;font-weight:600">점수 &lt; 0.3 (룰 1개+)</td>
+                                <td style="padding:10px 14px">참고 — 경미한 이상 또는 관례적 패턴</td>
+                                <td style="padding:10px 14px">모니터링</td>
+                            </tr>
+                            <tr style="background:#E8F5E9">
+                                <td style="padding:10px 14px"><span class="risk-badge 정상">정상</span></td>
+                                <td style="padding:10px 14px;font-weight:600">탐지 룰 0개</td>
+                                <td style="padding:10px 14px">정상 — 이상 징후 없음</td>
+                                <td style="padding:10px 14px">-</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div style="font-size:14px;font-weight:600;color:var(--hoban-dark);margin-bottom:10px">룰별 위험 점수</div>
+                    <table style="width:100%;border-collapse:collapse;font-size:12px">
+                        <thead>
+                            <tr style="background:var(--gray-100)">
+                                <th style="padding:8px;text-align:left">등급</th>
+                                <th style="padding:8px;text-align:left">해당 룰</th>
+                                <th style="padding:8px;text-align:left">점수 범위</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td style="padding:8px"><span class="risk-badge High" style="font-size:11px">High</span></td>
+                                <td style="padding:8px">차대변 불일치(0.5), 차대변 오류(0.4), 중복 전표(0.4), 계정 착오(0.3), 고액 10억+(0.3)</td>
+                                <td style="padding:8px">0.3 ~ 0.5</td>
+                            </tr>
+                            <tr style="background:var(--gray-50)">
+                                <td style="padding:8px"><span class="risk-badge Medium" style="font-size:11px">Medium</span></td>
+                                <td style="padding:8px">반복거래 이탈(0.25), 역분개(0.2), 해약/환불(0.2), 고액 5억+(0.15), 개인거래처 고액(0.15), 증빙 누락(0.15)</td>
+                                <td style="padding:8px">0.15 ~ 0.25</td>
+                            </tr>
+                            <tr>
+                                <td style="padding:8px"><span class="risk-badge Low" style="font-size:11px">Low</span></td>
+                                <td style="padding:8px">주말 기표(0.1), 월말 기표(0.05), 단수 금액(0.05), 근무시간 외(0.05), 적요 미입력(0.05), 다건 항목(0.05)</td>
+                                <td style="padding:8px">0.05 ~ 0.1</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div style="margin-top:16px;padding:12px;background:var(--gray-50);border-radius:8px;font-size:12px;color:var(--gray-600)">
+                        <strong>산출 예시:</strong> 어떤 전표에 "차대변 불일치(0.5)" + "중복 전표(0.4)"가 동시 탐지되면 합계 점수 0.9 → <span class="risk-badge High" style="font-size:11px">High</span><br>
+                        "계정 착오(0.3)" 하나만 탐지되면 점수 0.3 → <span class="risk-badge Medium" style="font-size:11px">Medium</span><br>
+                        "월말 기표(0.05)" 하나만 탐지되면 점수 0.05 → <span class="risk-badge Low" style="font-size:11px">Low</span><br>
+                        같은 필드의 상위/하위 룰은 더 엄격한 것만 적용 (예: 10억 초과 + 5억 초과 → 10억만 적용)
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <a href="/rules" class="btn btn-outline btn-sm">룰 관리 바로가기</a>
+                    <button class="btn btn-primary btn-sm" onclick="document.getElementById('criteriaModal').classList.remove('show')">닫기</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 필터: 위험등급 -->
+        <div class="filter-bar">
+            <a href="/review?project={{ current_project }}&doc_type={{ current_doc_type }}&error_code={{ current_error_code }}&vendor_type={{ current_vendor_type }}" class="filter-btn {{ 'active' if current_risk == 'all' }}">전체 <span class="badge">{{ total }}</span></a>
+            <a href="/review?risk=High&project={{ current_project }}&doc_type={{ current_doc_type }}&error_code={{ current_error_code }}&vendor_type={{ current_vendor_type }}" class="filter-btn {{ 'active' if current_risk == 'High' }}">고위험 <span class="badge high-bg">{{ high }}</span></a>
+            <a href="/review?risk=Medium&project={{ current_project }}&doc_type={{ current_doc_type }}&error_code={{ current_error_code }}&vendor_type={{ current_vendor_type }}" class="filter-btn {{ 'active' if current_risk == 'Medium' }}">주의 <span class="badge medium-bg">{{ medium }}</span></a>
+            <a href="/review?risk=Low&project={{ current_project }}&doc_type={{ current_doc_type }}&error_code={{ current_error_code }}&vendor_type={{ current_vendor_type }}" class="filter-btn {{ 'active' if current_risk == 'Low' }}">참고 <span class="badge low-bg">{{ low }}</span></a>
+            <a href="/review?risk=정상&project={{ current_project }}&doc_type={{ current_doc_type }}&error_code={{ current_error_code }}&vendor_type={{ current_vendor_type }}" class="filter-btn {{ 'active' if current_risk == '정상' }}">정상</a>
+        </div>
+
+        <!-- 필터: 이상사유 -->
+        {% if error_stats %}
+        <div class="filter-bar" style="margin-top:4px">
+            <span style="font-size:13px; color:var(--gray-500); padding:6px 0; margin-right:4px; white-space:nowrap;">이상사유:</span>
+            <a href="/review?risk={{ current_risk }}&project={{ current_project }}&doc_type={{ current_doc_type }}&vendor_type={{ current_vendor_type }}" class="filter-btn {{ 'active' if current_error_code == 'all' }}" style="font-size:12px">전체</a>
+            {% for code, info in error_stats.items() %}
+            <a href="/review?risk={{ current_risk }}&project={{ current_project }}&doc_type={{ current_doc_type }}&vendor_type={{ current_vendor_type }}&error_code={{ code }}"
+               class="filter-btn {{ 'active' if current_error_code == code }}" style="font-size:12px">
+                {{ info.name }}
+                <span class="badge {% if info.severity == 'High' %}high-bg{% elif info.severity == 'Medium' %}medium-bg{% else %}low-bg{% endif %}">{{ info.count }}</span>
+            </a>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- 필터: 프로젝트 + 전표유형 + 보기전환 -->
+        <div style="display:flex; gap:16px; flex-wrap:wrap; margin-bottom:16px; margin-top:8px; align-items:center">
+            <div>
+                <select onchange="location.href='/review?risk={{ current_risk }}&doc_type={{ current_doc_type }}&error_code={{ current_error_code }}&vendor_type={{ current_vendor_type }}&project='+this.value" style="padding:7px 12px; border:1px solid var(--gray-300); border-radius:20px; font-size:13px">
+                    <option value="all" {{ 'selected' if current_project == 'all' }}>전체 현장</option>
+                    {% for p in projects %}
+                    <option value="{{ p.code }}" {{ 'selected' if current_project == p.code }}>{{ p.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <select onchange="location.href='/review?risk={{ current_risk }}&project={{ current_project }}&error_code={{ current_error_code }}&vendor_type={{ current_vendor_type }}&doc_type='+this.value" style="padding:7px 12px; border:1px solid var(--gray-300); border-radius:20px; font-size:13px">
+                    <option value="all" {{ 'selected' if current_doc_type == 'all' }}>전체 전표유형</option>
+                    {% for dt in doc_types %}
+                    <option value="{{ dt }}" {{ 'selected' if current_doc_type == dt }}>{{ dt }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <select onchange="location.href='/review?risk={{ current_risk }}&project={{ current_project }}&error_code={{ current_error_code }}&vendor_type={{ current_vendor_type }}&doc_type={{ current_doc_type }}&vendor_type='+this.value" style="padding:7px 12px; border:1px solid var(--gray-300); border-radius:20px; font-size:13px">
+                    <option value="all" {{ 'selected' if current_vendor_type == 'all' }}>전체 거래처유형</option>
+                    <option value="F" {{ 'selected' if current_vendor_type == 'F' }}>법인(F)</option>
+                    <option value="P" {{ 'selected' if current_vendor_type == 'P' }}>개인(P)</option>
+                    <option value="D" {{ 'selected' if current_vendor_type == 'D' }}>부서(D)</option>
+                    <option value="S" {{ 'selected' if current_vendor_type == 'S' }}>사원(S)</option>
+                    <option value="X" {{ 'selected' if current_vendor_type == 'X' }}>기타(X)</option>
+                    <option value="B" {{ 'selected' if current_vendor_type == 'B' }}>은행(B)</option>
+                </select>
+            </div>
+            <button class="btn btn-sm btn-outline" onclick="openOcrCheck()" style="margin-left:auto;margin-right:8px;font-size:12px;border-color:var(--hoban-orange);color:var(--hoban-orange)">OCR 값 일치 점검</button>
+            <div class="view-toggle">
+                <button id="btnCard" class="active" onclick="setView('card')">카드</button>
+                <button id="btnTable" onclick="setView('table')">테이블</button>
+            </div>
+        </div>
+
+        <!-- 테이블 뷰 -->
+        <div class="table-view" id="tableView">
+            <table id="sortTable">
+                <thead>
+                    <tr id="tableHeader">
+                        <th data-key="risk" data-col="0" >위험 <span class="sort-icon">&#x25B2;&#x25BC;</span></th>
+                        <th data-key="doc_no" data-col="1" >전표번호 <span class="sort-icon">&#x25B2;&#x25BC;</span></th>
+                        <th data-key="date" data-col="2" >일자 <span class="sort-icon">&#x25B2;&#x25BC;</span></th>
+                        <th data-key="type" data-col="3" >유형 <span class="sort-icon">&#x25B2;&#x25BC;</span></th>
+                        <th data-key="desc" data-col="4" >적요 <span class="sort-icon">&#x25B2;&#x25BC;</span></th>
+                        <th data-key="user" data-col="5" >입력자 <span class="sort-icon">&#x25B2;&#x25BC;</span></th>
+                        <th data-key="amount" data-col="6" class="amt">차변합계 <span class="sort-icon">&#x25B2;&#x25BC;</span></th>
+                        <th data-key="project" data-col="7" >현장 <span class="sort-icon">&#x25B2;&#x25BC;</span></th>
+                        <th data-key="errors" data-col="8" >이상사유 <span class="sort-icon">&#x25B2;&#x25BC;</span></th>
+                        <th data-key="status" data-col="9" >상태 <span class="sort-icon">&#x25B2;&#x25BC;</span></th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    {% for j in journals %}
+                    <tr onclick="showDetail('{{ j.doc_no }}')"
+                        data-risk="{{ j.ai_risk_level or '' }}"
+                        data-score="{{ j.ai_risk_score or 0 }}"
+                        data-amount="{{ j.total_debit }}">
+                        <td data-col="0" data-sort="{{ j.ai_risk_score or 0 }}"><span class="risk-badge {{ j.ai_risk_level }}" style="font-size:11px;padding:2px 8px">{{ j.ai_risk_level }}</span></td>
+                        <td data-col="1" data-sort="{{ j.doc_no }}" style="font-weight:600;font-size:12px">{{ j.doc_no[-12:] }}</td>
+                        <td data-col="2" data-sort="{{ j.doc_date }}">{{ j.doc_date }}</td>
+                        <td data-col="3" data-sort="{{ j.doc_type or '' }}">{{ (j.doc_type or '미분류')[:6] }}</td>
+                        <td data-col="4" data-sort="{{ j.description[:40] if j.description else '' }}" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ j.description[:40] if j.description else '' }}</td>
+                        <td data-col="5" data-sort="{{ j.created_by or '' }}">{{ j.created_by }}</td>
+                        <td data-col="6" data-sort="{{ j.total_debit }}" class="amt">{{ "{:,.0f}".format(j.total_debit) }}</td>
+                        <td data-col="7" data-sort="{{ j.project.name if j.project else '' }}" style="font-size:11px">{% if j.project %}{{ j.project.name[:8] }}{% endif %}</td>
+                        <td data-col="8" data-sort="{{ j.ai_error_codes or '' }}">
+                            {% if j.ai_error_codes %}
+                                {% for code in j.ai_error_codes.split(',')[:2] %}
+                                    {% if code in error_names %}<span class="error-tag {{ error_severity.get(code,'low') }}" style="font-size:10px;padding:1px 6px">{{ error_names[code][:6] }}</span>{% endif %}
+                                {% endfor %}
+                                {% if j.ai_error_codes.split(',')|length > 2 %}<span style="font-size:10px;color:var(--gray-500)">+{{ j.ai_error_codes.split(',')|length - 2 }}</span>{% endif %}
+                            {% endif %}
+                        </td>
+                        <td data-col="9" data-sort="{{ j.status }}">{% if j.status == '검토완료' %}<span style="color:var(--success);font-size:12px">V</span>{% elif j.status == '반려' %}<span style="color:var(--danger);font-size:12px">X</span>{% endif %}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 카드 뷰 -->
+        <div class="card-grid" id="cardView">
+        {% for j in journals %}
+        <div class="journal-card risk-{{ j.ai_risk_level }}" onclick="showDetail('{{ j.doc_no }}')">
+            <div class="jc-header">
+                <span class="jc-title">{{ j.doc_no }}</span>
+                <span class="risk-badge {{ j.ai_risk_level }}">{{ j.ai_risk_level }}{% if j.ai_risk_score %} ({{ "%.0f"|format(j.ai_risk_score * 100) }}%){% endif %}</span>
+            </div>
+            <div style="font-size:14px; color:var(--gray-800); margin-bottom:6px">{{ j.description[:80] }}</div>
+            <div class="jc-meta">
+                <span>{{ j.doc_date }}</span>
+                <span>{{ j.doc_type or '미분류' }}</span>
+                <span>{{ j.category }}</span>
+                <span>{{ j.created_by }}</span>
+                <span style="font-weight:600">{{ "{:,.0f}".format(j.total_debit) }}원</span>
+                {% if j.project %}<span style="background:var(--gray-100);padding:2px 8px;border-radius:4px;font-size:12px">{{ j.project.name }}</span>{% endif %}
+                {% if j.receipt_image %}
+                    {% if 'tax_invoice' in j.receipt_image %}<span style="background:#FFF3E6;color:#EE7500;padding:2px 8px;border-radius:4px;font-size:12px;font-weight:600">세금계산서</span>
+                    {% elif 'invoice' in j.receipt_image %}<span style="background:#E8F5E9;color:#43A047;padding:2px 8px;border-radius:4px;font-size:12px;font-weight:600">거래명세서</span>
+                    {% else %}<span style="background:#E3F2FD;color:#1976D2;padding:2px 8px;border-radius:4px;font-size:12px;font-weight:600">영수증</span>{% endif %}
+                {% endif %}
+                {% if j.status == '검토완료' %}<span style="color:var(--success)">V 검토완료</span>
+                {% elif j.status == '반려' %}<span style="color:var(--danger)">X 반려</span>{% endif %}
+            </div>
+            {% if j.ai_error_codes %}
+            <div class="jc-errors" style="margin-top:8px">
+                {% for code in j.ai_error_codes.split(',') %}
+                    {% if code in error_names %}
+                        <span class="error-tag {{ error_severity.get(code, 'low') }}">{{ error_names[code] }}</span>
+                    {% else %}
+                        <span class="error-tag low">{{ code }}</span>
+                    {% endif %}
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+        </div><!-- /card-grid -->
+
+        {% if not journals %}
+        <div class="card" style="text-align:center;padding:48px;color:var(--gray-500)">해당 조건의 전표가 없습니다.</div>
+        {% endif %}
+
+        <!-- 페이지네이션 -->
+        {% if total_pages > 1 %}
+        <div class="pagination">
+            {% for p in range(1, total_pages + 1) %}
+                {% if p <= 10 or p == total_pages or (p >= current_page - 2 and p <= current_page + 2) %}
+                <a href="/review?risk={{ current_risk }}&project={{ current_project }}&doc_type={{ current_doc_type }}&error_code={{ current_error_code }}&vendor_type={{ current_vendor_type }}&page={{ p }}" class="{{ 'active' if p == current_page }}">{{ p }}</a>
+                {% endif %}
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- 모달 -->
+    <div class="modal-overlay" id="detailModal">
+        <div class="modal">
+            <div class="modal-header"><h3 id="modalTitle">전표 상세</h3><button class="modal-close" onclick="closeModal()">&times;</button></div>
+            <div class="modal-body" id="modalBody"></div>
+            <div class="modal-footer" id="modalFooter"></div>
+        </div>
+    </div>
+    <!-- OCR 점검 모달 -->
+    <div class="modal-overlay" id="ocrModal">
+        <div class="modal" style="max-width:900px">
+            <div class="modal-header">
+                <h3>OCR 값 일치 점검</h3>
+                <div style="display:flex;align-items:center;gap:12px">
+                    <span id="ocrProgress" style="font-size:13px;color:var(--gray-500)"></span>
+                    <button class="modal-close" onclick="closeOcrModal()">&times;</button>
+                </div>
+            </div>
+            <div class="modal-body" id="ocrModalBody" style="padding:20px"></div>
+            <div class="modal-footer" id="ocrModalFooter"></div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+    const EN = {'E001':'차대변 불일치','E002':'계정 착오','E003':'중복 전표','E004':'금액 이상','E004-M':'고액(5억+)','E005':'주말 기표','E006':'역분개','E006-H':'해약/환불','E007':'증빙 누락','E008':'비인가 계정','E009':'월말 대량','E010':'단수 금액','E011':'시간외 기표','E012':'개인거래처 고액','E013':'적요 미입력','E014':'다건 항목','E015':'반복거래 계정 이탈'};
+
+    // ══════ OCR 점검 ══════
+    let ocrItems = [];
+    let ocrIndex = 0;
+
+    async function openOcrCheck() {
+        const res = await fetch('/api/ocr-check');
+        ocrItems = await res.json();
+        ocrIndex = 0;
+
+        if (ocrItems.length === 0) {
+            showToast('OCR 데이터가 있는 전표가 없습니다.', '');
+            return;
+        }
+
+        document.getElementById('ocrModal').classList.add('show');
+        renderOcrItem();
+    }
+
+    function closeOcrModal() { document.getElementById('ocrModal').classList.remove('show'); }
+
+    async function reparseOcr(docNo) {
+        showToast('AI 이미지 재분석 중...', '');
+        try {
+            const res = await fetch(`/api/ocr-reparse/${docNo}`, {method:'POST'});
+            const d = await res.json();
+            if (d.success) {
+                const p = d.parsed;
+                // 현재 항목 업데이트
+                ocrItems[ocrIndex].ocr_date = p.date;
+                ocrItems[ocrIndex].ocr_vendor = p.vendor;
+                ocrItems[ocrIndex].ocr_amount = p.amount;
+                // 불일치 재계산
+                const mi = [];
+                if (p.date && ocrItems[ocrIndex].doc_date && p.date.replace(/-/g,'') !== ocrItems[ocrIndex].doc_date.replace(/-/g,'')) mi.push('일자');
+                if (p.vendor && ocrItems[ocrIndex].vendor && !ocrItems[ocrIndex].vendor.includes(p.vendor) && !p.vendor.includes(ocrItems[ocrIndex].vendor)) mi.push('거래처');
+                if (p.amount && Math.abs(p.amount - ocrItems[ocrIndex].total_debit) > 1) mi.push('금액');
+                ocrItems[ocrIndex].mismatches = mi;
+                showToast('AI 재분석 완료!', 'success');
+                renderOcrItem();
+            } else {
+                showToast(d.error || '재분석 실패', 'error');
+            }
+        } catch(e) { showToast('오류: ' + e.message, 'error'); }
+    }
+
+    function renderOcrItem() {
+        if (ocrIndex >= ocrItems.length) {
+            document.getElementById('ocrModalBody').innerHTML = `<div style="text-align:center;padding:40px"><div style="font-size:40px;color:var(--success);margin-bottom:12px">V</div><div style="font-size:18px;font-weight:600">전체 점검 완료</div><div style="color:var(--gray-500);margin-top:8px">${ocrItems.length}건 검토 완료</div></div>`;
+            document.getElementById('ocrModalFooter').innerHTML = `<button class="btn btn-primary" onclick="closeOcrModal()">닫기</button>`;
+            document.getElementById('ocrProgress').textContent = '';
+            return;
+        }
+
+        const item = ocrItems[ocrIndex];
+        const hasMismatch = item.mismatches.length > 0;
+
+        document.getElementById('ocrProgress').textContent = `${ocrIndex + 1} / ${ocrItems.length}건`;
+
+        let h = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">`;
+
+        // 좌: 세금계산서 이미지
+        h += `<div style="text-align:center">
+            <div style="font-size:13px;font-weight:600;color:var(--gray-600);margin-bottom:8px">세금계산서/영수증</div>
+            ${item.receipt_image ? `<img src="${item.receipt_image}" style="max-width:100%;max-height:350px;border-radius:8px;border:1px solid var(--gray-200);box-shadow:0 2px 8px rgba(0,0,0,0.08)">` : '<div style="color:var(--gray-400);padding:40px">이미지 없음</div>'}
+        </div>`;
+
+        // 우: 비교 테이블
+        h += `<div>
+            <div style="font-size:13px;font-weight:600;color:var(--gray-600);margin-bottom:8px">전표번호: <strong>${item.doc_no}</strong></div>
+            <div style="font-size:12px;color:var(--gray-500);margin-bottom:12px">${item.description}</div>
+
+            <table style="width:100%;border-collapse:collapse;font-size:13px">
+            <tr style="background:var(--gray-100)"><th style="padding:8px;text-align:left;width:25%">항목</th><th style="padding:8px;width:37%">OCR 추출값</th><th style="padding:8px;width:37%">전표 입력값</th></tr>`;
+
+        // 일자
+        const dateMatch = item.ocr_date && item.doc_date && item.ocr_date.replace(/-/g,'') === item.doc_date.replace(/-/g,'');
+        const dateColor = !item.ocr_date ? '' : dateMatch ? 'color:var(--success)' : 'color:var(--danger);font-weight:600';
+        h += `<tr><td style="padding:8px;font-weight:600">작성일자</td>
+            <td style="padding:8px">${item.ocr_date || '<span style="color:var(--gray-400)">-</span>'}</td>
+            <td style="padding:8px;${dateColor}">${item.doc_date || '-'} ${!item.ocr_date ? '' : dateMatch ? ' V' : ' X 불일치'}</td></tr>`;
+
+        // 거래처
+        const vendorMatch = !item.ocr_vendor || !item.vendor || item.vendor.includes(item.ocr_vendor) || item.ocr_vendor.includes(item.vendor);
+        const vendorColor = !item.ocr_vendor ? '' : vendorMatch ? 'color:var(--success)' : 'color:var(--danger);font-weight:600';
+        h += `<tr><td style="padding:8px;font-weight:600">거래처</td>
+            <td style="padding:8px">${item.ocr_vendor || '<span style="color:var(--gray-400)">-</span>'}</td>
+            <td style="padding:8px;${vendorColor}">${item.vendor || '-'} ${!item.ocr_vendor ? '' : vendorMatch ? ' V' : ' X 불일치'}</td></tr>`;
+
+        // 금액
+        const amountMatch = !item.ocr_amount || Math.abs((item.ocr_amount||0) - (item.total_debit||0)) <= 1;
+        const amountColor = !item.ocr_amount ? '' : amountMatch ? 'color:var(--success)' : 'color:var(--danger);font-weight:600';
+        h += `<tr><td style="padding:8px;font-weight:600">금액</td>
+            <td style="padding:8px">${item.ocr_amount ? Number(item.ocr_amount).toLocaleString() + '원' : '<span style="color:var(--gray-400)">-</span>'}</td>
+            <td style="padding:8px;${amountColor}">${Number(item.total_debit).toLocaleString()}원 ${!item.ocr_amount ? '' : amountMatch ? ' V' : ' X 불일치'}</td></tr>`;
+
+        h += `</table>`;
+
+        // 불일치 요약
+        if (hasMismatch) {
+            h += `<div style="margin-top:12px;padding:10px 14px;background:#FFEBEE;border:1px solid #FFCDD2;border-left:3px solid #E53935;border-radius:6px;font-size:13px;color:#B71C1C">
+                <strong>불일치 항목:</strong> ${item.mismatches.join(', ')} - 확인이 필요합니다.
+            </div>`;
+        } else {
+            h += `<div style="margin-top:12px;padding:10px 14px;background:#E8F5E9;border:1px solid #C8E6C9;border-left:3px solid #43A047;border-radius:6px;font-size:13px;color:#1B5E20">
+                <strong>V 일치</strong> - OCR 값과 입력값이 일치합니다.
+            </div>`;
+        }
+
+        h += `</div></div>`;
+
+        document.getElementById('ocrModalBody').innerHTML = h;
+        document.getElementById('ocrModalFooter').innerHTML = `
+            <button class="btn btn-outline" onclick="ocrIndex=Math.max(0,ocrIndex-1);renderOcrItem()" ${ocrIndex===0?'disabled':''}>이전</button>
+            <button class="btn btn-outline" style="border-color:var(--hoban-orange);color:var(--hoban-orange)" onclick="reparseOcr('${item.doc_no}')">AI 재분석</button>
+            <button class="btn btn-outline" onclick="showDetail('${item.doc_no}');closeOcrModal()">전표 상세</button>
+            <button class="btn btn-primary" onclick="ocrIndex++;renderOcrItem()">${ocrIndex < ocrItems.length-1 ? '확인 + 다음 건' : '점검 완료'}</button>
+        `;
+    }
+
+    // ══════ 테이블 정렬 (클릭) + 컬럼 드래그앤드롭 ══════
+    const NUM_SORT_KEYS = new Set(['risk', 'amount']);
+    let currentSort = {key: null, dir: 'none'};
+    let mouseDownTime = 0;
+    let mouseDownTh = null;
+
+    function sortTable(th) {
+        const key = th.dataset.key;
+        if (!key) return;
+
+        // 정렬 방향 토글
+        if (currentSort.key === key) {
+            if (currentSort.dir === 'asc') currentSort.dir = 'desc';
+            else if (currentSort.dir === 'desc') { currentSort.dir = 'none'; currentSort.key = null; }
+            else currentSort.dir = 'asc';
+        } else {
+            currentSort = {key, dir: 'asc'};
+        }
+
+        // 헤더 스타일
+        document.querySelectorAll('#tableHeader th').forEach(h => h.classList.remove('sort-asc', 'sort-desc'));
+        if (currentSort.dir !== 'none') {
+            th.classList.add(currentSort.dir === 'asc' ? 'sort-asc' : 'sort-desc');
+        }
+
+        // th의 현재 DOM 인덱스
+        const thIndex = Array.from(th.parentElement.children).indexOf(th);
+        const tbody = document.getElementById('tableBody');
+        const rows = Array.from(tbody.querySelectorAll('tr'));
+
+        if (currentSort.dir === 'none') {
+            rows.sort((a, b) => parseFloat(b.dataset.score || 0) - parseFloat(a.dataset.score || 0));
+        } else {
+            const isNum = NUM_SORT_KEYS.has(key);
+            const dir = currentSort.dir === 'asc' ? 1 : -1;
+
+            rows.sort((a, b) => {
+                const aVal = a.children[thIndex] ? (a.children[thIndex].dataset.sort || '') : '';
+                const bVal = b.children[thIndex] ? (b.children[thIndex].dataset.sort || '') : '';
+
+                // 명시적 숫자 컬럼
+                if (isNum) return dir * ((parseFloat(aVal) || 0) - (parseFloat(bVal) || 0));
+
+                // 순수 숫자 문자열 (쉼표 제거 후 판별, 날짜 제외)
+                if (/^\d[\d,]*\.?\d*$/.test(aVal) && /^\d[\d,]*\.?\d*$/.test(bVal)) {
+                    return dir * (parseFloat(aVal.replace(/,/g, '')) - parseFloat(bVal.replace(/,/g, '')));
+                }
+
+                // 문자열 비교 (날짜 YYYY-MM-DD, 한국어 등)
+                return dir * String(aVal).localeCompare(String(bVal), 'ko');
+            });
+        }
+
+        rows.forEach(r => tbody.appendChild(r));
+    }
+
+    // 클릭과 드래그 구분: mousedown → mouseup 간격 200ms 이하면 클릭(정렬)
+    document.querySelectorAll('#tableHeader th').forEach(th => {
+        th.setAttribute('draggable', 'false'); // 기본 draggable 비활성화
+
+        th.addEventListener('mousedown', function(e) {
+            mouseDownTime = Date.now();
+            mouseDownTh = this;
+        });
+
+        th.addEventListener('mouseup', function(e) {
+            const elapsed = Date.now() - mouseDownTime;
+            if (mouseDownTh === this && elapsed < 300) {
+                // 짧은 클릭 → 정렬
+                sortTable(this);
+            }
+            mouseDownTh = null;
+        });
+    });
+
+    // 보기 전환
+    function setView(mode) {
+        const cardView = document.getElementById('cardView');
+        const tableView = document.getElementById('tableView');
+        const btnCard = document.getElementById('btnCard');
+        const btnTable = document.getElementById('btnTable');
+        if (mode === 'table') {
+            cardView.style.display = 'none';
+            tableView.style.display = 'block';
+            btnCard.classList.remove('active');
+            btnTable.classList.add('active');
+            localStorage.setItem('reviewView', 'table');
+        } else {
+            cardView.style.display = 'grid';
+            tableView.style.display = 'none';
+            btnCard.classList.add('active');
+            btnTable.classList.remove('active');
+            localStorage.setItem('reviewView', 'card');
+        }
+    }
+    // 이전 선택 복원
+    if (localStorage.getItem('reviewView') === 'table') setView('table');
+
+    async function showDetail(docNo) {
+        const res = await fetch(`/api/journal/${docNo}`);
+        const j = await res.json();
+        document.getElementById('modalTitle').textContent = j.doc_no;
+
+        let receiptType = '';
+        if (j.receipt_image) {
+            receiptType = j.receipt_image.includes('tax_invoice')?'세금계산서':j.receipt_image.includes('invoice')?'거래명세서':'영수증';
+        }
+
+        let h = `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px 16px;margin-bottom:16px;font-size:13px">
+            <div><span style="color:var(--gray-500)">전표일자</span><br><strong>${j.doc_date}</strong></div>
+            <div><span style="color:var(--gray-500)">회계연도</span><br><strong>${j.fiscal_year||'-'}</strong></div>
+            <div><span style="color:var(--gray-500)">전표유형</span><br><strong>${j.doc_type||'-'}</strong></div>
+            <div><span style="color:var(--gray-500)">구분</span><br><strong>${j.category||'-'}</strong></div>
+            <div><span style="color:var(--gray-500)">대분류</span><br><strong>${j.big_category||'-'}</strong></div>
+            <div><span style="color:var(--gray-500)">입력자</span><br><strong>${j.created_by||'-'}</strong></div>
+            <div><span style="color:var(--gray-500)">현장</span><br><strong>${j.project_name||'-'}</strong></div>
+            <div><span style="color:var(--gray-500)">사업부</span><br><strong>${j.biz_unit||'-'}</strong></div>
+            <div><span style="color:var(--gray-500)">입력일시</span><br><strong>${j.input_datetime||'-'}</strong></div>
+            <div style="grid-column:span 3"><span style="color:var(--gray-500)">적요</span><br><strong>${j.description||'-'}</strong></div>
+            ${j.draft_doc_no?`<div style="grid-column:span 3"><span style="color:var(--gray-500)">기안문서번호</span><br><strong>${j.draft_doc_no}</strong></div>`:''}
+        </div>`;
+
+        if (j.receipt_image) {
+            h += `<div style="margin-bottom:16px;padding:14px;background:var(--gray-50);border-radius:10px;border:1px solid var(--gray-200);text-align:center">
+                <div style="font-size:13px;font-weight:600;color:var(--gray-600);margin-bottom:8px">첨부 증빙 (${receiptType})</div>
+                <a href="${j.receipt_image}" target="_blank"><img src="${j.receipt_image}" style="max-width:100%;max-height:300px;border-radius:8px;border:1px solid var(--gray-200);box-shadow:0 2px 8px rgba(0,0,0,0.08)"></a>
+            </div>`;
+        }
+
+        // 전표 항목
+        const VT = {'F':'법인','P':'개인','D':'부서','S':'사원','X':'기타','B':'은행'};
+        h += `<table class="lines-table"><thead><tr>
+            <th>No</th><th>차대</th><th>계정코드</th><th>계정과목</th>
+            <th style="text-align:right">차변금액</th><th style="text-align:right">대변금액</th>
+            <th>거래처유형</th><th>거래처</th><th>적요</th></tr></thead><tbody>`;
+        j.lines.forEach(l => {
+            const vtLabel = l.vendor_type ? `<span style="font-size:10px;background:var(--gray-100);padding:1px 5px;border-radius:4px">${VT[l.vendor_type]||l.vendor_type}</span>` : '';
+            h += `<tr><td>${l.line_no}</td><td>${l.side||'-'}</td><td>${l.account_code}</td><td>${l.account_name}</td>
+                <td style="text-align:right">${l.debit_amount?Number(l.debit_amount).toLocaleString():''}</td>
+                <td style="text-align:right">${l.credit_amount?Number(l.credit_amount).toLocaleString():''}</td>
+                <td style="font-size:12px;text-align:center">${vtLabel}</td>
+                <td style="font-size:12px">${l.vendor_name||''}</td>
+                <td style="font-size:12px">${(l.description||'').substring(0,30)}</td></tr>`;
+        });
+        const ok = Math.abs(j.total_debit-j.total_credit)<1;
+        h += `</tbody><tfoot><tr><td colspan="4" style="text-align:right"><strong>합계</strong></td>
+            <td style="text-align:right"><strong>${Number(j.total_debit).toLocaleString()}</strong></td>
+            <td style="text-align:right"><strong>${Number(j.total_credit).toLocaleString()}</strong></td>
+            <td colspan="3" class="${ok?'balance-ok':'balance-error'}">${ok?'V 일치':'X 불일치'}</td></tr></tfoot></table>`;
+
+        // AI 분석
+        h += `<div class="ai-result" style="margin-top:16px"><h4>AI 분석 <span class="risk-badge ${j.ai_risk_level}">${j.ai_risk_level}</span>
+            <span style="font-weight:normal;font-size:13px;color:var(--gray-500);margin-left:8px">${j.ai_risk_score!==null?(j.ai_risk_score*100).toFixed(0)+'%':'-'}</span></h4>`;
+        if (j.ai_error_codes&&j.ai_error_codes.length>0) {
+            h += '<div style="margin:8px 0;display:flex;gap:4px;flex-wrap:wrap">';
+            j.ai_error_codes.forEach(c => {
+                const sv=['E001','E002','E004','E008'].includes(c)?'high':['E003','E006','E007','E009'].includes(c)?'medium':'low';
+                h+=`<span class="error-tag ${sv}">${c} ${EN[c]||c}</span>`;
+            }); h+='</div>';
+        }
+        if(j.ai_reason){h+='<div style="margin-top:8px">';j.ai_reason.split('\n').forEach(r=>{if(r.trim())h+=`<div class="reason-item">${r}</div>`;});h+='</div>';}
+        if(j.ai_recommendation){h+='<div class="recommendation"><strong>권고:</strong><br>';j.ai_recommendation.split('\n').forEach(r=>{if(r.trim())h+=`- ${r}<br>`;});h+='</div>';}
+        if(!j.ai_error_codes||j.ai_error_codes.length===0) h+='<div style="color:var(--success);margin-top:8px">정상 전표</div>';
+        h+='</div>';
+
+        document.getElementById('modalBody').innerHTML = h;
+        document.getElementById('modalFooter').innerHTML = j.status==='제출'?
+            `<button class="btn btn-danger" onclick="actionJournal('${j.doc_no}','reject')">반려</button><button class="btn btn-success" onclick="actionJournal('${j.doc_no}','approve')">검토 승인</button>`:
+            `<span style="color:var(--gray-500)">처리 완료 (${j.status})</span>`;
+        document.getElementById('detailModal').classList.add('show');
+    }
+
+    function closeModal(){document.getElementById('detailModal').classList.remove('show');}
+    async function actionJournal(no,act){await fetch(`/api/journal/${no}/${act}`,{method:'POST'});showToast(`${no} ${act==='approve'?'승인':'반려'} 완료`,act==='approve'?'success':'error');closeModal();setTimeout(()=>location.reload(),500);}
+    function showToast(m,t){const e=document.getElementById('toast');e.textContent=m;e.className=`toast show ${t||''}`;setTimeout(()=>e.className='toast',3000);}
+    document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeModal();document.getElementById('criteriaModal').classList.remove('show');closeOcrModal();}});
+    document.getElementById('criteriaModal').addEventListener('click',e=>{if(e.target===e.currentTarget)e.target.classList.remove('show');});
+    document.getElementById('detailModal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal();});
+    </script>
+</body>
+</html>
