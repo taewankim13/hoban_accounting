@@ -74,6 +74,8 @@ class JournalEntry(Base):
     draft_doc_no = Column(String(100), nullable=True)           # 기안문서번호
     settlement_date = Column(String(10), nullable=True)         # 반제일
 
+    has_linked_doc = Column(String(1), default="N")           # 연결문서 여부 (Y/N)
+
     # AI 분석 결과
     ai_risk_level = Column(String(10), nullable=True)
     ai_risk_score = Column(Float, nullable=True)
@@ -84,6 +86,43 @@ class JournalEntry(Base):
 
     project = relationship("Project", back_populates="journals")
     lines = relationship("JournalLine", back_populates="journal", cascade="all, delete-orphan")
+    evidences = relationship("Evidence", back_populates="journal", cascade="all, delete-orphan")
+    linked_docs = relationship("LinkedDocument", back_populates="journal", cascade="all, delete-orphan")
+
+
+class Evidence(Base):
+    """증빙자료"""
+    __tablename__ = "evidences"
+
+    id = Column(Integer, primary_key=True, index=True)
+    journal_id = Column(Integer, ForeignKey("journal_entries.id"), index=True)
+    seq_no = Column(Integer)                                     # 증빙목록번호 (순번)
+    evidence_type = Column(String(50))                           # 증빙자료 구분 (세금계산서/영수증/계약서/거래명세서/기타)
+    file_name = Column(String(300))                              # 원본 파일명
+    file_path = Column(String(500))                              # 저장 경로
+    file_ext = Column(String(20))                                # 확장자 (.pdf, .jpg, .png 등)
+    file_size = Column(Integer, default=0)                       # 파일 크기 (bytes)
+    parsed_data = Column(Text, nullable=True)                    # JSON: LLM 파싱 결과 [{label, value}, ...]
+    created_at = Column(DateTime, default=datetime.now)
+
+    journal = relationship("JournalEntry", back_populates="evidences")
+
+
+class LinkedDocument(Base):
+    """연결문서"""
+    __tablename__ = "linked_documents"
+
+    id = Column(Integer, primary_key=True, index=True)
+    journal_id = Column(Integer, ForeignKey("journal_entries.id"), index=True)
+    seq_no = Column(Integer)                                     # 연결문서목록번호 (순번)
+    doc_type = Column(String(50))                                # 연결문서 구분 (기안서/계약서/검수확인서/품의서/발주서/기타)
+    file_name = Column(String(300))                              # 원본 파일명
+    file_path = Column(String(500))                              # 저장 경로
+    file_ext = Column(String(20))                                # 확장자
+    file_size = Column(Integer, default=0)                       # 파일 크기 (bytes)
+    created_at = Column(DateTime, default=datetime.now)
+
+    journal = relationship("JournalEntry", back_populates="linked_docs")
 
 
 class JournalLine(Base):

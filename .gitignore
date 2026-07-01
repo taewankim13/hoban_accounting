@@ -18,6 +18,8 @@ build/
 static/uploads/*.png
 static/uploads/*.jpg
 static/uploads/*.jpeg
+static/uploads/evidences/
+static/uploads/linked_docs/
 
 # IDE
 .vscode/

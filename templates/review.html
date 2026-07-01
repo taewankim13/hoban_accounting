@@ -153,22 +153,49 @@
             </div>
         </div>
 
+        <!-- 검색창 -->
+        <div style="margin-bottom:12px">
+            <form id="searchForm" onsubmit="doSearch(event)" style="display:flex;gap:8px;align-items:center">
+                <select id="searchField" style="padding:8px 12px;border:1px solid var(--gray-300);border-radius:20px;font-size:13px;background:#fff;cursor:pointer;min-width:100px">
+                    <option value="all" {{ 'selected' if current_search_field == 'all' }}>전체</option>
+                    <option value="doc_no" {{ 'selected' if current_search_field == 'doc_no' }}>전표번호</option>
+                    <option value="doc_date" {{ 'selected' if current_search_field == 'doc_date' }}>일자</option>
+                    <option value="doc_type" {{ 'selected' if current_search_field == 'doc_type' }}>전표유형</option>
+                    <option value="description" {{ 'selected' if current_search_field == 'description' }}>적요</option>
+                    <option value="created_by" {{ 'selected' if current_search_field == 'created_by' }}>입력자</option>
+                    <option value="project" {{ 'selected' if current_search_field == 'project' }}>현장</option>
+                    <option value="vendor" {{ 'selected' if current_search_field == 'vendor' }}>거래처</option>
+                    <option value="account" {{ 'selected' if current_search_field == 'account' }}>계정과목</option>
+                </select>
+                <div style="position:relative;flex:1;max-width:400px">
+                    <input type="text" id="searchInput" value="{{ current_search }}" placeholder="검색어를 입력하세요" style="width:100%;padding:9px 14px 9px 36px;border:1px solid var(--gray-300);border-radius:20px;font-size:13px;box-sizing:border-box">
+                    <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--gray-400);font-size:14px;pointer-events:none">&#x1F50D;</span>
+                </div>
+                <button type="submit" class="btn btn-primary btn-sm" style="padding:8px 18px;border-radius:20px">검색</button>
+                {% if current_search %}
+                <a href="/review?risk={{ current_risk }}&project={{ current_project }}&doc_type={{ current_doc_type }}&error_code={{ current_error_code }}&vendor_type={{ current_vendor_type }}" class="btn btn-outline btn-sm" style="padding:8px 14px;border-radius:20px;font-size:12px">초기화</a>
+                {% endif %}
+            </form>
+        </div>
+
         <!-- 필터: 위험등급 -->
+        {% set sf = '&search_field=' + current_search_field if current_search_field and current_search_field != 'all' else '' %}
+        {% set sq = '&search=' + current_search + sf if current_search else '' %}
         <div class="filter-bar">
-            <a href="/review?project={{ current_project }}&doc_type={{ current_doc_type }}&error_code={{ current_error_code }}&vendor_type={{ current_vendor_type }}" class="filter-btn {{ 'active' if current_risk == 'all' }}">전체 <span class="badge">{{ total }}</span></a>
-            <a href="/review?risk=High&project={{ current_project }}&doc_type={{ current_doc_type }}&error_code={{ current_error_code }}&vendor_type={{ current_vendor_type }}" class="filter-btn {{ 'active' if current_risk == 'High' }}">고위험 <span class="badge high-bg">{{ high }}</span></a>
-            <a href="/review?risk=Medium&project={{ current_project }}&doc_type={{ current_doc_type }}&error_code={{ current_error_code }}&vendor_type={{ current_vendor_type }}" class="filter-btn {{ 'active' if current_risk == 'Medium' }}">주의 <span class="badge medium-bg">{{ medium }}</span></a>
-            <a href="/review?risk=Low&project={{ current_project }}&doc_type={{ current_doc_type }}&error_code={{ current_error_code }}&vendor_type={{ current_vendor_type }}" class="filter-btn {{ 'active' if current_risk == 'Low' }}">참고 <span class="badge low-bg">{{ low }}</span></a>
-            <a href="/review?risk=정상&project={{ current_project }}&doc_type={{ current_doc_type }}&error_code={{ current_error_code }}&vendor_type={{ current_vendor_type }}" class="filter-btn {{ 'active' if current_risk == '정상' }}">정상</a>
+            <a href="/review?project={{ current_project }}&doc_type={{ current_doc_type }}&error_code={{ current_error_code }}&vendor_type={{ current_vendor_type }}{{ sq }}" class="filter-btn {{ 'active' if current_risk == 'all' }}">전체 <span class="badge">{{ total }}</span></a>
+            <a href="/review?risk=High&project={{ current_project }}&doc_type={{ current_doc_type }}&error_code={{ current_error_code }}&vendor_type={{ current_vendor_type }}{{ sq }}" class="filter-btn {{ 'active' if current_risk == 'High' }}">고위험 <span class="badge high-bg">{{ high }}</span></a>
+            <a href="/review?risk=Medium&project={{ current_project }}&doc_type={{ current_doc_type }}&error_code={{ current_error_code }}&vendor_type={{ current_vendor_type }}{{ sq }}" class="filter-btn {{ 'active' if current_risk == 'Medium' }}">주의 <span class="badge medium-bg">{{ medium }}</span></a>
+            <a href="/review?risk=Low&project={{ current_project }}&doc_type={{ current_doc_type }}&error_code={{ current_error_code }}&vendor_type={{ current_vendor_type }}{{ sq }}" class="filter-btn {{ 'active' if current_risk == 'Low' }}">참고 <span class="badge low-bg">{{ low }}</span></a>
+            <a href="/review?risk=정상&project={{ current_project }}&doc_type={{ current_doc_type }}&error_code={{ current_error_code }}&vendor_type={{ current_vendor_type }}{{ sq }}" class="filter-btn {{ 'active' if current_risk == '정상' }}">정상</a>
         </div>
 
         <!-- 필터: 이상사유 -->
         {% if error_stats %}
         <div class="filter-bar" style="margin-top:4px">
             <span style="font-size:13px; color:var(--gray-500); padding:6px 0; margin-right:4px; white-space:nowrap;">이상사유:</span>
-            <a href="/review?risk={{ current_risk }}&project={{ current_project }}&doc_type={{ current_doc_type }}&vendor_type={{ current_vendor_type }}" class="filter-btn {{ 'active' if current_error_code == 'all' }}" style="font-size:12px">전체</a>
+            <a href="/review?risk={{ current_risk }}&project={{ current_project }}&doc_type={{ current_doc_type }}&vendor_type={{ current_vendor_type }}{{ sq }}" class="filter-btn {{ 'active' if current_error_code == 'all' }}" style="font-size:12px">전체</a>
             {% for code, info in error_stats.items() %}
-            <a href="/review?risk={{ current_risk }}&project={{ current_project }}&doc_type={{ current_doc_type }}&vendor_type={{ current_vendor_type }}&error_code={{ code }}"
+            <a href="/review?risk={{ current_risk }}&project={{ current_project }}&doc_type={{ current_doc_type }}&vendor_type={{ current_vendor_type }}&error_code={{ code }}{{ sq }}"
                class="filter-btn {{ 'active' if current_error_code == code }}" style="font-size:12px">
                 {{ info.name }}
                 <span class="badge {% if info.severity == 'High' %}high-bg{% elif info.severity == 'Medium' %}medium-bg{% else %}low-bg{% endif %}">{{ info.count }}</span>
@@ -180,7 +207,7 @@
         <!-- 필터: 프로젝트 + 전표유형 + 보기전환 -->
         <div style="display:flex; gap:16px; flex-wrap:wrap; margin-bottom:16px; margin-top:8px; align-items:center">
             <div>
-                <select onchange="location.href='/review?risk={{ current_risk }}&doc_type={{ current_doc_type }}&error_code={{ current_error_code }}&vendor_type={{ current_vendor_type }}&project='+this.value" style="padding:7px 12px; border:1px solid var(--gray-300); border-radius:20px; font-size:13px">
+                <select onchange="location.href='/review?risk={{ current_risk }}&doc_type={{ current_doc_type }}&error_code={{ current_error_code }}&vendor_type={{ current_vendor_type }}{{ sq }}&project='+this.value" style="padding:7px 12px; border:1px solid var(--gray-300); border-radius:20px; font-size:13px">
                     <option value="all" {{ 'selected' if current_project == 'all' }}>전체 현장</option>
                     {% for p in projects %}
                     <option value="{{ p.code }}" {{ 'selected' if current_project == p.code }}>{{ p.name }}</option>
@@ -188,7 +215,7 @@
                 </select>
             </div>
             <div>
-                <select onchange="location.href='/review?risk={{ current_risk }}&project={{ current_project }}&error_code={{ current_error_code }}&vendor_type={{ current_vendor_type }}&doc_type='+this.value" style="padding:7px 12px; border:1px solid var(--gray-300); border-radius:20px; font-size:13px">
+                <select onchange="location.href='/review?risk={{ current_risk }}&project={{ current_project }}&error_code={{ current_error_code }}&vendor_type={{ current_vendor_type }}{{ sq }}&doc_type='+this.value" style="padding:7px 12px; border:1px solid var(--gray-300); border-radius:20px; font-size:13px">
                     <option value="all" {{ 'selected' if current_doc_type == 'all' }}>전체 전표유형</option>
                     {% for dt in doc_types %}
                     <option value="{{ dt }}" {{ 'selected' if current_doc_type == dt }}>{{ dt }}</option>
@@ -196,7 +223,7 @@
                 </select>
             </div>
             <div>
-                <select onchange="location.href='/review?risk={{ current_risk }}&project={{ current_project }}&error_code={{ current_error_code }}&vendor_type={{ current_vendor_type }}&doc_type={{ current_doc_type }}&vendor_type='+this.value" style="padding:7px 12px; border:1px solid var(--gray-300); border-radius:20px; font-size:13px">
+                <select onchange="location.href='/review?risk={{ current_risk }}&project={{ current_project }}&error_code={{ current_error_code }}&vendor_type={{ current_vendor_type }}&doc_type={{ current_doc_type }}{{ sq }}&vendor_type='+this.value" style="padding:7px 12px; border:1px solid var(--gray-300); border-radius:20px; font-size:13px">
                     <option value="all" {{ 'selected' if current_vendor_type == 'all' }}>전체 거래처유형</option>
                     <option value="F" {{ 'selected' if current_vendor_type == 'F' }}>법인(F)</option>
                     <option value="P" {{ 'selected' if current_vendor_type == 'P' }}>개인(P)</option>
@@ -206,7 +233,8 @@
                     <option value="B" {{ 'selected' if current_vendor_type == 'B' }}>은행(B)</option>
                 </select>
             </div>
-            <button class="btn btn-sm btn-outline" onclick="openOcrCheck()" style="margin-left:auto;margin-right:8px;font-size:12px;border-color:var(--hoban-orange);color:var(--hoban-orange)">OCR 값 일치 점검</button>
+            <button class="btn btn-sm btn-outline" onclick="openSideMismatch()" style="margin-left:auto;margin-right:8px;font-size:12px;border-color:#E53935;color:#E53935">차/대변 불일치 검토</button>
+            <button class="btn btn-sm btn-outline" onclick="openOcrCheck()" style="margin-right:8px;font-size:12px;border-color:var(--hoban-orange);color:var(--hoban-orange)">OCR 값 일치 점검</button>
             <div class="view-toggle">
                 <button id="btnCard" class="active" onclick="setView('card')">카드</button>
                 <button id="btnTable" onclick="setView('table')">테이블</button>
@@ -307,7 +335,7 @@
         <div class="pagination">
             {% for p in range(1, total_pages + 1) %}
                 {% if p <= 10 or p == total_pages or (p >= current_page - 2 and p <= current_page + 2) %}
-                <a href="/review?risk={{ current_risk }}&project={{ current_project }}&doc_type={{ current_doc_type }}&error_code={{ current_error_code }}&vendor_type={{ current_vendor_type }}&page={{ p }}" class="{{ 'active' if p == current_page }}">{{ p }}</a>
+                <a href="/review?risk={{ current_risk }}&project={{ current_project }}&doc_type={{ current_doc_type }}&error_code={{ current_error_code }}&vendor_type={{ current_vendor_type }}{{ sq }}&page={{ p }}" class="{{ 'active' if p == current_page }}">{{ p }}</a>
                 {% endif %}
             {% endfor %}
         </div>
@@ -337,10 +365,103 @@
         </div>
     </div>
 
+    <!-- 차/대변 불일치 검토 모달 -->
+    <div class="modal-overlay" id="sideModal">
+        <div class="modal" style="max-width:800px">
+            <div class="modal-header">
+                <h3>차/대변 불일치 전표 검토</h3>
+                <div style="display:flex;align-items:center;gap:12px">
+                    <span id="sideProgress" style="font-size:13px;color:var(--gray-500)"></span>
+                    <button class="modal-close" onclick="closeSideModal()">&times;</button>
+                </div>
+            </div>
+            <div class="modal-body" id="sideModalBody" style="padding:20px"></div>
+            <div class="modal-footer" id="sideModalFooter"></div>
+        </div>
+    </div>
+
     <div class="toast" id="toast"></div>
 
     <script>
     const EN = {'E001':'차대변 불일치','E002':'계정 착오','E003':'중복 전표','E004':'금액 이상','E004-M':'고액(5억+)','E005':'주말 기표','E006':'역분개','E006-H':'해약/환불','E007':'증빙 누락','E008':'비인가 계정','E009':'월말 대량','E010':'단수 금액','E011':'시간외 기표','E012':'개인거래처 고액','E013':'적요 미입력','E014':'다건 항목','E015':'반복거래 계정 이탈'};
+
+    function doSearch(e) {
+        e.preventDefault();
+        const q = document.getElementById('searchInput').value.trim();
+        const sf = document.getElementById('searchField').value;
+        const params = new URLSearchParams(location.search);
+        if (q) params.set('search', q); else params.delete('search');
+        if (q && sf && sf !== 'all') params.set('search_field', sf); else params.delete('search_field');
+        params.delete('page');
+        location.href = '/review?' + params.toString();
+    }
+
+    // ══════ 차/대변 불일치 검토 ══════
+    let sideItems = [];
+    let sideIndex = 0;
+
+    async function openSideMismatch() {
+        document.getElementById('sideModalBody').innerHTML = '<div style="text-align:center;padding:40px;color:var(--gray-500)">불일치 전표를 조회하고 있습니다...</div>';
+        document.getElementById('sideModalFooter').innerHTML = '';
+        document.getElementById('sideModal').classList.add('show');
+        const res = await fetch('/api/side-mismatch-journals');
+        sideItems = await res.json();
+        sideIndex = 0;
+        if (sideItems.length === 0) {
+            document.getElementById('sideModalBody').innerHTML = '<div style="text-align:center;padding:40px"><div style="font-size:40px;color:var(--success);margin-bottom:12px">V</div><div style="font-size:18px;font-weight:600">차/대변 불일치 전표가 없습니다</div><div style="color:var(--gray-500);margin-top:8px">모든 전표의 차/대변 방향이 정상입니다.</div></div>';
+            document.getElementById('sideModalFooter').innerHTML = '<button class="btn btn-primary" onclick="closeSideModal()">닫기</button>';
+            return;
+        }
+        document.getElementById('sideProgress').textContent = `총 ${sideItems.length}건`;
+        renderSideItem();
+    }
+
+    function closeSideModal() { document.getElementById('sideModal').classList.remove('show'); }
+
+    function renderSideItem() {
+        if (sideIndex >= sideItems.length) {
+            document.getElementById('sideModalBody').innerHTML = '<div style="text-align:center;padding:40px"><div style="font-size:40px;color:var(--success);margin-bottom:12px">V</div><div style="font-size:18px;font-weight:600">전체 검토 완료</div><div style="color:var(--gray-500);margin-top:8px">' + sideItems.length + '건 검토 완료</div></div>';
+            document.getElementById('sideModalFooter').innerHTML = '<button class="btn btn-primary" onclick="closeSideModal()">닫기</button>';
+            document.getElementById('sideProgress').textContent = '';
+            return;
+        }
+        const item = sideItems[sideIndex];
+        document.getElementById('sideProgress').textContent = (sideIndex + 1) + ' / ' + sideItems.length + '건';
+
+        let h = '<div style="margin-bottom:16px">';
+        h += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;font-size:13px;margin-bottom:14px">';
+        h += '<div><span style="color:var(--gray-500)">전표번호</span><br><strong>' + item.doc_no + '</strong></div>';
+        h += '<div><span style="color:var(--gray-500)">일자</span><br><strong>' + (item.doc_date || '-') + '</strong></div>';
+        h += '<div><span style="color:var(--gray-500)">현장</span><br><strong>' + (item.project_name || '-') + '</strong></div>';
+        h += '<div style="grid-column:span 2"><span style="color:var(--gray-500)">적요</span><br><strong>' + (item.description.substring(0, 60) || '-') + '</strong></div>';
+        h += '<div><span style="color:var(--gray-500)">위험등급</span><br><span class="risk-badge ' + (item.risk_level || '') + '">' + (item.risk_level || '-') + '</span></div>';
+        h += '</div>';
+
+        h += '<div style="font-size:13px;font-weight:600;color:var(--hoban-dark);margin-bottom:8px">불일치 항목 (' + item.mismatches.length + '건)</div>';
+        h += '<table style="width:100%;border-collapse:collapse;font-size:13px">';
+        h += '<tr style="background:var(--gray-100)"><th style="padding:8px;width:40px">No</th><th style="padding:8px">계정코드</th><th style="padding:8px">계정과목명</th><th style="padding:8px;text-align:center">정상방향</th><th style="padding:8px;text-align:center">입력방향</th><th style="padding:8px;text-align:right">금액</th></tr>';
+        item.mismatches.forEach(function(m) {
+            h += '<tr>';
+            h += '<td style="padding:8px;text-align:center;color:var(--gray-500)">' + m.line_no + '</td>';
+            h += '<td style="padding:8px;font-family:monospace">' + m.account_code + '</td>';
+            h += '<td style="padding:8px">' + m.account_name + '</td>';
+            h += '<td style="padding:8px;text-align:center"><span style="background:#E8F5E9;color:#2E7D32;padding:2px 8px;border-radius:10px;font-size:12px;font-weight:600">' + m.expected + '</span></td>';
+            h += '<td style="padding:8px;text-align:center"><span style="background:#FFEBEE;color:#C62828;padding:2px 8px;border-radius:10px;font-size:12px;font-weight:600">' + m.actual + '</span></td>';
+            h += '<td style="padding:8px;text-align:right;font-variant-numeric:tabular-nums">' + Number(m.amount).toLocaleString() + '원</td>';
+            h += '</tr>';
+        });
+        h += '</table>';
+
+        h += '<div style="margin-top:12px;padding:10px 14px;background:#FFF3E0;border:1px solid #FFE0B2;border-left:3px solid #FB8C00;border-radius:6px;font-size:12px;color:#E65100">';
+        h += '<strong>참고:</strong> 역분개, 수정분개, 계정대체 등 정당한 사유로 반대 방향에 기표될 수 있습니다.';
+        h += '</div></div>';
+
+        document.getElementById('sideModalBody').innerHTML = h;
+        document.getElementById('sideModalFooter').innerHTML =
+            '<button class="btn btn-outline" onclick="sideIndex=Math.max(0,sideIndex-1);renderSideItem()" ' + (sideIndex === 0 ? 'disabled' : '') + '>이전</button>' +
+            '<button class="btn btn-outline" onclick="showDetail(\'' + item.doc_no + '\');closeSideModal()">전표 상세</button>' +
+            '<button class="btn btn-primary" onclick="sideIndex++;renderSideItem()">' + (sideIndex < sideItems.length - 1 ? '확인 + 다음 건' : '검토 완료') + '</button>';
+    }
 
     // ══════ OCR 점검 ══════
     let ocrItems = [];
@@ -583,12 +704,138 @@
             ${j.draft_doc_no?`<div style="grid-column:span 3"><span style="color:var(--gray-500)">기안문서번호</span><br><strong>${j.draft_doc_no}</strong></div>`:''}
         </div>`;
 
+        // AI 분석 (상단 배치)
+        h += `<div class="ai-result" style="margin-bottom:16px"><h4>AI 분석 <span class="risk-badge ${j.ai_risk_level}">${j.ai_risk_level}</span>
+            <span style="font-weight:normal;font-size:13px;color:var(--gray-500);margin-left:8px">${j.ai_risk_score!==null?(j.ai_risk_score*100).toFixed(0)+'%':'-'}</span></h4>`;
+        if (j.ai_error_codes&&j.ai_error_codes.length>0) {
+            h += '<div style="margin:8px 0;display:flex;gap:4px;flex-wrap:wrap">';
+            j.ai_error_codes.forEach(c => {
+                const sv=['E001','E002','E004','E008'].includes(c)?'high':['E003','E006','E007','E009'].includes(c)?'medium':'low';
+                h+=`<span class="error-tag ${sv}">${c} ${EN[c]||c}</span>`;
+            }); h+='</div>';
+        }
+        if(j.ai_reason){h+='<div style="margin-top:8px">';j.ai_reason.split('\n').forEach(r=>{if(r.trim())h+=`<div class="reason-item">${r}</div>`;});h+='</div>';}
+        if(j.ai_recommendation){h+='<div class="recommendation"><strong>권고:</strong><br>';j.ai_recommendation.split('\n').forEach(r=>{if(r.trim())h+=`- ${r}<br>`;});h+='</div>';}
+        if(!j.ai_error_codes||j.ai_error_codes.length===0) h+='<div style="color:var(--success);margin-top:8px">정상 전표</div>';
+        h+='</div>';
+
         if (j.receipt_image) {
             h += `<div style="margin-bottom:16px;padding:14px;background:var(--gray-50);border-radius:10px;border:1px solid var(--gray-200);text-align:center">
                 <div style="font-size:13px;font-weight:600;color:var(--gray-600);margin-bottom:8px">첨부 증빙 (${receiptType})</div>
                 <a href="${j.receipt_image}" target="_blank"><img src="${j.receipt_image}" style="max-width:100%;max-height:300px;border-radius:8px;border:1px solid var(--gray-200);box-shadow:0 2px 8px rgba(0,0,0,0.08)"></a>
             </div>`;
         }
+
+        // 증빙자료 섹션
+        h += `<div style="margin-bottom:16px;padding:16px;background:var(--gray-50);border-radius:10px;border:1px solid var(--gray-200)">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+                <div style="font-size:14px;font-weight:600;color:var(--hoban-dark)">증빙자료 <span id="evCount" style="font-size:12px;color:var(--gray-500)">(${j.evidences ? j.evidences.length : 0}건)</span></div>
+                <div style="display:flex;gap:8px;align-items:center">
+                    <select id="modalEvType" style="padding:5px 8px;font-size:12px;border:1px solid var(--gray-300);border-radius:4px">
+                        <option value="세금계산서">세금계산서</option>
+                        <option value="영수증">영수증</option>
+                        <option value="거래명세서">거래명세서</option>
+                        <option value="계약서">계약서</option>
+                        <option value="공과금 고지서">공과금 고지서</option>
+                        <option value="견적서">견적서</option>
+                        <option value="검수확인서">검수확인서</option>
+                        <option value="기타">기타</option>
+                    </select>
+                    <label for="modalEvFile" class="btn btn-sm btn-outline" style="cursor:pointer;font-size:12px;padding:4px 10px">+ 추가</label>
+                    <input type="file" id="modalEvFile" accept=".pdf,.jpg,.jpeg,.png,.gif,.bmp,.tiff,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.hwp,.hwpx,.zip,.csv,.txt" multiple style="display:none" onchange="uploadModalEvidence(this, '${j.doc_no}')">
+                </div>
+            </div>
+            <div id="evListWrap">`;
+
+        if (j.evidences && j.evidences.length > 0) {
+            h += `<table style="width:100%;border-collapse:collapse;font-size:12px"><thead>
+                <tr style="background:var(--gray-200)"><th style="padding:6px 8px;text-align:center;width:35px">No</th><th style="padding:6px 8px">구분</th><th style="padding:6px 8px">파일명</th><th style="padding:6px 8px;text-align:right;width:70px">크기</th><th style="padding:6px 8px;width:70px">등록일</th><th style="padding:6px 8px;text-align:center;width:70px"></th></tr>
+                </thead><tbody>`;
+            j.evidences.forEach(ev => {
+                const sz = ev.file_size > 1048576 ? (ev.file_size/1048576).toFixed(1)+'MB' : Math.round(ev.file_size/1024)+'KB';
+                const isImg = ['.jpg','.jpeg','.png','.gif','.bmp','.tiff'].includes(ev.file_ext);
+                const icon = ev.file_ext === '.pdf' ? '📄' : isImg ? '🖼️' : '📎';
+                h += `<tr>
+                    <td style="padding:5px 8px;text-align:center;color:var(--gray-500)">${ev.seq_no}</td>
+                    <td style="padding:5px 8px"><span style="background:white;padding:1px 6px;border-radius:4px;font-size:11px;border:1px solid var(--gray-200)">${ev.evidence_type}</span></td>
+                    <td style="padding:5px 8px"><a href="${ev.file_path}" target="_blank" style="color:var(--hoban-orange);text-decoration:none">${icon} ${ev.file_name}</a></td>
+                    <td style="padding:5px 8px;text-align:right;color:var(--gray-500)">${sz}</td>
+                    <td style="padding:5px 8px;font-size:11px;color:var(--gray-500)">${ev.created_at || '-'}</td>
+                    <td style="padding:5px 8px;text-align:center"><button class="btn btn-sm btn-outline" onclick="deleteEvidence(${ev.id}, '${j.doc_no}')" style="padding:1px 6px;font-size:10px;color:var(--danger);border-color:var(--danger)">삭제</button></td>
+                </tr>`;
+                // 파싱된 데이터 테이블 표시
+                if (ev.parsed_data && ev.parsed_data.length > 0) {
+                    h += `<tr><td colspan="6" style="padding:0;border-bottom:2px solid var(--hoban-orange)">
+                        <div style="margin:6px 8px 10px;padding:10px;background:#FFF8F0;border:1px solid #FFE0B2;border-radius:8px">
+                            <div style="font-size:11px;font-weight:600;color:var(--hoban-dark);margin-bottom:6px;display:flex;align-items:center;gap:6px">
+                                <span style="background:var(--hoban-orange);color:white;padding:1px 8px;border-radius:10px;font-size:10px">AI 파싱</span>
+                                ${ev.evidence_type} 분석 결과 (${ev.parsed_data.length}개 항목)
+                            </div>
+                            <table style="width:100%;border-collapse:collapse;font-size:12px;background:white;border-radius:6px;overflow:hidden">
+                                <thead><tr style="background:var(--hoban-dark);color:white">
+                                    <th style="padding:5px 10px;text-align:left;width:130px;font-size:11px;font-weight:500">항목</th>
+                                    <th style="padding:5px 10px;text-align:left;font-size:11px;font-weight:500">내용</th>
+                                </tr></thead>
+                                <tbody>${ev.parsed_data.map(f => {
+                                    const val = f.value || '<span style="color:var(--gray-400)">-</span>';
+                                    const isAmount = f.label.includes('금액') && f.value && /^\\d+$/.test(f.value);
+                                    const displayVal = isAmount ? Number(f.value).toLocaleString() + '원' : val;
+                                    return '<tr><td style="padding:4px 10px;font-weight:600;color:var(--gray-700);border-bottom:1px solid var(--gray-100);white-space:nowrap">' + f.label + '</td><td style="padding:4px 10px;border-bottom:1px solid var(--gray-100)">' + displayVal + '</td></tr>';
+                                }).join('')}</tbody>
+                            </table>
+                        </div>
+                    </td></tr>`;
+                }
+            });
+            h += `</tbody></table>`;
+        } else {
+            h += `<div style="text-align:center;padding:16px;color:var(--gray-400);font-size:12px">첨부된 증빙자료가 없습니다</div>`;
+        }
+        h += `</div></div>`;
+
+        // 연결문서 섹션
+        h += `<div style="margin-bottom:16px;padding:16px;background:var(--gray-50);border-radius:10px;border:1px solid var(--gray-200)">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+                <div style="font-size:14px;font-weight:600;color:var(--hoban-dark)">연결문서 <span id="ldCount" style="font-size:12px;color:var(--gray-500)">(${j.linked_docs ? j.linked_docs.length : 0}건)</span></div>
+                <div style="display:flex;gap:8px;align-items:center">
+                    <select id="modalLdType" style="padding:5px 8px;font-size:12px;border:1px solid var(--gray-300);border-radius:4px">
+                        <option value="기안서">기안서</option>
+                        <option value="계약서">계약서</option>
+                        <option value="검수확인서">검수확인서</option>
+                        <option value="품의서">품의서</option>
+                        <option value="발주서">발주서</option>
+                        <option value="시방서">시방서</option>
+                        <option value="내역서">내역서</option>
+                        <option value="기타">기타</option>
+                    </select>
+                    <label for="modalLdFile" class="btn btn-sm btn-outline" style="cursor:pointer;font-size:12px;padding:4px 10px">+ 추가</label>
+                    <input type="file" id="modalLdFile" accept=".pdf,.jpg,.jpeg,.png,.gif,.bmp,.tiff,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.hwp,.hwpx,.zip,.csv,.txt" multiple style="display:none" onchange="uploadModalLinkedDoc(this, '${j.doc_no}')">
+                </div>
+            </div>
+            <div id="ldListWrap">`;
+
+        if (j.linked_docs && j.linked_docs.length > 0) {
+            h += `<table style="width:100%;border-collapse:collapse;font-size:12px"><thead>
+                <tr style="background:var(--gray-200)"><th style="padding:6px 8px;text-align:center;width:35px">No</th><th style="padding:6px 8px">구분</th><th style="padding:6px 8px">파일명</th><th style="padding:6px 8px;text-align:right;width:70px">크기</th><th style="padding:6px 8px;width:70px">등록일</th><th style="padding:6px 8px;text-align:center;width:70px"></th></tr>
+                </thead><tbody>`;
+            j.linked_docs.forEach(ld => {
+                const sz = ld.file_size > 1048576 ? (ld.file_size/1048576).toFixed(1)+'MB' : Math.round(ld.file_size/1024)+'KB';
+                const isImg = ['.jpg','.jpeg','.png','.gif','.bmp','.tiff'].includes(ld.file_ext);
+                const icon = ld.file_ext === '.pdf' ? '📄' : isImg ? '🖼️' : '📎';
+                h += `<tr>
+                    <td style="padding:5px 8px;text-align:center;color:var(--gray-500)">${ld.seq_no}</td>
+                    <td style="padding:5px 8px"><span style="background:white;padding:1px 6px;border-radius:4px;font-size:11px;border:1px solid var(--gray-200)">${ld.doc_type}</span></td>
+                    <td style="padding:5px 8px"><a href="${ld.file_path}" target="_blank" style="color:var(--hoban-orange);text-decoration:none">${icon} ${ld.file_name}</a></td>
+                    <td style="padding:5px 8px;text-align:right;color:var(--gray-500)">${sz}</td>
+                    <td style="padding:5px 8px;font-size:11px;color:var(--gray-500)">${ld.created_at || '-'}</td>
+                    <td style="padding:5px 8px;text-align:center"><button class="btn btn-sm btn-outline" onclick="deleteLinkedDoc(${ld.id}, '${j.doc_no}')" style="padding:1px 6px;font-size:10px;color:var(--danger);border-color:var(--danger)">삭제</button></td>
+                </tr>`;
+            });
+            h += `</tbody></table>`;
+        } else {
+            h += `<div style="text-align:center;padding:16px;color:var(--gray-400);font-size:12px">연결문서가 없습니다</div>`;
+        }
+        h += `</div></div>`;
 
         // 전표 항목
         const VT = {'F':'법인','P':'개인','D':'부서','S':'사원','X':'기타','B':'은행'};
@@ -611,21 +858,6 @@
             <td style="text-align:right"><strong>${Number(j.total_credit).toLocaleString()}</strong></td>
             <td colspan="3" class="${ok?'balance-ok':'balance-error'}">${ok?'V 일치':'X 불일치'}</td></tr></tfoot></table>`;
 
-        // AI 분석
-        h += `<div class="ai-result" style="margin-top:16px"><h4>AI 분석 <span class="risk-badge ${j.ai_risk_level}">${j.ai_risk_level}</span>
-            <span style="font-weight:normal;font-size:13px;color:var(--gray-500);margin-left:8px">${j.ai_risk_score!==null?(j.ai_risk_score*100).toFixed(0)+'%':'-'}</span></h4>`;
-        if (j.ai_error_codes&&j.ai_error_codes.length>0) {
-            h += '<div style="margin:8px 0;display:flex;gap:4px;flex-wrap:wrap">';
-            j.ai_error_codes.forEach(c => {
-                const sv=['E001','E002','E004','E008'].includes(c)?'high':['E003','E006','E007','E009'].includes(c)?'medium':'low';
-                h+=`<span class="error-tag ${sv}">${c} ${EN[c]||c}</span>`;
-            }); h+='</div>';
-        }
-        if(j.ai_reason){h+='<div style="margin-top:8px">';j.ai_reason.split('\n').forEach(r=>{if(r.trim())h+=`<div class="reason-item">${r}</div>`;});h+='</div>';}
-        if(j.ai_recommendation){h+='<div class="recommendation"><strong>권고:</strong><br>';j.ai_recommendation.split('\n').forEach(r=>{if(r.trim())h+=`- ${r}<br>`;});h+='</div>';}
-        if(!j.ai_error_codes||j.ai_error_codes.length===0) h+='<div style="color:var(--success);margin-top:8px">정상 전표</div>';
-        h+='</div>';
-
         document.getElementById('modalBody').innerHTML = h;
         document.getElementById('modalFooter').innerHTML = j.status==='제출'?
             `<button class="btn btn-danger" onclick="actionJournal('${j.doc_no}','reject')">반려</button><button class="btn btn-success" onclick="actionJournal('${j.doc_no}','approve')">검토 승인</button>`:
@@ -633,10 +865,96 @@
         document.getElementById('detailModal').classList.add('show');
     }
 
+    async function uploadModalEvidence(input, docNo) {
+        if (!input.files || input.files.length === 0) return;
+        const evType = document.getElementById('modalEvType').value;
+        const PARSEABLE = ['계약서', '공과금 고지서'];
+        const IMG_EXT = ['jpg','jpeg','png','gif','bmp','tiff','tif'];
+        let uploaded = 0;
+        for (const file of input.files) {
+            const ext = file.name.split('.').pop().toLowerCase();
+            const isImage = IMG_EXT.includes(ext);
+            let parsedDataParam = '';
+
+            // 파싱 가능한 유형이고 이미지이면 먼저 파싱
+            const isPdf = ext === 'pdf';
+            if (PARSEABLE.includes(evType) && (isImage || isPdf)) {
+                showToast(`${evType} 문서 AI 분석 중...`, '');
+                try {
+                    const pfd = new FormData(); pfd.append('file', file);
+                    const pRes = await fetch(`/api/evidence/parse-document?evidence_type=${encodeURIComponent(evType)}`, {method:'POST', body:pfd});
+                    const pData = await pRes.json();
+                    if (pData.success && pData.fields) {
+                        parsedDataParam = `&parsed_data=${encodeURIComponent(JSON.stringify(pData.fields))}`;
+                    }
+                } catch(e) { console.error('parse error', e); }
+            }
+
+            const fd = new FormData();
+            fd.append('file', file);
+            try {
+                const res = await fetch(`/api/evidence/${docNo}?evidence_type=${encodeURIComponent(evType)}${parsedDataParam}`, {method: 'POST', body: fd});
+                const d = await res.json();
+                if (d.success) uploaded++;
+                else showToast(d.error || '업로드 실패', 'error');
+            } catch(e) { showToast('업로드 오류: ' + e.message, 'error'); }
+        }
+        input.value = '';
+        if (uploaded > 0) {
+            showToast(`증빙자료 ${uploaded}건 업로드 완료`, 'success');
+            showDetail(docNo);
+        }
+    }
+
+    async function deleteEvidence(evId, docNo) {
+        if (!confirm('이 증빙자료를 삭제하시겠습니까?')) return;
+        try {
+            const res = await fetch(`/api/evidence/${evId}`, {method: 'DELETE'});
+            const d = await res.json();
+            if (d.success) {
+                showToast('증빙자료 삭제 완료', 'success');
+                showDetail(docNo);
+            } else showToast(d.error || '삭제 실패', 'error');
+        } catch(e) { showToast('삭제 오류: ' + e.message, 'error'); }
+    }
+
+    async function uploadModalLinkedDoc(input, docNo) {
+        if (!input.files || input.files.length === 0) return;
+        const docType = document.getElementById('modalLdType').value;
+        let uploaded = 0;
+        for (const file of input.files) {
+            const fd = new FormData();
+            fd.append('file', file);
+            try {
+                const res = await fetch(`/api/linked-doc/${docNo}?doc_type=${encodeURIComponent(docType)}`, {method: 'POST', body: fd});
+                const d = await res.json();
+                if (d.success) uploaded++;
+                else showToast(d.error || '업로드 실패', 'error');
+            } catch(e) { showToast('업로드 오류: ' + e.message, 'error'); }
+        }
+        input.value = '';
+        if (uploaded > 0) {
+            showToast(`연결문서 ${uploaded}건 업로드 완료`, 'success');
+            showDetail(docNo);
+        }
+    }
+
+    async function deleteLinkedDoc(ldId, docNo) {
+        if (!confirm('이 연결문서를 삭제하시겠습니까?')) return;
+        try {
+            const res = await fetch(`/api/linked-doc/${ldId}`, {method: 'DELETE'});
+            const d = await res.json();
+            if (d.success) {
+                showToast('연결문서 삭제 완료', 'success');
+                showDetail(docNo);
+            } else showToast(d.error || '삭제 실패', 'error');
+        } catch(e) { showToast('삭제 오류: ' + e.message, 'error'); }
+    }
+
     function closeModal(){document.getElementById('detailModal').classList.remove('show');}
     async function actionJournal(no,act){await fetch(`/api/journal/${no}/${act}`,{method:'POST'});showToast(`${no} ${act==='approve'?'승인':'반려'} 완료`,act==='approve'?'success':'error');closeModal();setTimeout(()=>location.reload(),500);}
     function showToast(m,t){const e=document.getElementById('toast');e.textContent=m;e.className=`toast show ${t||''}`;setTimeout(()=>e.className='toast',3000);}
-    document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeModal();document.getElementById('criteriaModal').classList.remove('show');closeOcrModal();}});
+    document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeModal();document.getElementById('criteriaModal').classList.remove('show');closeOcrModal();closeSideModal();}});
     document.getElementById('criteriaModal').addEventListener('click',e=>{if(e.target===e.currentTarget)e.target.classList.remove('show');});
     document.getElementById('detailModal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal();});
     </script>

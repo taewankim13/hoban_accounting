@@ -253,16 +253,81 @@
     "id": "C002"
   },
   {
-    "name": "특정 거래처 전표 탐지",
-    "description": "거래처명에 '박진무'가 포함된 전표를 탐지합니다.",
-    "field": "vendor_name_contains",
+    "name": "5억이상 개인 거래처 전표 탐지",
+    "description": "5억이상 개인 거래처 전표 탐지",
+    "field": "description_contains",
     "operator": "contains",
-    "value": "박진무",
-    "severity": "Low",
-    "score": 0.1,
-    "category": "거래처",
+    "value": "억이상,개인,거래처",
+    "severity": "Medium",
+    "score": 0.15,
+    "category": "내용",
     "enabled": true,
     "threshold": null,
-    "id": "C003"
+    "id": "C004"
+  },
+  {
+    "name": "교육훈련비 계정 연결문서 누락",
+    "description": "교육훈련비가 계정과목명에 포함되면서, 연결문서가 없는 전표",
+    "severity": "Medium",
+    "score": 0.2,
+    "category": "증빙",
+    "enabled": true,
+    "threshold": null,
+    "conditions": [
+      {
+        "field": "account_name_contains",
+        "operator": "contains",
+        "value": "교육훈련비"
+      },
+      {
+        "field": "has_linked_doc",
+        "operator": "==",
+        "value": "N"
+      }
+    ],
+    "logic": "AND",
+    "field": "multi_condition",
+    "operator": "AND",
+    "value": "2개 조건",
+    "id": "C005"
+  },
+  {
+    "id": "E017",
+    "name": "증빙자료-전표 연관성 없음",
+    "description": "증빙자료(계약서 등)의 계약대상, 계약자 상호와 전표 적요를 비교하여 동일 단어가 없는 경우 연관성 없음으로 판단",
+    "severity": "Medium",
+    "score": 0.25,
+    "enabled": true,
+    "field": "evidence_description_match",
+    "operator": "no_common_word",
+    "value": "계약대상,계약자 상호",
+    "threshold": null,
+    "category": "증빙"
+  },
+  {
+    "name": "계정과목이 수도광열비 인 전표의 미지급금이 증빙자료 당...",
+    "description": "계정과목이 수도광열비 인 전표의 미지급금이 증빙자료 당월요금계랑 값이 다른 전표 탐지",
+    "severity": "Medium",
+    "score": 0.15,
+    "category": "계정",
+    "enabled": true,
+    "threshold": null,
+    "conditions": [
+      {
+        "field": "account_name_contains",
+        "operator": "contains",
+        "value": "수도광열비"
+      },
+      {
+        "field": "evidence_monthly_charge",
+        "operator": "!=",
+        "value": "total_credit"
+      }
+    ],
+    "logic": "AND",
+    "field": "multi_condition",
+    "operator": "AND",
+    "value": "2개 조건",
+    "id": "C006"
   }
 ]

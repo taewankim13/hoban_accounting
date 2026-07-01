@@ -10,9 +10,18 @@ from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func
 
 from database import engine, get_db, Base
-from models import JournalEntry, JournalLine, Project, DEPARTMENTS, EMPLOYEES
+from models import JournalEntry, JournalLine, Project, Evidence, LinkedDocument, DEPARTMENTS, EMPLOYEES
 from ai_engine import analyze_journal
 from receipt_parser import parse_receipt_image
+import json as _json
+
+def load_balance_sides():
+    """account_balance_side.json 로드: {계정코드: '차변'|'대변'}"""
+    try:
+        with open('account_balance_side.json', 'r', encoding='utf-8') as f:
+            return _json.load(f)
+    except:
+        return {}
 
 # DB 테이블 생성
 Base.metadata.create_all(bind=engine)
@@ -21,6 +30,8 @@ app = FastAPI(title="호반건설 전표 이상탐지 FDS")
 
 os.makedirs("static/css", exist_ok=True)
 os.makedirs("static/uploads", exist_ok=True)
+os.makedirs("static/uploads/evidences", exist_ok=True)
+os.makedirs("static/uploads/linked_docs", exist_ok=True)
 os.makedirs("templates", exist_ok=True)
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -257,7 +268,8 @@ async def create_journal(request: Request, db: Session = Depends(get_db)):
 @app.get("/review", response_class=HTMLResponse)
 def review_page(request: Request, risk: str = None, project: str = None,
                 doc_type: str = None, error_code: str = None,
-                vendor_type: str = None,
+                vendor_type: str = None, search: str = None,
+                search_field: str = None,
                 page: int = 1, db: Session = Depends(get_db)):
     per_page = 50
     query = db.query(JournalEntry).options(joinedload(JournalEntry.lines), joinedload(JournalEntry.project))
@@ -270,6 +282,43 @@ def review_page(request: Request, risk: str = None, project: str = None,
         query = query.filter(JournalEntry.doc_type == doc_type)
     if vendor_type and vendor_type != "all":
         query = query.join(JournalLine).filter(JournalLine.vendor_type == vendor_type).distinct()
+    if search and search.strip():
+        kw = f"%{search.strip()}%"
+        sf = (search_field or "").strip()
+        if sf == "doc_no":
+            query = query.filter(JournalEntry.doc_no.like(kw))
+        elif sf == "doc_date":
+            query = query.filter(JournalEntry.doc_date.like(kw))
+        elif sf == "doc_type":
+            query = query.filter(JournalEntry.doc_type.like(kw))
+        elif sf == "description":
+            query = query.filter(JournalEntry.description.like(kw))
+        elif sf == "created_by":
+            query = query.filter(JournalEntry.created_by.like(kw))
+        elif sf == "project":
+            if not (project and project != "all"):
+                query = query.outerjoin(Project, JournalEntry.project_id == Project.id)
+            query = query.filter(Project.name.like(kw) | Project.code.like(kw))
+        elif sf == "vendor":
+            if not (vendor_type and vendor_type != "all"):
+                query = query.join(JournalLine)
+            query = query.filter(JournalLine.vendor_name.like(kw)).distinct()
+        elif sf == "account":
+            if not (vendor_type and vendor_type != "all"):
+                query = query.join(JournalLine)
+            query = query.filter(
+                JournalLine.account_name.like(kw) | JournalLine.account_code.like(kw)
+            ).distinct()
+        else:
+            if not (project and project != "all"):
+                query = query.outerjoin(Project, JournalEntry.project_id == Project.id)
+            query = query.filter(
+                JournalEntry.doc_no.like(kw) |
+                JournalEntry.doc_date.like(kw) |
+                JournalEntry.description.like(kw) |
+                JournalEntry.created_by.like(kw) |
+                Project.name.like(kw)
+            )
     if error_code and error_code != "all":
         # 정확한 코드 매칭: E004가 E004-M을 포함하지 않도록
         # 패턴: 코드가 정확히 일치 (시작/콤마 뒤 + 끝/콤마 앞)
@@ -331,6 +380,8 @@ def review_page(request: Request, risk: str = None, project: str = None,
         "current_doc_type": doc_type or "all",
         "current_error_code": error_code or "all",
         "current_vendor_type": vendor_type or "all",
+        "current_search": search or "",
+        "current_search_field": search_field or "all",
         "current_page": page,
         "total_pages": total_pages,
         "total_filtered": total_filtered,
@@ -346,7 +397,8 @@ def review_page(request: Request, risk: str = None, project: str = None,
 @app.get("/api/journal/{doc_no}", response_class=JSONResponse)
 def get_journal(doc_no: str, db: Session = Depends(get_db)):
     journal = db.query(JournalEntry).options(
-        joinedload(JournalEntry.lines), joinedload(JournalEntry.project)
+        joinedload(JournalEntry.lines), joinedload(JournalEntry.project),
+        joinedload(JournalEntry.evidences), joinedload(JournalEntry.linked_docs)
     ).filter(JournalEntry.doc_no == doc_no).first()
 
     if not journal:
@@ -395,6 +447,27 @@ def get_journal(doc_no: str, db: Session = Depends(get_db)):
             }
             for l in sorted(journal.lines, key=lambda x: x.line_no)
         ],
+        "evidences": [
+            {
+                "id": e.id, "seq_no": e.seq_no,
+                "evidence_type": e.evidence_type,
+                "file_name": e.file_name, "file_path": e.file_path,
+                "file_ext": e.file_ext, "file_size": e.file_size,
+                "parsed_data": _json.loads(e.parsed_data) if e.parsed_data else None,
+                "created_at": e.created_at.strftime("%Y-%m-%d %H:%M") if e.created_at else None,
+            }
+            for e in sorted(journal.evidences, key=lambda x: x.seq_no)
+        ],
+        "linked_docs": [
+            {
+                "id": d.id, "seq_no": d.seq_no,
+                "doc_type": d.doc_type,
+                "file_name": d.file_name, "file_path": d.file_path,
+                "file_ext": d.file_ext, "file_size": d.file_size,
+                "created_at": d.created_at.strftime("%Y-%m-%d %H:%M") if d.created_at else None,
+            }
+            for d in sorted(journal.linked_docs, key=lambda x: x.seq_no)
+        ],
     }
 
 
@@ -435,6 +508,74 @@ async def ocr_reparse(doc_no: str, db: Session = Depends(get_db)):
             return {"success": False, "error": result.get("error", "분석 실패")}
     except Exception as e:
         return {"success": False, "error": str(e)}
+
+
+@app.post("/api/check-balance-side", response_class=JSONResponse)
+async def check_balance_side(request: Request):
+    """전표 항목의 차대변 방향이 계정과목 잔액구분과 일치하는지 검증"""
+    data = await request.json()
+    lines = data.get("lines", [])
+    bs = load_balance_sides()
+    mismatches = []
+    for i, line in enumerate(lines):
+        code = str(line.get("account_code", "")).strip()
+        name = line.get("account_name", "")
+        debit = float(line.get("debit_amount", 0))
+        credit = float(line.get("credit_amount", 0))
+        expected = bs.get(code)
+        if not expected or (debit == 0 and credit == 0):
+            continue
+        actual = "차변" if debit > 0 else "대변"
+        if actual != expected:
+            mismatches.append({
+                "line_no": i + 1,
+                "account_code": code,
+                "account_name": name,
+                "expected_side": expected,
+                "actual_side": actual,
+                "amount": debit if debit > 0 else credit,
+            })
+    return {"mismatches": mismatches}
+
+
+@app.get("/api/side-mismatch-journals", response_class=JSONResponse)
+def side_mismatch_journals(db: Session = Depends(get_db)):
+    """차대변 불일치 전표 목록 반환"""
+    bs = load_balance_sides()
+    if not bs:
+        return []
+    journals = db.query(JournalEntry).options(
+        joinedload(JournalEntry.lines), joinedload(JournalEntry.project)
+    ).order_by(JournalEntry.ai_risk_score.desc().nullslast(), JournalEntry.id.desc()).all()
+
+    results = []
+    for j in journals:
+        mismatches = []
+        for line in j.lines:
+            code = (line.account_code or "").strip()
+            expected = bs.get(code)
+            if not expected:
+                continue
+            if line.debit_amount and line.debit_amount > 0 and expected == "대변":
+                mismatches.append({"line_no": line.line_no, "account_code": code,
+                    "account_name": line.account_name, "expected": "대변", "actual": "차변",
+                    "amount": line.debit_amount})
+            elif line.credit_amount and line.credit_amount > 0 and expected == "차변":
+                mismatches.append({"line_no": line.line_no, "account_code": code,
+                    "account_name": line.account_name, "expected": "차변", "actual": "대변",
+                    "amount": line.credit_amount})
+        if mismatches:
+            results.append({
+                "doc_no": j.doc_no, "doc_date": j.doc_date,
+                "description": j.description or "",
+                "created_by": j.created_by or "",
+                "total_debit": j.total_debit,
+                "project_name": j.project.name if j.project else "",
+                "risk_level": j.ai_risk_level,
+                "risk_score": j.ai_risk_score,
+                "mismatches": mismatches,
+            })
+    return results
 
 
 @app.get("/api/ocr-check", response_class=JSONResponse)
@@ -622,6 +763,254 @@ async def parse_nl_rule(request: Request):
     return {"success": False, "message": "룰을 생성할 수 없습니다. 조건을 더 구체적으로 입력해주세요."}
 
 
+# ──────────────────────────────────
+# 증빙자료 관리
+# ──────────────────────────────────
+ALLOWED_EVIDENCE_EXTS = {'.pdf', '.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff', '.tif',
+                         '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.hwp', '.hwpx',
+                         '.zip', '.csv', '.txt'}
+IMG_EXTS = {'.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff', '.tif'}
+
+
+@app.post("/api/evidence/parse-document", response_class=JSONResponse)
+async def parse_evidence_document_api(file: UploadFile = File(...),
+                                       request: Request = None):
+    """증빙 문서 이미지/PDF를 LLM으로 파싱하여 구조화된 데이터 추출"""
+    params = request.query_params if request else {}
+    evidence_type = params.get("evidence_type", "")
+
+    ext = os.path.splitext(file.filename)[1].lower()
+    parseable_exts = IMG_EXTS | {'.pdf'}
+    if ext not in parseable_exts:
+        return {"success": False, "error": "이미지 또는 PDF 파일만 파싱할 수 있습니다."}
+
+    # 임시 파일 저장
+    saved_name = f"parse_{uuid.uuid4().hex[:8]}{ext}"
+    save_path = os.path.join("static", "uploads", "evidences", saved_name)
+    content = await file.read()
+    with open(save_path, "wb") as f:
+        f.write(content)
+
+    try:
+        from llm_vision import parse_evidence_document, PARSEABLE_EVIDENCE_TYPES
+        if evidence_type not in PARSEABLE_EVIDENCE_TYPES:
+            return {"success": False, "error": f"파싱을 지원하지 않는 증빙 유형입니다: {evidence_type}"}
+
+        result = parse_evidence_document(save_path, evidence_type)
+        return result
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+    finally:
+        if os.path.exists(save_path):
+            os.remove(save_path)
+
+
+@app.post("/api/evidence/{doc_no}", response_class=JSONResponse)
+async def upload_evidence(doc_no: str, file: UploadFile = File(...),
+                          request: Request = None, db: Session = Depends(get_db)):
+    """증빙자료 업로드"""
+    from fastapi import Form
+    journal = db.query(JournalEntry).filter(JournalEntry.doc_no == doc_no).first()
+    if not journal:
+        return JSONResponse({"error": "전표를 찾을 수 없습니다."}, status_code=404)
+
+    ext = os.path.splitext(file.filename)[1].lower()
+    if ext not in ALLOWED_EVIDENCE_EXTS:
+        return JSONResponse({"error": f"허용되지 않는 파일 형식입니다: {ext}"}, status_code=400)
+
+    # 다음 순번 계산
+    max_seq = db.query(func.coalesce(func.max(Evidence.seq_no), 0)).filter(
+        Evidence.journal_id == journal.id).scalar()
+    next_seq = max_seq + 1
+
+    # 파일 저장
+    saved_name = f"{doc_no}_{next_seq}_{uuid.uuid4().hex[:8]}{ext}"
+    save_path = os.path.join("static", "uploads", "evidences", saved_name)
+    content = await file.read()
+    with open(save_path, "wb") as f:
+        f.write(content)
+
+    # evidence_type은 쿼리 파라미터로 받음
+    params = request.query_params if request else {}
+    ev_type = params.get("evidence_type", "기타")
+    parsed_data_str = params.get("parsed_data", None)
+
+    # 이미지/PDF이고 파싱 가능한 유형인데 parsed_data가 없으면 자동 파싱
+    if (ext in IMG_EXTS or ext == '.pdf') and not parsed_data_str:
+        try:
+            from llm_vision import parse_evidence_document, PARSEABLE_EVIDENCE_TYPES
+            if ev_type in PARSEABLE_EVIDENCE_TYPES:
+                parse_result = parse_evidence_document(save_path, ev_type)
+                if parse_result.get("success"):
+                    parsed_data_str = _json.dumps(parse_result["fields"], ensure_ascii=False)
+        except Exception as e:
+            print(f"[증빙파싱] 자동 파싱 실패: {e}")
+
+    evidence = Evidence(
+        journal_id=journal.id,
+        seq_no=next_seq,
+        evidence_type=ev_type,
+        file_name=file.filename,
+        file_path=f"/static/uploads/evidences/{saved_name}",
+        file_ext=ext,
+        file_size=len(content),
+        parsed_data=parsed_data_str,
+    )
+    db.add(evidence)
+    db.commit()
+    db.refresh(evidence)
+
+    return {
+        "success": True,
+        "evidence": {
+            "id": evidence.id, "seq_no": evidence.seq_no,
+            "evidence_type": evidence.evidence_type,
+            "file_name": evidence.file_name, "file_path": evidence.file_path,
+            "file_ext": evidence.file_ext, "file_size": evidence.file_size,
+            "parsed_data": _json.loads(evidence.parsed_data) if evidence.parsed_data else None,
+            "created_at": evidence.created_at.strftime("%Y-%m-%d %H:%M") if evidence.created_at else None,
+        }
+    }
+
+
+@app.get("/api/evidence/{doc_no}", response_class=JSONResponse)
+def list_evidences(doc_no: str, db: Session = Depends(get_db)):
+    """증빙자료 목록 조회"""
+    journal = db.query(JournalEntry).filter(JournalEntry.doc_no == doc_no).first()
+    if not journal:
+        return JSONResponse({"error": "전표를 찾을 수 없습니다."}, status_code=404)
+
+    evidences = db.query(Evidence).filter(Evidence.journal_id == journal.id).order_by(Evidence.seq_no).all()
+    return [
+        {
+            "id": e.id, "seq_no": e.seq_no,
+            "evidence_type": e.evidence_type,
+            "file_name": e.file_name, "file_path": e.file_path,
+            "file_ext": e.file_ext, "file_size": e.file_size,
+            "parsed_data": _json.loads(e.parsed_data) if e.parsed_data else None,
+            "created_at": e.created_at.strftime("%Y-%m-%d %H:%M") if e.created_at else None,
+        }
+        for e in evidences
+    ]
+
+
+@app.delete("/api/evidence/{evidence_id}", response_class=JSONResponse)
+def delete_evidence(evidence_id: int, db: Session = Depends(get_db)):
+    """증빙자료 삭제"""
+    evidence = db.query(Evidence).filter(Evidence.id == evidence_id).first()
+    if not evidence:
+        return JSONResponse({"error": "증빙자료를 찾을 수 없습니다."}, status_code=404)
+
+    # 파일 삭제
+    file_path = evidence.file_path.lstrip("/")
+    if os.path.exists(file_path):
+        os.remove(file_path)
+
+    db.delete(evidence)
+    db.commit()
+    return {"success": True}
+
+
+# ──────────────────────────────────
+# 연결문서 관리
+# ──────────────────────────────────
+ALLOWED_DOC_EXTS = ALLOWED_EVIDENCE_EXTS
+
+@app.post("/api/linked-doc/{doc_no}", response_class=JSONResponse)
+async def upload_linked_doc(doc_no: str, file: UploadFile = File(...),
+                            request: Request = None, db: Session = Depends(get_db)):
+    """연결문서 업로드"""
+    journal = db.query(JournalEntry).filter(JournalEntry.doc_no == doc_no).first()
+    if not journal:
+        return JSONResponse({"error": "전표를 찾을 수 없습니다."}, status_code=404)
+
+    ext = os.path.splitext(file.filename)[1].lower()
+    if ext not in ALLOWED_DOC_EXTS:
+        return JSONResponse({"error": f"허용되지 않는 파일 형식입니다: {ext}"}, status_code=400)
+
+    max_seq = db.query(func.coalesce(func.max(LinkedDocument.seq_no), 0)).filter(
+        LinkedDocument.journal_id == journal.id).scalar()
+    next_seq = max_seq + 1
+
+    saved_name = f"{doc_no}_LD{next_seq}_{uuid.uuid4().hex[:8]}{ext}"
+    save_path = os.path.join("static", "uploads", "linked_docs", saved_name)
+    content = await file.read()
+    with open(save_path, "wb") as f:
+        f.write(content)
+
+    params = request.query_params if request else {}
+    d_type = params.get("doc_type", "기타")
+
+    linked_doc = LinkedDocument(
+        journal_id=journal.id,
+        seq_no=next_seq,
+        doc_type=d_type,
+        file_name=file.filename,
+        file_path=f"/static/uploads/linked_docs/{saved_name}",
+        file_ext=ext,
+        file_size=len(content),
+    )
+    db.add(linked_doc)
+    journal.has_linked_doc = "Y"
+    db.commit()
+    db.refresh(linked_doc)
+
+    return {
+        "success": True,
+        "linked_doc": {
+            "id": linked_doc.id, "seq_no": linked_doc.seq_no,
+            "doc_type": linked_doc.doc_type,
+            "file_name": linked_doc.file_name, "file_path": linked_doc.file_path,
+            "file_ext": linked_doc.file_ext, "file_size": linked_doc.file_size,
+            "created_at": linked_doc.created_at.strftime("%Y-%m-%d %H:%M") if linked_doc.created_at else None,
+        }
+    }
+
+
+@app.get("/api/linked-doc/{doc_no}", response_class=JSONResponse)
+def list_linked_docs(doc_no: str, db: Session = Depends(get_db)):
+    """연결문서 목록 조회"""
+    journal = db.query(JournalEntry).filter(JournalEntry.doc_no == doc_no).first()
+    if not journal:
+        return JSONResponse({"error": "전표를 찾을 수 없습니다."}, status_code=404)
+
+    docs = db.query(LinkedDocument).filter(LinkedDocument.journal_id == journal.id).order_by(LinkedDocument.seq_no).all()
+    return [
+        {
+            "id": d.id, "seq_no": d.seq_no,
+            "doc_type": d.doc_type,
+            "file_name": d.file_name, "file_path": d.file_path,
+            "file_ext": d.file_ext, "file_size": d.file_size,
+            "created_at": d.created_at.strftime("%Y-%m-%d %H:%M") if d.created_at else None,
+        }
+        for d in docs
+    ]
+
+
+@app.delete("/api/linked-doc/{linked_doc_id}", response_class=JSONResponse)
+def delete_linked_doc(linked_doc_id: int, db: Session = Depends(get_db)):
+    """연결문서 삭제"""
+    doc = db.query(LinkedDocument).filter(LinkedDocument.id == linked_doc_id).first()
+    if not doc:
+        return JSONResponse({"error": "연결문서를 찾을 수 없습니다."}, status_code=404)
+
+    journal_id = doc.journal_id
+    file_path = doc.file_path.lstrip("/")
+    if os.path.exists(file_path):
+        os.remove(file_path)
+
+    db.delete(doc)
+    db.flush()
+
+    remaining = db.query(LinkedDocument).filter(LinkedDocument.journal_id == journal_id).count()
+    journal = db.query(JournalEntry).filter(JournalEntry.id == journal_id).first()
+    if journal:
+        journal.has_linked_doc = "Y" if remaining > 0 else "N"
+
+    db.commit()
+    return {"success": True}
+
+
 import threading
 reanalyze_status = {"running": False, "progress": 0, "total": 0, "done": False, "result": None, "rules_changed": False}
 
@@ -718,4 +1107,4 @@ def reanalyze_progress():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=8001)

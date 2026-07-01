@@ -26,7 +26,6 @@
         .toggle .slider:before{content:"";position:absolute;height:16px;width:16px;left:3px;bottom:3px;background:white;border-radius:50%;transition:0.2s}
         .toggle input:checked+.slider{background:var(--hoban-orange)}.toggle input:checked+.slider:before{transform:translateX(18px)}
 
-        /* 재분석 바 */
         .reanalyze-bar{background:white;border-radius:12px;box-shadow:0 2px 8px rgba(87,85,83,0.08);padding:16px 20px;margin-bottom:20px;border:1px solid rgba(0,0,0,0.04);display:flex;align-items:center;gap:16px}
         .reanalyze-bar .progress-wrap{flex:1;height:8px;background:var(--gray-200);border-radius:4px;overflow:hidden}
         .reanalyze-bar .progress-fill{height:100%;background:var(--hoban-orange);border-radius:4px;transition:width 0.3s ease;width:0}
@@ -34,26 +33,60 @@
         .reanalyze-bar.done .progress-fill{background:var(--success)}
         .reanalyze-bar .done-icon{color:var(--success);font-weight:700;font-size:16px}
         .alert-banner{background:#FFF3E0;border:1px solid #FFE0B2;border-left:4px solid var(--hoban-orange);border-radius:8px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:10px;font-size:13px;color:#E65100}
-        .alert-banner .alert-icon{font-size:18px}
 
-        /* 대화형 룰 빌더 */
         .rule-builder{background:white;border-radius:16px;box-shadow:0 2px 8px rgba(87,85,83,0.08);padding:24px;margin-bottom:24px;border:1px solid rgba(0,0,0,0.04)}
         .builder-chat{display:flex;gap:16px}
         .builder-left{flex:1}
         .builder-right{flex:1;background:var(--gray-50);border-radius:12px;padding:16px;border:1px solid var(--gray-200)}
-        .builder-chat-box{height:240px;overflow-y:auto;border:1px solid var(--gray-200);border-radius:10px;padding:12px;background:var(--gray-50);margin-bottom:10px}
+        .builder-chat-box{height:200px;overflow-y:auto;border:1px solid var(--gray-200);border-radius:10px;padding:12px;background:var(--gray-50);margin-bottom:10px}
         .builder-chat-box .chat-msg{padding:8px 12px;margin-bottom:8px;font-size:13px;border-radius:12px;max-width:85%}
         .builder-chat-box .chat-msg.user{background:var(--hoban-orange);color:white;margin-left:auto;border-bottom-right-radius:4px}
         .builder-chat-box .chat-msg.ai{background:white;border:1px solid var(--gray-200);border-bottom-left-radius:4px}
-        .builder-field{margin-bottom:10px}
+        .builder-field{margin-bottom:8px}
         .builder-field label{font-size:11px;font-weight:600;color:var(--gray-500);display:block;margin-bottom:3px}
-        .builder-field input,.builder-field select{width:100%;padding:7px 10px;border:1px solid var(--gray-300);border-radius:6px;font-size:13px}
+        .builder-field input,.builder-field select{width:100%;padding:6px 8px;border:1px solid var(--gray-300);border-radius:6px;font-size:12px}
         .builder-field input:focus,.builder-field select:focus{border-color:var(--hoban-orange);outline:none}
         .builder-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
         .category-label{font-size:13px;font-weight:700;color:var(--hoban-dark);padding:8px 0 4px;border-bottom:2px solid var(--hoban-orange);margin:16px 0 10px;display:inline-block}
         .examples-bar{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
         .examples-bar button{background:var(--gray-50);border:1px solid var(--gray-200);border-radius:16px;padding:4px 12px;font-size:11px;cursor:pointer;color:var(--gray-600);transition:all 0.15s}
         .examples-bar button:hover{background:var(--hoban-orange);color:white;border-color:var(--hoban-orange)}
+
+        /* 다중 조건 빌더 */
+        .cond-block{border:1px solid var(--gray-200);border-radius:8px;padding:10px;margin-bottom:6px;background:white;position:relative}
+        .cond-block .cond-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+        .cond-block .cond-num{font-size:11px;font-weight:700;color:var(--hoban-orange)}
+        .cond-block .cond-remove{background:none;border:none;color:var(--danger);cursor:pointer;font-size:14px;padding:0 4px;line-height:1}
+        .cond-row{display:grid;grid-template-columns:1fr 100px 1fr;gap:6px}
+        .cond-row select,.cond-row input{padding:5px 7px;border:1px solid var(--gray-300);border-radius:5px;font-size:12px}
+        .logic-connector{display:flex;justify-content:center;align-items:center;margin:4px 0}
+        .logic-toggle{display:inline-flex;border-radius:12px;overflow:hidden;border:1px solid var(--gray-300);font-size:11px;cursor:pointer}
+        .logic-toggle span{padding:3px 12px;transition:all 0.15s}
+        .logic-toggle span.active{background:var(--hoban-orange);color:white}
+        .logic-toggle span:not(.active){background:white;color:var(--gray-600)}
+        .logic-toggle span:hover:not(.active){background:#FFF3E6}
+
+        /* 룰 카드 내 조건 표시 */
+        .rule-conditions{display:flex;flex-wrap:wrap;gap:3px;margin-top:4px;font-size:11px}
+        .rule-conditions .cond-pill{background:#E3F2FD;color:#1565C0;padding:2px 8px;border-radius:10px}
+        .rule-conditions .logic-pill{background:var(--hoban-orange);color:white;padding:2px 6px;border-radius:10px;font-weight:700;font-size:10px}
+
+        /* 검색 가능 필드 드롭다운 */
+        .field-search-wrap{position:relative;flex:1}
+        .field-search-input{width:100%;padding:5px 7px;border:1px solid var(--gray-300);border-radius:5px;font-size:12px;cursor:pointer;background:white;box-sizing:border-box}
+        .field-search-input:focus{border-color:var(--hoban-orange);outline:none}
+        .field-dropdown{position:absolute;top:100%;left:0;right:0;background:white;border:1px solid var(--gray-300);border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,0.12);z-index:100;max-height:260px;overflow-y:auto;display:none}
+        .field-dropdown.open{display:block}
+        .field-dropdown .fd-group{font-size:10px;font-weight:700;color:var(--gray-500);padding:6px 10px 2px;text-transform:uppercase;background:var(--gray-50);border-bottom:1px solid var(--gray-100)}
+        .field-dropdown .fd-item{padding:5px 10px 5px 16px;font-size:12px;cursor:pointer;display:flex;justify-content:space-between;align-items:center}
+        .field-dropdown .fd-item:hover{background:#FFF3E6}
+        .field-dropdown .fd-item.selected{background:#E3F2FD}
+        .field-dropdown .fd-item .fd-col{color:var(--gray-400);font-size:10px;font-family:monospace}
+        .field-dropdown .fd-item .fd-label{color:var(--gray-700)}
+        .field-dropdown .fd-empty{padding:12px;text-align:center;color:var(--gray-400);font-size:12px}
+        .field-dropdown .fd-search{padding:6px 8px;border-bottom:1px solid var(--gray-200);position:sticky;top:0;background:white;z-index:1}
+        .field-dropdown .fd-search input{width:100%;padding:5px 8px;border:1px solid var(--gray-200);border-radius:4px;font-size:12px;box-sizing:border-box}
+        .field-dropdown .fd-search input:focus{border-color:var(--hoban-orange);outline:none}
     </style>
 </head>
 <body>
@@ -73,87 +106,54 @@
             <p>자연어 대화로 룰을 생성하고, 전표 데이터에 즉시 적용합니다</p>
         </div>
 
-        <!-- 룰 변경 알림 -->
         <div class="alert-banner" id="changeAlert" style="display:none">
-            <span class="alert-icon">!</span>
+            <span style="font-size:18px">!</span>
             <span>룰이 수정/추가되었습니다. <strong>전체 재분석</strong>을 실행하여 변경 사항을 반영하세요.</span>
             <button class="btn btn-primary btn-sm" onclick="startReanalyze()" style="margin-left:auto">재분석 실행</button>
         </div>
 
-        <!-- 재분석 진행률 바 -->
         <div class="reanalyze-bar" id="reanalyzeBar" style="display:none">
             <div style="font-size:14px;font-weight:600;white-space:nowrap">재분석</div>
             <div class="progress-wrap"><div class="progress-fill" id="progressFill"></div></div>
             <div class="status-text" id="reanalyzeStatus">준비중...</div>
         </div>
 
-        <!-- ────── 대화형 룰 빌더 ────── -->
+        <!-- ────── AI 룰 빌더 (다중 조건) ────── -->
         <div class="rule-builder">
             <div style="font-size:16px;font-weight:700;margin-bottom:4px;color:var(--hoban-dark)">AI 룰 빌더</div>
-            <p style="font-size:12px;color:var(--gray-500);margin-bottom:12px">대화로 조건을 설명하면 AI가 룰을 구성합니다. 오른쪽 필드를 직접 수정할 수도 있습니다.</p>
+            <p style="font-size:12px;color:var(--gray-500);margin-bottom:12px">대화로 조건을 설명하거나, 오른쪽에서 다중 조건을 직접 구성합니다. 조건 간 AND/OR 연결 가능.</p>
             <div class="builder-chat">
                 <!-- 좌: 대화 -->
                 <div class="builder-left">
                     <div class="builder-chat-box" id="builderChatBox">
                         <div class="chat-msg ai">
-                            어떤 이상 전표를 탐지하고 싶으세요?<br>자연어로 설명하면 룰 조건을 구성해 드립니다.
+                            어떤 이상 전표를 탐지하고 싶으세요?
                             <div class="examples-bar" style="margin-top:8px">
                                 <button onclick="builderChat('금액이 3억원 이상인 전표')">금액 3억 이상</button>
                                 <button onclick="builderChat('주말에 기표된 전표')">주말 기표</button>
                                 <button onclick="builderChat('적요에 가지급금 포함')">적요 키워드</button>
+                                <button onclick="builderChat('교육훈련비 계정이면서 연결문서가 없는 전표')">교육훈련비+연결문서 누락</button>
                                 <button onclick="builderChat('개인거래처 고액 전표')">개인거래처 고액</button>
-                                <button onclick="builderChat('전표 항목이 10개 이상')">다건 항목</button>
-                                <button onclick="builderChat('미분류 전표 중 5천만원 초과')">미분류 고액</button>
                             </div>
                         </div>
                     </div>
                     <div class="chat-input">
-                        <input type="text" id="builderInput" placeholder="예: 금액이 5억 이상이고 주말에 기표된 전표를 탐지해줘" onkeypress="if(event.key==='Enter') builderChat()" style="font-size:13px;padding:10px 16px">
+                        <input type="text" id="builderInput" placeholder="예: 교육훈련비 계정이면서 연결문서가 없는 전표" onkeypress="if(event.key==='Enter') builderChat()" style="font-size:13px;padding:10px 16px">
                         <button class="btn btn-primary btn-sm" onclick="builderChat()">전송</button>
                     </div>
                 </div>
-                <!-- 우: 룰 필드 편집 -->
-                <div class="builder-right">
-                    <div style="font-size:13px;font-weight:600;margin-bottom:10px;color:var(--hoban-dark)">룰 조건 편집</div>
+                <!-- 우: 다중 조건 빌더 -->
+                <div class="builder-right" style="overflow-y:auto;max-height:420px">
+                    <div style="font-size:13px;font-weight:600;margin-bottom:8px;color:var(--hoban-dark)">룰 조건 편집</div>
                     <div class="builder-field"><label>룰 이름</label><input type="text" id="bName" placeholder="룰 이름"></div>
                     <div class="builder-field"><label>설명</label><input type="text" id="bDesc" placeholder="상세 설명"></div>
-                    <div class="builder-grid">
-                        <div class="builder-field"><label>검사 필드</label>
-                            <select id="bField">
-                                <option value="max_line_amount">최대 항목 금액</option>
-                                <option value="total_amount">총 금액</option>
-                                <option value="balance">차대변 잔액</option>
-                                <option value="is_weekend">주말 여부</option>
-                                <option value="day_of_month">일자 (월기준)</option>
-                                <option value="doc_type_contains">전표유형 포함</option>
-                                <option value="description_contains">적요 포함</option>
-                                <option value="account_code_contains">계정코드 포함</option>
-                                <option value="vendor_name_contains">거래처 포함</option>
-                                <option value="line_count">항목 수</option>
-                                <option value="odd_amount">단수 금액</option>
-                                <option value="off_hours">근무시간 외</option>
-                                <option value="personal_vendor_high">거래처유형+고액 (복합)</option>
-                                <option value="empty_description">적요 미입력</option>
-                                <option value="unclassified_high">전표유형+고액 (복합)</option>
-                                <option value="duplicate">중복 전표</option>
-                                <option value="account_mismatch">계정과목 착오</option>
-                                <option value="account_pattern_mismatch">반복거래 계정 이탈</option>
-                                <option value="revenue_expense_side_error">수익/비용 차대변 오류</option>
-                                <option value="invalid_account_pair">비인가 계정 조합</option>
-                            </select>
-                        </div>
-                        <div class="builder-field"><label>연산자</label>
-                            <select id="bOp">
-                                <option value=">">> 초과</option><option value=">=">>= 이상</option>
-                                <option value="<">< 미만</option><option value="<="><= 이하</option>
-                                <option value="==">== 일치</option><option value="!=">!= 불일치</option>
-                                <option value="contains">포함</option>
-                                <option value="compound">복합 조건</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="builder-field"><label>값</label><input type="text" id="bValue" placeholder="조건 값 (숫자 또는 키워드)"></div>
-                    <div class="builder-grid">
+
+                    <!-- 조건 목록 -->
+                    <div style="font-size:11px;font-weight:600;color:var(--gray-500);margin:10px 0 6px">조건 목록</div>
+                    <div id="bConditions"></div>
+                    <button class="btn btn-outline btn-sm" onclick="addBuilderCondition()" style="width:100%;margin:6px 0;font-size:11px">+ 조건 추가</button>
+
+                    <div class="builder-grid" style="margin-top:8px">
                         <div class="builder-field"><label>위험등급</label>
                             <select id="bSeverity"><option value="High">High</option><option value="Medium" selected>Medium</option><option value="Low">Low</option></select>
                         </div>
@@ -164,7 +164,7 @@
                     <div class="builder-field"><label>카테고리</label>
                         <select id="bCategory"><option>금액</option><option>시점</option><option>유형</option><option>내용</option><option>계정</option><option>거래처</option><option>정합성</option><option>증빙</option><option>기타</option></select>
                     </div>
-                    <div style="display:flex;gap:8px;margin-top:12px">
+                    <div style="display:flex;gap:8px;margin-top:10px">
                         <button class="btn btn-outline btn-sm" onclick="clearBuilder()">초기화</button>
                         <button class="btn btn-primary btn-sm" style="flex:1" onclick="saveBuilderRule(false)">룰 저장</button>
                         <button class="btn btn-success btn-sm" onclick="saveBuilderRule(true)">저장 + 재분석</button>
@@ -207,7 +207,12 @@
                 <div class="rule-desc" style="font-size:11px;margin-bottom:6px;line-height:1.4">{{ rule.description[:80] }}{% if rule.description|length > 80 %}...{% endif %}</div>
                 <div style="display:flex;justify-content:space-between;align-items:center">
                     <div class="rule-meta">
-                        <span>{{ rule.field }}</span><span>점수 {{ rule.score }}</span>
+                        {% if rule.conditions %}
+                            <span>{{ rule.conditions|length }}개 조건 ({{ rule.logic or 'AND' }})</span>
+                        {% else %}
+                            <span>{{ rule.field }}</span>
+                        {% endif %}
+                        <span>점수 {{ rule.score }}</span>
                     </div>
                     <div class="rule-actions">
                         <label class="toggle"><input type="checkbox" {{ 'checked' if rule.enabled }} onchange="toggleRule('{{ rule.id }}',this.checked)"><span class="slider"></span></label>
@@ -215,28 +220,33 @@
                         <button class="btn btn-sm btn-outline" onclick="deleteRule('{{ rule.id }}')" style="font-size:11px;padding:3px 8px;color:var(--danger)">삭제</button>
                     </div>
                 </div>
+                {% if rule.conditions %}
+                <div class="rule-conditions">
+                    {% for cond in rule.conditions %}
+                        {% if not loop.first %}<span class="logic-pill">{{ rule.logic or 'AND' }}</span>{% endif %}
+                        <span class="cond-pill">{{ cond.field }} {{ cond.operator }} {{ cond.value }}</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
             </div>
         {% endfor %}
         </div>
     </div>
 
-    <!-- 수동 편집 모달 -->
+    <!-- 수동 편집 모달 (다중 조건 지원) -->
     <div class="modal-overlay" id="ruleModal">
-        <div class="modal" style="max-width:600px">
+        <div class="modal" style="max-width:700px">
             <div class="modal-header"><h3 id="ruleModalTitle">룰 편집</h3><button class="modal-close" onclick="closeModal()">&times;</button></div>
             <div class="modal-body">
                 <input type="hidden" id="editRuleId">
                 <div class="form-group"><label>룰 이름</label><input type="text" id="mName"></div>
                 <div class="form-group"><label>설명</label><input type="text" id="mDesc"></div>
-                <div class="form-row">
-                    <div class="form-group"><label>필드</label><select id="mField"><option value="max_line_amount">최대 항목 금액</option><option value="total_amount">총 금액</option><option value="balance">차대변 잔액</option><option value="is_weekend">주말</option><option value="day_of_month">일자</option><option value="doc_type_contains">전표유형 포함</option><option value="description_contains">적요 포함</option><option value="account_code_contains">계정코드 포함</option><option value="vendor_name_contains">거래처 포함</option><option value="line_count">항목 수</option><option value="odd_amount">단수금액</option><option value="off_hours">근무시간외</option><option value="personal_vendor_high">개인거래처고액</option><option value="empty_description">적요미입력</option><option value="unclassified_high">미분류고액</option></select></div>
-                    <div class="form-group"><label>연산자</label><select id="mOp"><option value=">">> 초과</option><option value=">=">>= 이상</option><option value="<">< 미만</option><option value="==">==</option><option value="contains">포함</option></select></div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group"><label>값</label><input type="text" id="mValue"></div>
-                    <div class="form-group"><label>임계값</label><input type="text" id="mThreshold"></div>
-                </div>
-                <div class="form-row">
+
+                <div style="font-size:13px;font-weight:600;color:var(--hoban-dark);margin:12px 0 8px">조건 목록</div>
+                <div id="mConditions"></div>
+                <button class="btn btn-outline btn-sm" onclick="addModalCondition()" style="width:100%;margin:6px 0;font-size:12px">+ 조건 추가</button>
+
+                <div class="form-row" style="margin-top:12px">
                     <div class="form-group"><label>위험등급</label><select id="mSeverity"><option value="High">High</option><option value="Medium" selected>Medium</option><option value="Low">Low</option></select></div>
                     <div class="form-group"><label>점수</label><input type="number" id="mScore" step="0.05" min="0" max="1" value="0.15"></div>
                     <div class="form-group"><label>카테고리</label><select id="mCategory"><option>금액</option><option>시점</option><option>유형</option><option>내용</option><option>계정</option><option>거래처</option><option>정합성</option><option>증빙</option><option>기타</option></select></div>
@@ -253,7 +263,105 @@
 
     <script>
     let rulesData = {{ rules | tojson }};
-    let builderHistory = [];
+    let builderConditions = [];
+    let builderLogic = 'AND';
+    let modalConditions = [];
+    let modalLogic = 'AND';
+
+    const FIELD_GROUPS = [
+        { group: '전표 헤더', fields: [
+            {value:'doc_date', label:'전표일자', col:'doc_date'},
+            {value:'doc_type', label:'전표유형', col:'doc_type'},
+            {value:'category', label:'구분', col:'category'},
+            {value:'big_category', label:'대분류', col:'big_category'},
+            {value:'description', label:'적요', col:'description'},
+            {value:'created_by', label:'입력자', col:'created_by'},
+            {value:'department', label:'손익부서명', col:'department'},
+            {value:'total_debit', label:'차변합계', col:'total_debit'},
+            {value:'total_credit', label:'대변합계', col:'total_credit'},
+            {value:'has_linked_doc', label:'연결문서여부', col:'has_linked_doc'},
+            {value:'evidence_type', label:'증빙구분', col:'evidence_type'},
+            {value:'status', label:'전표상태', col:'status'},
+        ]},
+        { group: '전표 항목', fields: [
+            {value:'account_code', label:'계정코드', col:'account_code'},
+            {value:'account_name', label:'계정과목명', col:'account_name'},
+            {value:'debit_amount', label:'차변금액', col:'debit_amount'},
+            {value:'credit_amount', label:'대변금액', col:'credit_amount'},
+            {value:'vendor_name', label:'거래처명(상호)', col:'vendor_name'},
+            {value:'vendor_type', label:'거래처유형', col:'vendor_type'},
+            {value:'vendor_code', label:'거래처코드', col:'vendor_code'},
+            {value:'side', label:'차대구분', col:'side'},
+        ]},
+        { group: '검색/포함 필드', fields: [
+            {value:'account_name_contains', label:'계정과목명 포함', col:'account_name'},
+            {value:'doc_type_contains', label:'전표유형 포함', col:'doc_type'},
+            {value:'description_contains', label:'적요 포함', col:'description'},
+            {value:'account_code_contains', label:'계정코드 포함', col:'account_code'},
+            {value:'vendor_name_contains', label:'거래처명 포함', col:'vendor_name'},
+        ]},
+        { group: '계산/특수 필드', fields: [
+            {value:'max_line_amount', label:'최대 항목 금액', col:'(계산)'},
+            {value:'total_amount', label:'총 금액', col:'(계산)'},
+            {value:'balance', label:'차대변 잔액', col:'(계산)'},
+            {value:'line_count', label:'항목 수', col:'(계산)'},
+            {value:'is_weekend', label:'주말 여부', col:'(계산)'},
+            {value:'day_of_month', label:'일자(월 기준)', col:'(계산)'},
+            {value:'odd_amount', label:'단수 금액', col:'(계산)'},
+            {value:'off_hours', label:'근무시간 외', col:'(계산)'},
+            {value:'empty_description', label:'적요 미입력', col:'(계산)'},
+            {value:'has_evidence', label:'증빙자료 여부', col:'(계산)'},
+        ]},
+        { group: '복합 탐지', fields: [
+            {value:'personal_vendor_high', label:'거래처유형+고액', col:'(복합)'},
+            {value:'unclassified_high', label:'전표유형+고액', col:'(복합)'},
+            {value:'duplicate', label:'중복 전표', col:'(복합)'},
+            {value:'account_mismatch', label:'계정과목 착오', col:'(복합)'},
+            {value:'account_pattern_mismatch', label:'반복거래 계정 이탈', col:'(복합)'},
+            {value:'revenue_expense_side_error', label:'수익/비용 차대변 오류', col:'(복합)'},
+            {value:'invalid_account_pair', label:'비인가 계정 조합', col:'(복합)'},
+        ]},
+        { group: '증빙자료 분석', fields: [
+            {value:'evidence_description_match', label:'증빙-적요 연관성', col:'(증빙파싱)'},
+            {value:'evidence_title', label:'증빙 - 제목', col:'(증빙파싱)'},
+            {value:'evidence_target', label:'증빙 - 대상', col:'(증빙파싱)'},
+            {value:'evidence_vendor', label:'증빙 - 거래처, 계약자', col:'(증빙파싱)'},
+            {value:'evidence_contract_amount', label:'증빙 - 계약금', col:'(증빙파싱)'},
+            {value:'evidence_rent', label:'증빙 - 월세', col:'(증빙파싱)'},
+            {value:'evidence_monthly_charge', label:'증빙 - 당월요금계', col:'(증빙파싱)'},
+            {value:'evidence_period', label:'증빙 - 기간', col:'(증빙파싱)'},
+            {value:'evidence_base_month', label:'증빙 - 기준년월', col:'(증빙파싱)'},
+            {value:'evidence_base_date', label:'증빙 - 기준일자', col:'(증빙파싱)'},
+        ]},
+    ];
+
+    const FIELD_LABELS = {};
+    FIELD_GROUPS.forEach(g => g.fields.forEach(f => { FIELD_LABELS[f.value] = f.label; }));
+
+    const EVIDENCE_COMPARE_FIELDS = new Set([
+        'evidence_title','evidence_target','evidence_vendor',
+        'evidence_contract_amount','evidence_rent','evidence_monthly_charge',
+        'evidence_period','evidence_base_month','evidence_base_date'
+    ]);
+
+    const JOURNAL_COMPARE_COLS = [
+        {value:'description', label:'적요'},
+        {value:'doc_date', label:'전표일자'},
+        {value:'doc_type', label:'전표유형'},
+        {value:'vendor_name', label:'거래처명'},
+        {value:'account_name', label:'계정과목명'},
+        {value:'total_debit', label:'차변합계'},
+        {value:'total_credit', label:'대변합계'},
+        {value:'project_name', label:'현장명'},
+        {value:'created_by', label:'입력자'},
+    ];
+
+    const OP_OPTIONS = `
+        <option value=">">> 초과</option><option value=">=">>= 이상</option>
+        <option value="<">< 미만</option><option value="<="><= 이하</option>
+        <option value="==">== 일치</option><option value="!=">!= 불일치</option>
+        <option value="contains">포함</option><option value="compound">복합 조건</option>
+        <option value="no_common_word">동일 단어 없음 (연관성 없음)</option><option value="has_common_word">동일 단어 있음 (연관성 있음)</option>`;
 
     // ══════ 재분석 ══════
     async function startReanalyze() {
@@ -265,33 +373,24 @@
             pollProgress();
         } else { showToast(d.message,'error'); }
     }
-
     async function pollProgress() {
-        const bar = document.getElementById('reanalyzeBar');
         const fill = document.getElementById('progressFill');
         const status = document.getElementById('reanalyzeStatus');
+        const bar = document.getElementById('reanalyzeBar');
         const poll = async () => {
             const res = await fetch('/api/rules/reanalyze/status');
             const d = await res.json();
             fill.style.width = d.percent + '%';
-            if(d.running) {
-                status.textContent = `${d.progress}/${d.total} (${d.percent}%)`;
-                setTimeout(poll, 300);
-            } else if(d.done) {
-                fill.style.width = '100%';
-                bar.classList.add('done');
-                if(d.result && !d.result.error) {
-                    status.innerHTML = `<span class="done-icon">V</span> 완료! H:${d.result.high} M:${d.result.medium} L:${d.result.low} 정상:${d.result.normal}`;
-                } else {
-                    status.textContent = '오류: ' + (d.result?.error || '');
-                }
+            if(d.running) { status.textContent = `${d.progress}/${d.total} (${d.percent}%)`; setTimeout(poll, 300); }
+            else if(d.done) {
+                fill.style.width = '100%'; bar.classList.add('done');
+                if(d.result && !d.result.error) status.innerHTML = `<span class="done-icon">V</span> 완료! H:${d.result.high} M:${d.result.medium} L:${d.result.low} 정상:${d.result.normal}`;
+                else status.textContent = '오류: ' + (d.result?.error || '');
                 setTimeout(() => location.reload(), 2000);
             }
         };
         poll();
     }
-
-    // 페이지 로드 시 상태 확인
     (async () => {
         const res = await fetch('/api/rules/reanalyze/status');
         const d = await res.json();
@@ -299,105 +398,247 @@
         if(d.rules_changed) { document.getElementById('changeAlert').style.display='flex'; }
     })();
 
-    // ══════ 대화형 룰 빌더 ══════
+    // ══════ 검색 가능 필드 드롭다운 ══════
+    let activeDropdown = null;
+    function openFieldDropdown(btn, prefix, idx) {
+        closeAllDropdowns();
+        const wrap = btn.closest('.field-search-wrap');
+        const dd = wrap.querySelector('.field-dropdown');
+        dd.classList.add('open');
+        activeDropdown = dd;
+        const searchInput = dd.querySelector('.fd-search input');
+        searchInput.value = '';
+        filterFieldItems(dd, '');
+        setTimeout(() => searchInput.focus(), 50);
+    }
+    function closeAllDropdowns() {
+        document.querySelectorAll('.field-dropdown.open').forEach(d => d.classList.remove('open'));
+        activeDropdown = null;
+    }
+    document.addEventListener('click', e => {
+        if (activeDropdown && !e.target.closest('.field-search-wrap')) closeAllDropdowns();
+    });
+    function filterFieldItems(dd, query) {
+        const q = query.toLowerCase();
+        dd.querySelectorAll('.fd-group').forEach(g => {
+            let anyVisible = false;
+            let el = g.nextElementSibling;
+            while (el && !el.classList.contains('fd-group')) {
+                if (el.classList.contains('fd-item')) {
+                    const match = !q || el.dataset.label.toLowerCase().includes(q) || el.dataset.value.toLowerCase().includes(q) || el.dataset.col.toLowerCase().includes(q);
+                    el.style.display = match ? '' : 'none';
+                    if (match) anyVisible = true;
+                }
+                el = el.nextElementSibling;
+            }
+            g.style.display = anyVisible ? '' : 'none';
+        });
+        const empty = dd.querySelector('.fd-empty');
+        const anyItem = dd.querySelector('.fd-item:not([style*="display: none"])');
+        if (empty) empty.style.display = anyItem ? 'none' : '';
+    }
+    function selectField(prefix, idx, value) {
+        const conds = prefix === 'b' ? builderConditions : modalConditions;
+        conds[idx].field = value;
+        if (value === 'evidence_description_match') {
+            conds[idx].operator = 'no_common_word';
+            if (!conds[idx].value) conds[idx].value = '계약대상,계약자 상호';
+        } else if (EVIDENCE_COMPARE_FIELDS.has(value)) {
+            const numFields = new Set(['evidence_contract_amount','evidence_rent','evidence_monthly_charge']);
+            conds[idx].operator = numFields.has(value) ? '==' : 'has_common_word';
+            conds[idx].value = numFields.has(value) ? 'total_debit' : 'description';
+        }
+        const logic = prefix === 'b' ? builderLogic : modalLogic;
+        const containerId = prefix === 'b' ? 'bConditions' : 'mConditions';
+        renderConditions(containerId, conds, logic, prefix);
+        closeAllDropdowns();
+    }
+
+    function buildFieldDropdownHTML(currentField, prefix, idx) {
+        let html = `<div class="field-search-wrap">`;
+        html += `<input type="text" class="field-search-input" value="${FIELD_LABELS[currentField] || currentField}" readonly onclick="openFieldDropdown(this,'${prefix}',${idx})">`;
+        html += `<div class="field-dropdown">`;
+        html += `<div class="fd-search"><input type="text" placeholder="필드 검색..." oninput="filterFieldItems(this.closest('.field-dropdown'), this.value)"></div>`;
+        FIELD_GROUPS.forEach(g => {
+            html += `<div class="fd-group">${g.group}</div>`;
+            g.fields.forEach(f => {
+                const sel = f.value === currentField ? ' selected' : '';
+                html += `<div class="fd-item${sel}" data-value="${f.value}" data-label="${f.label}" data-col="${f.col}" onclick="selectField('${prefix}',${idx},'${f.value}')">`;
+                html += `<span class="fd-label">${f.label}</span><span class="fd-col">${f.col}</span></div>`;
+            });
+        });
+        html += `<div class="fd-empty" style="display:none">검색 결과 없음</div>`;
+        html += `</div></div>`;
+        return html;
+    }
+
+    // ══════ 다중 조건 렌더링 (공통) ══════
+    function renderConditions(containerId, conditions, logic, prefix) {
+        const wrap = document.getElementById(containerId);
+        let html = '';
+        conditions.forEach((c, i) => {
+            if (i > 0) {
+                html += `<div class="logic-connector">
+                    <div class="logic-toggle" onclick="toggleLogic('${prefix}')">
+                        <span class="${logic==='AND'?'active':''}" data-val="AND">AND</span>
+                        <span class="${logic==='OR'?'active':''}" data-val="OR">OR</span>
+                    </div>
+                </div>`;
+            }
+            const opSel = OP_OPTIONS.replace(`value="${c.operator}"`, `value="${c.operator}" selected`);
+            const valDisplay = (c.value !== undefined && c.value !== null) ? (typeof c.value === 'object' ? JSON.stringify(c.value) : String(c.value)) : '';
+            const isEvCompare = EVIDENCE_COMPARE_FIELDS.has(c.field);
+            let valueHtml;
+            if (isEvCompare) {
+                const colOpts = JOURNAL_COMPARE_COLS.map(col =>
+                    `<option value="${col.value}"${valDisplay===col.value?' selected':''}>${col.label}</option>`
+                ).join('');
+                valueHtml = `<select onchange="updateCondition('${prefix}',${i},'value',this.value)" style="min-width:120px"><option value="">-- 비교 대상 컬럼 --</option>${colOpts}</select>`;
+            } else {
+                valueHtml = `<input type="text" value="${valDisplay}" placeholder="${c.field === 'evidence_description_match' ? '비교할 증빙 필드 (예: 계약대상,계약자 상호)' : '값'}" onchange="updateCondition('${prefix}',${i},'value',this.value)">`;
+            }
+            html += `<div class="cond-block">
+                <div class="cond-header">
+                    <span class="cond-num">조건 ${i+1}</span>
+                    ${conditions.length > 1 ? `<button class="cond-remove" onclick="removeCondition('${prefix}',${i})">X</button>` : ''}
+                </div>
+                <div class="cond-row">
+                    ${buildFieldDropdownHTML(c.field, prefix, i)}
+                    <select onchange="updateCondition('${prefix}',${i},'operator',this.value)">${opSel}</select>
+                    ${valueHtml}
+                </div>
+            </div>`;
+        });
+        wrap.innerHTML = html;
+    }
+
+    function toggleLogic(prefix) {
+        if (prefix === 'b') { builderLogic = builderLogic === 'AND' ? 'OR' : 'AND'; renderConditions('bConditions', builderConditions, builderLogic, 'b'); }
+        else { modalLogic = modalLogic === 'AND' ? 'OR' : 'AND'; renderConditions('mConditions', modalConditions, modalLogic, 'm'); }
+    }
+
+    function updateCondition(prefix, idx, key, value) {
+        const conds = prefix === 'b' ? builderConditions : modalConditions;
+        conds[idx][key] = value;
+    }
+
+    function removeCondition(prefix, idx) {
+        if (prefix === 'b') { builderConditions.splice(idx, 1); renderConditions('bConditions', builderConditions, builderLogic, 'b'); }
+        else { modalConditions.splice(idx, 1); renderConditions('mConditions', modalConditions, modalLogic, 'm'); }
+    }
+
+    function addBuilderCondition() {
+        builderConditions.push({field:'max_line_amount', operator:'>', value:''});
+        renderConditions('bConditions', builderConditions, builderLogic, 'b');
+    }
+    function addModalCondition() {
+        modalConditions.push({field:'max_line_amount', operator:'>', value:''});
+        renderConditions('mConditions', modalConditions, modalLogic, 'm');
+    }
+
+    // 초기 빌더 조건 1개
+    builderConditions = [{field:'max_line_amount', operator:'>', value:''}];
+    renderConditions('bConditions', builderConditions, builderLogic, 'b');
+
+    // ══════ AI 대화형 빌더 ══════
     async function builderChat(text) {
         const input = document.getElementById('builderInput');
         const msg = text || input.value.trim(); if(!msg) return; input.value='';
         appendBuilder('user', msg);
-        appendBuilder('ai', '<div style="color:var(--gray-500)">Gemini AI로 룰을 생성하고 있습니다... (10~30초 소요)</div>');
-        builderHistory.push({role:'user', content:msg});
-
+        appendBuilder('ai', '<div style="color:var(--gray-500)">Gemini AI로 룰을 생성하고 있습니다...</div>');
         try {
-            const res = await fetch('/api/rules/parse-nl', {
-                method:'POST', headers:{'Content-Type':'application/json'},
-                body:JSON.stringify({text:msg})
-            });
+            const res = await fetch('/api/rules/parse-nl', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({text:msg})});
             const d = await res.json();
-            // 로딩 메시지 제거 (마지막 ai 메시지)
             const chatBox = document.getElementById('builderChatBox');
             const lastAi = chatBox.querySelector('.chat-msg.ai:last-child');
             if(lastAi && lastAi.textContent.includes('생성하고 있습니다')) lastAi.remove();
-
             if(d.success) {
                 const r = d.rule;
-                // 안전하게 필드 설정 (select에 option이 없으면 추가)
-                function safeSetSelect(selectId, value, label) {
-                    const sel = document.getElementById(selectId);
-                    if(!value) return;
-                    // 해당 value가 option에 있는지 확인
-                    let found = false;
-                    for(let opt of sel.options) { if(opt.value === value) { found = true; break; } }
-                    if(!found) {
-                        // 없으면 동적 추가
-                        const newOpt = document.createElement('option');
-                        newOpt.value = value;
-                        newOpt.textContent = label || value;
-                        sel.appendChild(newOpt);
-                    }
-                    sel.value = value;
-                }
-
                 document.getElementById('bName').value = r.name || '';
                 document.getElementById('bDesc').value = r.description || '';
-                safeSetSelect('bField', r.field, r.field);
-                safeSetSelect('bOp', r.operator, r.operator);
-                document.getElementById('bValue').value = (r.value !== undefined && r.value !== null) ? (typeof r.value === 'object' ? JSON.stringify(r.value) : String(r.value)) : '';
-                safeSetSelect('bSeverity', r.severity, r.severity);
+                if (r.conditions && r.conditions.length > 0) {
+                    builderConditions = r.conditions;
+                    builderLogic = r.logic || 'AND';
+                } else {
+                    builderConditions = [{field: r.field || 'max_line_amount', operator: r.operator || '>', value: r.value !== undefined ? r.value : ''}];
+                    builderLogic = 'AND';
+                }
+                renderConditions('bConditions', builderConditions, builderLogic, 'b');
+                safeSetSelect('bSeverity', r.severity);
                 document.getElementById('bScore').value = r.score || 0.15;
-                safeSetSelect('bCategory', r.category, r.category);
+                safeSetSelect('bCategory', r.category);
 
-                const valDisplay = (r.value !== undefined && r.value !== null) ? (typeof r.value === 'object' ? JSON.stringify(r.value) : String(r.value)) : '-';
-                let reply = `룰을 구성했습니다:<br>`;
-                reply += `<strong>${r.name || '(이름 미정)'}</strong><br>`;
-                reply += `<table style="font-size:12px;margin:6px 0"><tr><td style="color:var(--gray-500);padding-right:8px">필드</td><td><strong>${r.field || '-'}</strong></td></tr>`;
-                reply += `<tr><td style="color:var(--gray-500);padding-right:8px">연산자</td><td><strong>${r.operator || '-'}</strong></td></tr>`;
-                reply += `<tr><td style="color:var(--gray-500);padding-right:8px">값</td><td><strong>${valDisplay}</strong></td></tr>`;
-                reply += `<tr><td style="color:var(--gray-500);padding-right:8px">등급</td><td><strong>${r.severity || 'Medium'}</strong></td></tr>`;
-                reply += `<tr><td style="color:var(--gray-500);padding-right:8px">점수</td><td><strong>${r.score || 0.15}</strong></td></tr></table>`;
-                reply += `<div style="font-size:11px;color:var(--gray-500)">오른쪽에서 조건을 수정하거나, 추가 설명을 입력하세요.</div>`;
+                let reply = `룰 구성 완료: <strong>${r.name||''}</strong><br>`;
+                builderConditions.forEach((c,i) => {
+                    if(i>0) reply += `<span style="color:var(--hoban-orange);font-weight:700">${builderLogic}</span> `;
+                    reply += `<span style="background:#E3F2FD;padding:1px 6px;border-radius:6px;font-size:11px">${FIELD_LABELS[c.field]||c.field} ${c.operator} ${typeof c.value==='object'?JSON.stringify(c.value):c.value}</span> `;
+                });
+                reply += `<br><span style="font-size:11px;color:var(--gray-500)">오른쪽에서 조건을 수정/추가하세요.</span>`;
                 appendBuilder('ai', reply);
-                builderHistory.push({role:'assistant', content:'룰 구성 완료'});
             } else {
-                appendBuilder('ai', d.message || '조건을 이해하지 못했습니다. 더 구체적으로 설명해주세요.');
+                appendBuilder('ai', d.message || '조건을 이해하지 못했습니다.');
             }
-        } catch(e) { appendBuilder('ai','오류: '+e.message + '<br><span style="font-size:11px;color:var(--gray-500)">LLM 호출 시간이 초과되었을 수 있습니다. 다시 시도해주세요.</span>'); }
+        } catch(e) { appendBuilder('ai','오류: '+e.message); }
     }
 
-    function appendBuilder(role, html) {
-        const box = document.getElementById('builderChatBox');
-        const div = document.createElement('div');
-        div.className = `chat-msg ${role}`;
-        div.innerHTML = html;
-        box.appendChild(div);
-        box.scrollTop = box.scrollHeight;
+    function safeSetSelect(selectId, value) {
+        const sel = document.getElementById(selectId);
+        if(!value) return;
+        let found = false;
+        for(let opt of sel.options) { if(opt.value === value) { found = true; break; } }
+        if(!found) { const o = document.createElement('option'); o.value = value; o.textContent = value; sel.appendChild(o); }
+        sel.value = value;
     }
+
+    function appendBuilder(role, html) { const b=document.getElementById('builderChatBox'); const d=document.createElement('div'); d.className=`chat-msg ${role}`; d.innerHTML=html; b.appendChild(d); b.scrollTop=b.scrollHeight; }
 
     function clearBuilder() {
-        ['bName','bDesc','bValue'].forEach(id => document.getElementById(id).value='');
-        document.getElementById('bField').value='max_line_amount';
-        document.getElementById('bOp').value='>';
+        ['bName','bDesc'].forEach(id => document.getElementById(id).value='');
         document.getElementById('bSeverity').value='Medium';
         document.getElementById('bScore').value='0.15';
         document.getElementById('bCategory').value='기타';
+        builderConditions = [{field:'max_line_amount', operator:'>', value:''}];
+        builderLogic = 'AND';
+        renderConditions('bConditions', builderConditions, builderLogic, 'b');
+    }
+
+    function parseConditionValue(v) {
+        if (v === '') return '';
+        try { return JSON.parse(v); } catch(e) {}
+        if (!isNaN(Number(v))) return Number(v);
+        if (v === 'true') return true;
+        if (v === 'false') return false;
+        return v;
     }
 
     async function saveBuilderRule(reanalyze) {
-        let val = document.getElementById('bValue').value;
-        try{val=JSON.parse(val)}catch(e){if(!isNaN(Number(val)))val=Number(val);else if(val==='true')val=true;else if(val==='false')val=false;}
+        const conds = builderConditions.map(c => ({field:c.field, operator:c.operator, value:parseConditionValue(String(c.value))}));
         const rule = {
-            name:document.getElementById('bName').value, description:document.getElementById('bDesc').value,
-            field:document.getElementById('bField').value, operator:document.getElementById('bOp').value,
-            value:val, severity:document.getElementById('bSeverity').value,
-            score:parseFloat(document.getElementById('bScore').value),
-            category:document.getElementById('bCategory').value, enabled:true, threshold:null
+            name: document.getElementById('bName').value,
+            description: document.getElementById('bDesc').value,
+            severity: document.getElementById('bSeverity').value,
+            score: parseFloat(document.getElementById('bScore').value),
+            category: document.getElementById('bCategory').value,
+            enabled: true, threshold: null,
         };
         if(!rule.name){showToast('룰 이름을 입력하세요','error');return;}
+        if (conds.length === 1) {
+            rule.field = conds[0].field;
+            rule.operator = conds[0].operator;
+            rule.value = conds[0].value;
+        } else {
+            rule.conditions = conds;
+            rule.logic = builderLogic;
+            rule.field = 'multi_condition';
+            rule.operator = builderLogic;
+            rule.value = `${conds.length}개 조건`;
+        }
         const res = await fetch('/api/rules',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(rule)});
         const d = await res.json();
         if(d.success) {
-            appendBuilder('ai',`룰 <strong>${d.rule.id}</strong> 저장 완료!${reanalyze?' 재분석을 시작합니다...':''}`);
-            if(reanalyze) { await startReanalyze(); }
-            else { setTimeout(()=>location.reload(),1000); }
+            appendBuilder('ai',`룰 <strong>${d.rule.id}</strong> 저장 완료!${reanalyze?' 재분석 시작...':''}`);
+            if(reanalyze) await startReanalyze();
+            else setTimeout(()=>location.reload(),1000);
         }
     }
 
@@ -405,44 +646,69 @@
     function addManualRule() {
         document.getElementById('ruleModalTitle').textContent='룰 추가';
         document.getElementById('editRuleId').value='';
-        ['mName','mDesc','mValue','mThreshold'].forEach(id=>document.getElementById(id).value='');
-        document.getElementById('mSeverity').value='Medium';document.getElementById('mScore').value='0.15';
+        ['mName','mDesc'].forEach(id=>document.getElementById(id).value='');
+        document.getElementById('mSeverity').value='Medium'; document.getElementById('mScore').value='0.15';
+        modalConditions = [{field:'max_line_amount', operator:'>', value:''}];
+        modalLogic = 'AND';
+        renderConditions('mConditions', modalConditions, modalLogic, 'm');
         document.getElementById('ruleModal').classList.add('show');
     }
+
     function editRule(id) {
-        const r=rulesData.find(x=>x.id===id); if(!r) return;
-        document.getElementById('ruleModalTitle').textContent=`룰 수정: ${id}`;
-        document.getElementById('editRuleId').value=id;
-        document.getElementById('mName').value=r.name||'';document.getElementById('mDesc').value=r.description||'';
-        document.getElementById('mField').value=r.field||'';document.getElementById('mOp').value=r.operator||'>';
-        document.getElementById('mValue').value=typeof r.value==='object'?JSON.stringify(r.value):r.value;
-        document.getElementById('mThreshold').value=r.threshold||'';
-        document.getElementById('mSeverity').value=r.severity||'Medium';document.getElementById('mScore').value=r.score||0.15;
-        document.getElementById('mCategory').value=r.category||'기타';
+        const r = rulesData.find(x=>x.id===id); if(!r) return;
+        document.getElementById('ruleModalTitle').textContent = `룰 수정: ${id}`;
+        document.getElementById('editRuleId').value = id;
+        document.getElementById('mName').value = r.name||'';
+        document.getElementById('mDesc').value = r.description||'';
+        document.getElementById('mSeverity').value = r.severity||'Medium';
+        document.getElementById('mScore').value = r.score||0.15;
+        document.getElementById('mCategory').value = r.category||'기타';
+
+        if (r.conditions && r.conditions.length > 0) {
+            modalConditions = r.conditions.map(c => ({...c}));
+            modalLogic = r.logic || 'AND';
+        } else {
+            const valStr = (r.value !== undefined && r.value !== null) ? (typeof r.value === 'object' ? JSON.stringify(r.value) : String(r.value)) : '';
+            modalConditions = [{field: r.field||'', operator: r.operator||'>', value: valStr}];
+            modalLogic = 'AND';
+        }
+        renderConditions('mConditions', modalConditions, modalLogic, 'm');
         document.getElementById('ruleModal').classList.add('show');
     }
+
     function closeModal(){document.getElementById('ruleModal').classList.remove('show');}
 
     async function saveModal(reanalyze) {
-        let val=document.getElementById('mValue').value;
-        try{val=JSON.parse(val)}catch(e){if(!isNaN(Number(val)))val=Number(val);else if(val==='true')val=true;}
-        let thr=document.getElementById('mThreshold').value;
-        if(thr){thr=isNaN(Number(thr))?thr:Number(thr);}else{thr=null;}
-        const rule={name:document.getElementById('mName').value,description:document.getElementById('mDesc').value,
-            field:document.getElementById('mField').value,operator:document.getElementById('mOp').value,
-            value:val,threshold:thr,severity:document.getElementById('mSeverity').value,
+        const conds = modalConditions.map(c => ({field:c.field, operator:c.operator, value:parseConditionValue(String(c.value))}));
+        const rule = {
+            name:document.getElementById('mName').value,
+            description:document.getElementById('mDesc').value,
+            severity:document.getElementById('mSeverity').value,
             score:parseFloat(document.getElementById('mScore').value),
-            category:document.getElementById('mCategory').value,enabled:true};
-        const editId=document.getElementById('editRuleId').value;
+            category:document.getElementById('mCategory').value,
+            enabled:true, threshold:null,
+        };
+        if (conds.length === 1) {
+            rule.field = conds[0].field;
+            rule.operator = conds[0].operator;
+            rule.value = conds[0].value;
+        } else {
+            rule.conditions = conds;
+            rule.logic = modalLogic;
+            rule.field = 'multi_condition';
+            rule.operator = modalLogic;
+            rule.value = `${conds.length}개 조건`;
+        }
+        const editId = document.getElementById('editRuleId').value;
         const res = editId ?
             await fetch(`/api/rules/${editId}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(rule)}) :
             await fetch('/api/rules',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(rule)});
-        const d=await res.json();
+        const d = await res.json();
         if(d.success){
             closeModal();
             showToast(`룰 ${editId||d.rule.id} 저장 완료!`,'success');
-            if(reanalyze){await startReanalyze();}
-            else{setTimeout(()=>location.reload(),800);}
+            if(reanalyze) await startReanalyze();
+            else setTimeout(()=>location.reload(),800);
         }
     }
 

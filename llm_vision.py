@@ -41,6 +41,31 @@ PARSE_PROMPT = """이 이미지는 세금계산서, 영수증, 거래명세서, 
 """
 
 
+PDF_EXTS = {'.pdf'}
+IMG_PARSE_EXTS = {'.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff', '.tif'}
+ALL_PARSEABLE_EXTS = IMG_PARSE_EXTS | PDF_EXTS
+
+
+def pdf_to_image_path(pdf_path: str) -> str | None:
+    """PDF 첫 페이지를 PNG 이미지로 변환하여 임시 파일 경로를 반환한다."""
+    try:
+        import fitz
+        doc = fitz.open(pdf_path)
+        if len(doc) == 0:
+            return None
+        page = doc[0]
+        mat = fitz.Matrix(2, 2)
+        pix = page.get_pixmap(matrix=mat)
+        out_path = pdf_path.rsplit('.', 1)[0] + '_page1.png'
+        pix.save(out_path)
+        doc.close()
+        print(f"[증빙파싱] PDF→PNG 변환: {out_path} ({pix.width}x{pix.height})")
+        return out_path
+    except Exception as e:
+        print(f"[증빙파싱] PDF 변환 실패: {e}")
+        return None
+
+
 def resize_and_encode_image(image_path: str, max_size_bytes: int = 1_500_000) -> tuple[str, str]:
     """이미지를 리사이즈하고 base64로 인코딩한다. (max_size_bytes 이하로 압축)"""
     file_size = os.path.getsize(image_path)
@@ -161,6 +186,166 @@ def analyze_receipt_with_llm(image_path: str) -> dict:
         return {"success": False, "error": "LLM 응답 파싱 실패", "ocr_mode": "llm_vision", "raw_text": text if 'text' in dir() else ""}
     except Exception as e:
         return {"success": False, "error": str(e), "ocr_mode": "llm_vision"}
+
+
+EVIDENCE_PARSE_PROMPTS = {
+    "계약서": """이 이미지는 계약서 문서입니다. 이미지에서 다음 기본 항목을 추출하세요.
+
+기본 항목 (반드시 포함):
+1. 계약서 제목 - 계약서의 제목 또는 명칭
+2. 계약서명 - 계약자들의 서명/날인 여부 (서명완료/미서명)
+3. 계약일자 - 계약 체결일 (YYYY-MM-DD 형식)
+4. 계약기간 - 계약 유효 기간 (시작일 ~ 종료일)
+5. 계약금액 - 계약 총 금액 (원 단위, 숫자만)
+6. 계약대상 - 계약의 대상 (공사명, 용역명, 물품명 등)
+7. 계약자 상호 - 계약 당사자들의 상호/회사명 (발주자, 수급자 등)
+
+추가 항목 (이미지에서 발견되는 경우 자유롭게 추가):
+예: 납품장소, 하자보증기간, 지체상금률, 계약보증금, 선급금, 공급가액, 부가세, 대금지급조건, 특약사항 등
+
+규칙:
+- 기본 항목 중 이미지에서 확인할 수 없는 항목은 값을 빈 문자열("")로 남기세요
+- 추가 항목은 이미지에서 확인된 것만 포함하세요
+- 금액은 숫자만 입력하세요 (예: 50000000)
+
+반드시 아래 JSON 배열 형식으로만 응답하세요. 다른 텍스트는 포함하지 마세요:
+[
+  {"label": "계약서 제목", "value": ""},
+  {"label": "계약서명", "value": ""},
+  {"label": "계약일자", "value": ""},
+  {"label": "계약기간", "value": ""},
+  {"label": "계약금액", "value": ""},
+  {"label": "계약대상", "value": ""},
+  {"label": "계약자 상호", "value": ""}
+]""",
+    "공과금 고지서": """이 이미지는 공과금 고지서(전기요금, 가스요금, 수도요금 등)입니다.
+이미지에서 다음 항목을 추출하세요.
+
+기본 항목 (반드시 포함):
+1. 고지서구분 - 전기/가스/수도/난방/통신 등 고지서 종류
+2. 대상주소 - 요금 부과 대상 주소 (건물명, 동호수 포함)
+3. 기준년월 - 요금 산정 기준 년월 (YYYY-MM 형식)
+4. 기준일자 - 검침일자 또는 고지일자 (YYYY-MM-DD 형식)
+5. 거래처명 - 공급사 상호 (한국전력공사, 한국가스공사, 수도사업소 등)
+6. 거래처코드 - 공급사 사업자번호 또는 고객번호
+7. 공급가액 - 공급가액 (원 단위, 숫자만)
+8. 부가세액 - 부가가치세 (원 단위, 숫자만)
+9. 합계금액 - 총 납부금액 (원 단위, 숫자만)
+10. 당월요금계 - 당월 사용 요금 합계 (원 단위, 숫자만)
+
+추가 항목 (이미지에서 발견되는 경우 자유롭게 추가):
+예: 사용량, 납부기한, 고객번호, 전월지침, 당월지침, 검침기간, 연체가산금, 기본요금, 사용요금, 전력산업기반기금, 환경개선부담금, TV수신료 등
+
+규칙:
+- 기본 항목 중 이미지에서 확인할 수 없는 항목은 값을 빈 문자열("")로 남기세요
+- 추가 항목은 이미지에서 확인된 것만 포함하세요
+- 금액은 숫자만 입력하세요 (예: 1234560)
+
+반드시 아래 JSON 배열 형식으로만 응답하세요. 다른 텍스트는 포함하지 마세요:
+[
+  {"label": "고지서구분", "value": ""},
+  {"label": "대상주소", "value": ""},
+  {"label": "기준년월", "value": ""},
+  {"label": "기준일자", "value": ""},
+  {"label": "거래처명", "value": ""},
+  {"label": "거래처코드", "value": ""},
+  {"label": "공급가액", "value": ""},
+  {"label": "부가세액", "value": ""},
+  {"label": "합계금액", "value": ""},
+  {"label": "당월요금계", "value": ""}
+]""",
+}
+
+PARSEABLE_EVIDENCE_TYPES = set(EVIDENCE_PARSE_PROMPTS.keys())
+
+
+def parse_evidence_document(image_path: str, evidence_type: str) -> dict:
+    """증빙 문서를 LLM Vision으로 파싱하여 구조화된 데이터를 추출한다. 이미지 및 PDF 지원."""
+    if not HAS_LLM_VISION:
+        return {"success": False, "error": "ALPHA_API_KEY가 설정되지 않았습니다."}
+
+    if evidence_type not in EVIDENCE_PARSE_PROMPTS:
+        return {"success": False, "error": f"파싱을 지원하지 않는 증빙 유형입니다: {evidence_type}"}
+
+    converted_path = None
+    try:
+        prompt = EVIDENCE_PARSE_PROMPTS[evidence_type]
+
+        ext = os.path.splitext(image_path)[1].lower()
+        actual_path = image_path
+        if ext in PDF_EXTS:
+            converted_path = pdf_to_image_path(image_path)
+            if not converted_path:
+                return {"success": False, "error": "PDF 변환에 실패했습니다."}
+            actual_path = converted_path
+
+        img_base64, mime = resize_and_encode_image(actual_path)
+
+        payload = {
+            "model": MODEL,
+            "messages": [{
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": prompt},
+                    {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{img_base64}"}}
+                ]
+            }],
+            "max_tokens": 4096,
+        }
+
+        headers = {
+            "Authorization": f"Bearer {ALPHA_API_KEY}",
+            "Content-Type": "application/json",
+        }
+
+        response = requests.post(API_URL, headers=headers, json=payload, timeout=120)
+        response.raise_for_status()
+
+        result = response.json()
+        text = (result["choices"][0]["message"].get("content") or "").strip()
+
+        if not text:
+            return {"success": False, "error": "LLM 응답이 비어있습니다."}
+
+        # JSON 배열 추출
+        import re
+        json_match = re.search(r'```json\s*(.*?)\s*```', text, re.DOTALL)
+        if json_match:
+            text = json_match.group(1)
+        if not text.startswith('['):
+            idx = text.find('[')
+            if idx >= 0:
+                text = text[idx:]
+            last_bracket = text.rfind(']')
+            if last_bracket >= 0:
+                text = text[:last_bracket + 1]
+
+        fields = json.loads(text)
+
+        if not isinstance(fields, list):
+            return {"success": False, "error": "LLM 응답 형식이 올바르지 않습니다."}
+
+        # 각 항목이 {label, value} 형식인지 검증
+        validated = []
+        for item in fields:
+            if isinstance(item, dict) and "label" in item:
+                validated.append({
+                    "label": str(item.get("label", "")),
+                    "value": str(item.get("value", ""))
+                })
+
+        print(f"[증빙파싱] {evidence_type} 파싱 완료: {len(validated)}개 항목 추출")
+        return {"success": True, "fields": validated, "evidence_type": evidence_type}
+
+    except requests.exceptions.RequestException as e:
+        return {"success": False, "error": f"API 호출 오류: {str(e)}"}
+    except json.JSONDecodeError:
+        return {"success": False, "error": "LLM 응답 JSON 파싱 실패"}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+    finally:
+        if converted_path and os.path.exists(converted_path):
+            os.remove(converted_path)
 
 
 def map_to_account(parsed: dict) -> dict:

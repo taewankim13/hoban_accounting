@@ -6,19 +6,25 @@
     <title>전표 생성 - 호반건설 FDS</title>
     <link rel="stylesheet" href="/static/css/style.css">
     <style>
-        /* 상단 AI 패널 */
-        .ai-panel { display:grid; grid-template-columns:280px 1fr; gap:16px; margin-bottom:20px; align-items:stretch; }
-        .ai-panel > .card { display:flex; flex-direction:column; padding:16px; margin-bottom:0; }
-        .upload-zone { border:2px dashed var(--gray-300); border-radius:10px; padding:16px; text-align:center; cursor:pointer; transition:all 0.2s; background:var(--gray-50); flex:1; display:flex; flex-direction:column; justify-content:center; align-items:center; min-height:0; }
-        .upload-zone:hover,.upload-zone.dragover { border-color:var(--hoban-orange); background:#FFF7ED; }
-        .upload-zone input[type=file] { display:none; }
-        .receipt-preview { max-width:120px; max-height:100px; border-radius:6px; margin-top:6px; border:1px solid var(--gray-200); }
-        .ocr-result { background:#E8F5E9; border:1px solid #C8E6C9; border-radius:6px; padding:8px 10px; margin-top:6px; font-size:12px; }
+        /* 상단: 증빙자료 + AI 챗 */
+        .top-panel { display:grid; grid-template-columns:1fr 320px; gap:16px; margin-bottom:20px; align-items:stretch; }
+        .top-panel > .card { display:flex; flex-direction:column; padding:16px; margin-bottom:0; }
 
-        /* 챗 */
+        /* 증빙 업로드 영역 */
+        .ev-upload-row { display:flex; gap:10px; align-items:flex-end; margin-bottom:10px; }
+        .ev-upload-row .form-group { margin-bottom:0; }
+        .ev-list-table { width:100%; border-collapse:collapse; font-size:12px; }
+        .ev-list-table th { padding:6px 8px; background:var(--gray-100); text-align:left; font-size:11px; font-weight:600; color:var(--gray-500); }
+        .ev-list-table td { padding:5px 8px; border-bottom:1px solid var(--gray-100); }
+        .ev-list-table tr:hover td { background:#FFF7ED; }
+        .ev-ocr-badge { display:inline-block; font-size:10px; padding:1px 6px; border-radius:6px; margin-left:4px; }
+        .ev-empty { text-align:center; padding:16px; color:var(--gray-400); font-size:12px; border:1px dashed var(--gray-300); border-radius:8px; }
+        .ocr-result-inline { background:#E8F5E9; border:1px solid #C8E6C9; border-radius:6px; padding:8px 10px; margin-top:8px; font-size:12px; }
+
+        /* 챗 (좁은 너비) */
         .chat-compact { display:flex; flex-direction:column; flex:1; min-height:0; }
-        .chat-compact .chat-box { flex:1; height:auto; min-height:0; overflow-y:auto; border-radius:10px; padding:12px; font-size:13px; margin-bottom:8px; }
-        .chat-compact .chat-msg { padding:8px 12px; margin-bottom:8px; font-size:13px; border-radius:12px; max-width:85%; }
+        .chat-compact .chat-box { flex:1; height:auto; min-height:120px; max-height:220px; overflow-y:auto; border-radius:10px; padding:10px; font-size:12px; margin-bottom:8px; }
+        .chat-compact .chat-msg { padding:6px 10px; margin-bottom:6px; font-size:12px; border-radius:10px; max-width:90%; }
 
         /* 전표 메인 폼 */
         .slip-form { background:white; border-radius:16px; box-shadow:0 2px 8px rgba(87,85,83,0.08); border:1px solid rgba(0,0,0,0.04); }
@@ -26,13 +32,7 @@
         .slip-header .form-group { margin-bottom:0; }
         .slip-header .form-group label { font-size:11px; font-weight:600; color:var(--gray-500); text-transform:uppercase; margin-bottom:3px; }
         .slip-header .form-group input,.slip-header .form-group select { padding:7px 10px; font-size:13px; }
-        .slip-header .span2 { grid-column:span 2; }
-        .slip-header .span3 { grid-column:span 3; }
-
-        /* 거래처 + 적요 영역 */
         .slip-middle { display:grid; grid-template-columns:1fr 1fr 2fr; gap:10px; padding:12px 24px; border-bottom:1px solid var(--gray-200); background:var(--gray-50); }
-
-        /* 전표 항목 테이블 */
         .slip-table-wrap { padding:0; }
         .slip-table { width:100%; border-collapse:collapse; font-size:13px; }
         .slip-table th { background:var(--hoban-dark); color:white; padding:9px 12px; text-align:left; font-size:12px; font-weight:500; position:sticky; top:0; }
@@ -54,13 +54,14 @@
         .search-dropdown .search-item .name { font-weight:500; }
         .search-dropdown .no-result { padding:12px; text-align:center; color:var(--gray-500); font-size:13px; }
 
-        /* 로딩 스피너 */
         @keyframes spin { to { transform: rotate(360deg); } }
-
-        /* 하단 버튼 */
         .slip-footer { padding:16px 24px; display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--gray-200); }
 
-        @media(max-width:1024px) { .ai-panel{grid-template-columns:1fr} .slip-header{grid-template-columns:repeat(3,1fr)} }
+        /* 하단 첨부 영역 (증빙 + 연결문서) */
+        .attach-panels { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:16px; }
+        .attach-panels > .card { padding:16px; margin-bottom:0; }
+
+        @media(max-width:1024px) { .top-panel{grid-template-columns:1fr} .slip-header{grid-template-columns:repeat(3,1fr)} .attach-panels{grid-template-columns:1fr} }
     </style>
 </head>
 <body>
@@ -77,42 +78,76 @@
     <div class="container">
         <div class="page-header">
             <h1>전표 생성</h1>
-            <p>AI 챗 또는 영수증 업로드로 전표를 생성하거나, 직접 입력합니다</p>
+            <p>증빙자료를 업로드하면 AI가 자동 분석합니다. 직접 입력도 가능합니다.</p>
         </div>
 
-        <!-- ────── 상단: AI 패널 (영수증 + 챗) ────── -->
-        <div class="ai-panel">
-            <!-- 영수증 업로드 -->
-            <div class="card" style="padding:16px; margin-bottom:0">
-                <div style="font-size:14px; font-weight:600; margin-bottom:8px; color:var(--hoban-dark)">영수증 업로드</div>
-                <div class="upload-zone" id="uploadZone" onclick="document.getElementById('receiptFile').click()">
-                    <input type="file" id="receiptFile" accept="image/*" onchange="uploadReceipt(this)">
-                    <div style="font-size:24px; color:var(--gray-400)">+</div>
-                    <p style="color:var(--gray-500); font-size:12px; margin:4px 0">클릭 또는 드래그</p>
+        <!-- ────── 상단: 증빙자료 업로드 + AI 챗 ────── -->
+        <div class="top-panel">
+            <!-- 증빙자료 업로드 (넓은 영역) -->
+            <div class="card">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+                    <div style="font-size:14px;font-weight:600;color:var(--hoban-dark)">증빙자료 업로드</div>
+                    <span id="evidenceCount" style="font-size:12px;color:var(--gray-500)">0건</span>
                 </div>
-                <div id="receiptResult" style="display:none"></div>
+                <div class="ev-upload-row">
+                    <div class="form-group" style="flex:0 0 140px">
+                        <label style="font-size:11px;font-weight:600;color:var(--gray-500)">증빙 구분</label>
+                        <select id="evidenceType" style="padding:6px 8px;font-size:12px;border:1px solid var(--gray-300);border-radius:6px">
+                            <option value="세금계산서">세금계산서</option>
+                            <option value="영수증">영수증</option>
+                            <option value="거래명세서">거래명세서</option>
+                            <option value="계약서">계약서</option>
+                            <option value="공과금 고지서">공과금 고지서</option>
+                            <option value="견적서">견적서</option>
+                            <option value="검수확인서">검수확인서</option>
+                            <option value="기타">기타</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="evidenceFile" class="btn btn-outline btn-sm" style="cursor:pointer;font-size:12px;padding:6px 12px">+ 파일 선택</label>
+                        <input type="file" id="evidenceFile" accept=".pdf,.jpg,.jpeg,.png,.gif,.bmp,.tiff,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.hwp,.hwpx,.zip,.csv,.txt,image/*" multiple style="display:none" onchange="uploadEvidenceFiles(this)">
+                    </div>
+                    <span style="font-size:11px;color:var(--gray-400)">PDF, 이미지, 문서 | 이미지 업로드 시 Gemini AI 자동 분석</span>
+                </div>
+                <!-- 증빙 목록 -->
+                <div id="evidenceList" style="display:none">
+                    <table class="ev-list-table">
+                        <thead><tr>
+                            <th style="width:35px;text-align:center">No</th>
+                            <th style="width:90px">구분</th>
+                            <th>파일명</th>
+                            <th style="width:60px;text-align:right">크기</th>
+                            <th style="width:80px;text-align:center">AI 분석</th>
+                            <th style="width:40px"></th>
+                        </tr></thead>
+                        <tbody id="evidenceListBody"></tbody>
+                    </table>
+                </div>
+                <div id="evidenceEmpty" class="ev-empty">증빙자료를 업로드하세요 (세금계산서, 영수증 이미지 업로드 시 AI 자동 분석)</div>
+                <!-- OCR 결과 -->
+                <div id="ocrResult" style="display:none"></div>
             </div>
 
-            <!-- AI 챗 -->
-            <div class="card" style="padding:16px; margin-bottom:0">
-                <div style="font-size:14px; font-weight:600; margin-bottom:8px; color:var(--hoban-dark)">
-                    AI 전표 어시스턴트
-                    <span id="llmBadge" style="font-size:10px; background:var(--gray-100); color:var(--gray-500); padding:1px 6px; border-radius:8px; margin-left:4px">Local</span>
+            <!-- AI 챗 (축소) -->
+            <div class="card">
+                <div style="font-size:13px;font-weight:600;margin-bottom:6px;color:var(--hoban-dark)">
+                    AI 어시스턴트
+                    <span id="llmBadge" style="font-size:10px;background:var(--gray-100);color:var(--gray-500);padding:1px 5px;border-radius:8px;margin-left:4px">Local</span>
                 </div>
                 <div class="chat-compact">
                     <div class="chat-box" id="chatBox">
-                        <div class="chat-msg ai" style="font-size:12px">
-                            자연어로 전표를 생성하거나 수정할 수 있습니다.
-                            <div class="suggestions" style="margin-top:6px">
-                                <button onclick="sendChat('자재 구매 500만원')">자재 구매 500만원</button>
-                                <button onclick="sendChat('외주비 1000만원')">외주비 1000만원</button>
-                                <button onclick="sendChat('부가세 분리해줘')">부가세 분리</button>
+                        <div class="chat-msg ai" style="font-size:11px">
+                            자연어로 전표 생성/수정
+                            <div class="suggestions" style="margin-top:4px">
+                                <button onclick="sendChat('자재 구매 500만원')" style="font-size:11px;padding:3px 8px">자재 500만원</button>
+                                <button onclick="sendChat('외주비 1000만원')" style="font-size:11px;padding:3px 8px">외주비 1000만원</button>
+                                <button onclick="sendChat('부가세 분리해줘')" style="font-size:11px;padding:3px 8px">부가세 분리</button>
                             </div>
                         </div>
                     </div>
                     <div class="chat-input">
-                        <input type="text" id="chatInput" placeholder="예: 자재 구매 500만원 / 금액을 1155만원으로 수정해줘" onkeypress="if(event.key==='Enter') sendChat()" style="font-size:13px; padding:10px 16px">
-                        <button class="btn btn-primary btn-sm" onclick="sendChat()">전송</button>
+                        <input type="text" id="chatInput" placeholder="예: 자재 구매 500만원" onkeypress="if(event.key==='Enter') sendChat()" style="font-size:12px;padding:8px 12px">
+                        <button class="btn btn-primary btn-sm" onclick="sendChat()" style="font-size:12px;padding:6px 12px">전송</button>
                     </div>
                 </div>
             </div>
@@ -120,154 +155,95 @@
 
         <!-- ────── 메인: 전표 입력 폼 ────── -->
         <div class="slip-form">
-            <!-- 헤더 필드 -->
             <div class="slip-header">
-                <div class="form-group">
-                    <label>회계연도</label>
-                    <input type="text" id="fiscalYear" value="2026" readonly style="background:var(--gray-50)">
+                <div class="form-group"><label>회계연도</label><input type="text" id="fiscalYear" value="2026" readonly style="background:var(--gray-50)"></div>
+                <div class="form-group"><label>전표일자</label><input type="date" id="docDate" value="2026-06-30"></div>
+                <div class="form-group"><label>전표유형</label>
+                    <select id="docType"><option>대체전표</option><option>법인카드 집행</option><option>XML세금계산서전표발행</option><option>원안품의(기안) 자동전표</option><option>수기전표</option><option>자금입금전표</option></select>
                 </div>
-                <div class="form-group">
-                    <label>전표일자</label>
-                    <input type="date" id="docDate" value="2026-06-23">
+                <div class="form-group"><label>구분</label>
+                    <select id="category"><option>손익</option><option>부채</option><option>자산</option><option>자본</option></select>
                 </div>
-                <div class="form-group">
-                    <label>전표유형</label>
-                    <select id="docType">
-                        <option>대체전표</option>
-                        <option>법인카드 집행</option>
-                        <option>XML세금계산서전표발행</option>
-                        <option>원안품의(기안) 자동전표</option>
-                        <option>수기전표</option>
-                        <option>자금입금전표</option>
-                    </select>
+                <div class="form-group"><label>대분류</label>
+                    <select id="bigCategory"><option>매출원가</option><option>유동부채</option><option>유동자산</option><option>영업외수익</option><option>영업외비용</option><option>비유동자산</option><option>매출</option></select>
                 </div>
-                <div class="form-group">
-                    <label>구분</label>
-                    <select id="category">
-                        <option>손익</option>
-                        <option>부채</option>
-                        <option>자산</option>
-                        <option>자본</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>대분류</label>
-                    <select id="bigCategory">
-                        <option>매출원가</option>
-                        <option>유동부채</option>
-                        <option>유동자산</option>
-                        <option>영업외수익</option>
-                        <option>영업외비용</option>
-                        <option>비유동자산</option>
-                        <option>매출</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>입력자</label>
-                    <select id="createdBy">
-                        {% for name, dept in employees %}
-                        <option value="{{ name }}" data-dept="{{ dept }}">{{ name }} ({{ dept }})</option>
-                        {% endfor %}
-                    </select>
+                <div class="form-group"><label>입력자</label>
+                    <select id="createdBy">{% for name, dept in employees %}<option value="{{ name }}" data-dept="{{ dept }}">{{ name }} ({{ dept }})</option>{% endfor %}</select>
                 </div>
             </div>
-
-            <!-- 거래처 + 프로젝트 + 적요 -->
             <div class="slip-middle" style="grid-template-columns:1fr 120px 1fr 2fr">
-                <div class="form-group" style="margin-bottom:0">
-                    <label style="font-size:11px; font-weight:600; color:var(--gray-500)">프로젝트(현장)</label>
-                    <div class="search-input-wrap">
-                        <input type="text" id="projectSearch" placeholder="프로젝트 검색..." autocomplete="off"
-                               oninput="searchField('project', this.value)" onfocus="searchField('project', this.value)">
-                        <input type="hidden" id="projectId">
-                        <div class="search-dropdown" id="projectDropdown"></div>
-                    </div>
+                <div class="form-group" style="margin-bottom:0"><label style="font-size:11px;font-weight:600;color:var(--gray-500)">프로젝트(현장)</label>
+                    <div class="search-input-wrap"><input type="text" id="projectSearch" placeholder="프로젝트 검색..." autocomplete="off" oninput="searchField('project', this.value)" onfocus="searchField('project', this.value)"><input type="hidden" id="projectId"><div class="search-dropdown" id="projectDropdown"></div></div>
                 </div>
-                <div class="form-group" style="margin-bottom:0">
-                    <label style="font-size:11px; font-weight:600; color:var(--gray-500)">거래처유형</label>
-                    <select id="vendorType" style="padding:7px 10px;font-size:13px;border:1px solid var(--gray-300);border-radius:6px">
-                        <option value="">선택</option>
-                        <option value="F">법인(F)</option>
-                        <option value="P">개인(P)</option>
-                        <option value="D">부서(D)</option>
-                        <option value="S">사원(S)</option>
-                        <option value="X">기타(X)</option>
-                        <option value="B">은행(B)</option>
-                    </select>
+                <div class="form-group" style="margin-bottom:0"><label style="font-size:11px;font-weight:600;color:var(--gray-500)">거래처유형</label>
+                    <select id="vendorType" style="padding:7px 10px;font-size:13px;border:1px solid var(--gray-300);border-radius:6px"><option value="">선택</option><option value="F">법인(F)</option><option value="P">개인(P)</option><option value="D">부서(D)</option><option value="S">사원(S)</option><option value="X">기타(X)</option><option value="B">은행(B)</option></select>
                 </div>
-                <div class="form-group" style="margin-bottom:0">
-                    <label style="font-size:11px; font-weight:600; color:var(--gray-500)">거래처</label>
-                    <div class="search-input-wrap">
-                        <input type="text" id="vendorSearch" placeholder="거래처 검색..." autocomplete="off"
-                               oninput="searchField('vendor', this.value)" onfocus="searchField('vendor', this.value)">
-                        <input type="hidden" id="vendorCode">
-                        <div class="search-dropdown" id="vendorDropdown"></div>
-                    </div>
+                <div class="form-group" style="margin-bottom:0"><label style="font-size:11px;font-weight:600;color:var(--gray-500)">거래처</label>
+                    <div class="search-input-wrap"><input type="text" id="vendorSearch" placeholder="거래처 검색..." autocomplete="off" oninput="searchField('vendor', this.value)" onfocus="searchField('vendor', this.value)"><input type="hidden" id="vendorCode"><div class="search-dropdown" id="vendorDropdown"></div></div>
                 </div>
-                <div class="form-group" style="margin-bottom:0">
-                    <label style="font-size:11px; font-weight:600; color:var(--gray-500)">적요</label>
-                    <input type="text" id="description" placeholder="거래 내용을 입력하세요">
-                </div>
+                <div class="form-group" style="margin-bottom:0"><label style="font-size:11px;font-weight:600;color:var(--gray-500)">적요</label><input type="text" id="description" placeholder="거래 내용을 입력하세요"></div>
             </div>
-
-            <!-- 전표 항목 테이블 -->
             <div class="slip-table-wrap">
-                <table class="slip-table">
-                    <thead>
-                        <tr>
-                            <th style="width:5%">No</th>
-                            <th style="width:8%">차대구분</th>
-                            <th style="width:25%">계정과목</th>
-                            <th style="width:15%">차변금액</th>
-                            <th style="width:15%">대변금액</th>
-                            <th style="width:25%">적요</th>
-                            <th style="width:4%"></th>
-                        </tr>
-                    </thead>
-                    <tbody id="linesBody">
-                        <tr>
-                            <td style="text-align:center; color:var(--gray-500)">1</td>
-                            <td><select class="side-select"><option>차변</option><option>대변</option></select></td>
-                            <td><div class="search-input-wrap"><input type="text" class="acct-search" placeholder="계정 검색..." autocomplete="off" oninput="searchAccount(this)" onfocus="searchAccount(this)"><input type="hidden" class="acct-code"><div class="search-dropdown acct-dropdown"></div></div></td>
-                            <td><input type="text" class="amt debit-input" placeholder="0" oninput="formatAmount(this);updateTotal()"></td>
-                            <td><input type="text" class="amt credit-input" placeholder="0" oninput="formatAmount(this);updateTotal()"></td>
-                            <td><input type="text" class="line-desc" placeholder="항목별 적요 (선택)"></td>
-                            <td><button class="btn btn-sm btn-outline" onclick="removeLine(this)" style="padding:3px 7px; font-size:12px">X</button></td>
-                        </tr>
-                        <tr>
-                            <td style="text-align:center; color:var(--gray-500)">2</td>
-                            <td><select class="side-select"><option>차변</option><option selected>대변</option></select></td>
-                            <td><div class="search-input-wrap"><input type="text" class="acct-search" placeholder="계정 검색..." autocomplete="off" oninput="searchAccount(this)" onfocus="searchAccount(this)"><input type="hidden" class="acct-code"><div class="search-dropdown acct-dropdown"></div></div></td>
-                            <td><input type="text" class="amt debit-input" placeholder="0" oninput="formatAmount(this);updateTotal()"></td>
-                            <td><input type="text" class="amt credit-input" placeholder="0" oninput="formatAmount(this);updateTotal()"></td>
-                            <td><input type="text" class="line-desc" placeholder="항목별 적요 (선택)"></td>
-                            <td><button class="btn btn-sm btn-outline" onclick="removeLine(this)" style="padding:3px 7px; font-size:12px">X</button></td>
-                        </tr>
-                    </tbody>
-                    <tfoot>
-                        <tr>
-                            <td colspan="3" style="text-align:right">합계</td>
-                            <td id="totalDebit" class="amt" style="font-weight:700">0</td>
-                            <td id="totalCredit" class="amt" style="font-weight:700">0</td>
-                            <td id="balanceStatus" class="balance-ok">-</td>
-                            <td></td>
-                        </tr>
-                    </tfoot>
+                <table class="slip-table"><thead><tr>
+                    <th style="width:5%">No</th><th style="width:8%">차대구분</th><th style="width:25%">계정과목</th><th style="width:15%">차변금액</th><th style="width:15%">대변금액</th><th style="width:25%">적요</th><th style="width:4%"></th>
+                </tr></thead>
+                <tbody id="linesBody">
+                    <tr><td style="text-align:center;color:var(--gray-500)">1</td><td><select class="side-select"><option>차변</option><option>대변</option></select></td><td><div class="search-input-wrap"><input type="text" class="acct-search" placeholder="계정 검색..." autocomplete="off" oninput="searchAccount(this)" onfocus="searchAccount(this)"><input type="hidden" class="acct-code"><div class="search-dropdown acct-dropdown"></div></div></td><td><input type="text" class="amt debit-input" placeholder="0" oninput="formatAmount(this);updateTotal()"></td><td><input type="text" class="amt credit-input" placeholder="0" oninput="formatAmount(this);updateTotal()"></td><td><input type="text" class="line-desc" placeholder="항목별 적요 (선택)"></td><td><button class="btn btn-sm btn-outline" onclick="removeLine(this)" style="padding:3px 7px;font-size:12px">X</button></td></tr>
+                    <tr><td style="text-align:center;color:var(--gray-500)">2</td><td><select class="side-select"><option>차변</option><option selected>대변</option></select></td><td><div class="search-input-wrap"><input type="text" class="acct-search" placeholder="계정 검색..." autocomplete="off" oninput="searchAccount(this)" onfocus="searchAccount(this)"><input type="hidden" class="acct-code"><div class="search-dropdown acct-dropdown"></div></div></td><td><input type="text" class="amt debit-input" placeholder="0" oninput="formatAmount(this);updateTotal()"></td><td><input type="text" class="amt credit-input" placeholder="0" oninput="formatAmount(this);updateTotal()"></td><td><input type="text" class="line-desc" placeholder="항목별 적요 (선택)"></td><td><button class="btn btn-sm btn-outline" onclick="removeLine(this)" style="padding:3px 7px;font-size:12px">X</button></td></tr>
+                </tbody>
+                <tfoot><tr><td colspan="3" style="text-align:right">합계</td><td id="totalDebit" class="amt" style="font-weight:700">0</td><td id="totalCredit" class="amt" style="font-weight:700">0</td><td id="balanceStatus" class="balance-ok">-</td><td></td></tr></tfoot>
                 </table>
             </div>
-
-            <!-- 하단 버튼 -->
             <div class="slip-footer">
                 <button class="btn btn-outline btn-sm" onclick="addLine()">+ 항목 추가</button>
-                <div style="display:flex; gap:8px">
+                <div style="display:flex;gap:8px">
                     <button class="btn btn-outline" onclick="clearForm()">초기화</button>
                     <button class="btn btn-primary" onclick="submitJournal()">전표 저장</button>
                 </div>
             </div>
         </div>
 
-        <!-- AI 분석 결과 -->
-        <div id="aiResult" class="ai-result" style="display:none; margin-top:16px;"></div>
+        <!-- ────── 하단: 연결문서 ────── -->
+        <div class="card" style="margin-top:16px;padding:16px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+                <div style="font-size:14px;font-weight:600;color:var(--hoban-dark)">연결문서</div>
+                <span id="linkedDocCount" style="font-size:12px;color:var(--gray-500)">0건</span>
+            </div>
+            <div style="display:flex;gap:10px;align-items:flex-end;margin-bottom:10px">
+                <div class="form-group" style="margin-bottom:0;flex:0 0 140px">
+                    <label style="font-size:11px;font-weight:600;color:var(--gray-500)">문서 구분</label>
+                    <select id="linkedDocType" style="padding:6px 8px;font-size:12px;border:1px solid var(--gray-300);border-radius:6px">
+                        <option value="기안서">기안서</option>
+                        <option value="계약서">계약서</option>
+                        <option value="검수확인서">검수확인서</option>
+                        <option value="품의서">품의서</option>
+                        <option value="발주서">발주서</option>
+                        <option value="시방서">시방서</option>
+                        <option value="내역서">내역서</option>
+                        <option value="기타">기타</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="linkedDocFile" class="btn btn-outline btn-sm" style="cursor:pointer;font-size:12px;padding:6px 12px">+ 파일 선택</label>
+                    <input type="file" id="linkedDocFile" accept=".pdf,.jpg,.jpeg,.png,.gif,.bmp,.tiff,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.hwp,.hwpx,.zip,.csv,.txt" multiple style="display:none" onchange="addLinkedDocFiles(this)">
+                </div>
+            </div>
+            <div id="linkedDocList" style="display:none">
+                <table class="ev-list-table">
+                    <thead><tr>
+                        <th style="width:35px;text-align:center">No</th>
+                        <th style="width:90px">구분</th>
+                        <th>파일명</th>
+                        <th style="width:60px;text-align:right">크기</th>
+                        <th style="width:40px"></th>
+                    </tr></thead>
+                    <tbody id="linkedDocListBody"></tbody>
+                </table>
+            </div>
+            <div id="linkedDocEmpty" class="ev-empty">연결문서가 없습니다 (기안서, 계약서, 검수확인서 등)</div>
+        </div>
+
+        <div id="aiResult" class="ai-result" style="display:none;margin-top:16px;"></div>
     </div>
     <div class="toast" id="toast"></div>
 
@@ -276,11 +252,14 @@
     let currentReceiptUrl = null;
     let chatHistory = [];
     let searchDebounce = null;
-    // OCR 파싱 결과 저장
     let ocrData = { date: null, vendor: null, amount: null, raw: null };
+    let pendingEvidences = [];
+    let pendingLinkedDocs = [];
+    let savedDocNo = null;
+    const IMG_EXTS = ['jpg','jpeg','png','gif','bmp','tiff','tif'];
+    const PARSEABLE_TYPES = ['계약서', '공과금 고지서'];
 
     // ══════ 검색형 입력 ══════
-
     async function searchField(type, query) {
         clearTimeout(searchDebounce);
         searchDebounce = setTimeout(async () => {
@@ -288,227 +267,298 @@
             const res = await fetch(url);
             const items = await res.json();
             const dd = document.getElementById(`${type === 'project' ? 'project' : 'vendor'}Dropdown`);
-            if (items.length === 0) {
-                dd.innerHTML = '<div class="no-result">검색 결과 없음</div>';
-            } else {
+            if (items.length === 0) { dd.innerHTML = '<div class="no-result">검색 결과 없음</div>'; }
+            else {
                 dd.innerHTML = items.map(item => {
                     const typeBadge = item.type_name ? `<span style="font-size:10px;background:var(--gray-100);padding:1px 5px;border-radius:4px;margin-right:4px">${item.type_name}</span>` : '';
-                    return `<div class="search-item" onclick="selectField('${type}', '${item.id || item.code}', '${item.name.replace(/'/g,"\\'")}', '${item.code || ''}', '${item.type || ''}')">
-                        <span class="name">${typeBadge}${item.name}</span>
-                        <span class="code">${item.code || ''}</span>
-                    </div>`;
+                    return `<div class="search-item" onclick="selectField('${type}', '${item.id || item.code}', '${item.name.replace(/'/g,"\\'")}', '${item.code || ''}', '${item.type || ''}')"><span class="name">${typeBadge}${item.name}</span><span class="code">${item.code || ''}</span></div>`;
                 }).join('');
             }
             dd.classList.add('show');
         }, 200);
     }
-
     function selectField(type, id, name, code, vendorTypeCode) {
-        if (type === 'project') {
-            document.getElementById('projectSearch').value = name;
-            document.getElementById('projectId').value = id;
-            document.getElementById('projectDropdown').classList.remove('show');
-        } else {
-            document.getElementById('vendorSearch').value = name;
-            document.getElementById('vendorCode').value = code;
-            document.getElementById('vendorDropdown').classList.remove('show');
-            if (vendorTypeCode) document.getElementById('vendorType').value = vendorTypeCode;
-        }
+        if (type === 'project') { document.getElementById('projectSearch').value = name; document.getElementById('projectId').value = id; document.getElementById('projectDropdown').classList.remove('show'); }
+        else { document.getElementById('vendorSearch').value = name; document.getElementById('vendorCode').value = code; document.getElementById('vendorDropdown').classList.remove('show'); if (vendorTypeCode) document.getElementById('vendorType').value = vendorTypeCode; }
     }
-
     async function searchAccount(input) {
-        const q = input.value.trim();
-        const dd = input.parentElement.querySelector('.acct-dropdown');
+        const q = input.value.trim(); const dd = input.parentElement.querySelector('.acct-dropdown');
         clearTimeout(input._debounce);
         input._debounce = setTimeout(async () => {
             const res = await fetch(`/api/search/accounts?q=${encodeURIComponent(q)}`);
             const items = await res.json();
-            if (items.length === 0) {
-                dd.innerHTML = '<div class="no-result">검색 결과 없음</div>';
-            } else {
-                dd.innerHTML = items.map(item =>
-                    `<div class="search-item" onclick="selectAccount(this, '${item.code}', '${item.name.replace(/'/g,"\\'")}')">
-                        <span class="code">${item.code}</span>
-                        <span class="name">${item.name}</span>
-                    </div>`
-                ).join('');
-            }
+            if (items.length === 0) { dd.innerHTML = '<div class="no-result">검색 결과 없음</div>'; }
+            else { dd.innerHTML = items.map(item => `<div class="search-item" onclick="selectAccount(this, '${item.code}', '${item.name.replace(/'/g,"\\'")}')"><span class="code">${item.code}</span><span class="name">${item.name}</span></div>`).join(''); }
             dd.classList.add('show');
         }, 200);
     }
-
-    function selectAccount(el, code, name) {
-        const row = el.closest('tr') || el.closest('.search-input-wrap');
-        const wrap = el.closest('.search-input-wrap');
-        wrap.querySelector('.acct-search').value = `${code} ${name}`;
-        wrap.querySelector('.acct-code').value = code;
-        wrap.querySelector('.acct-dropdown').classList.remove('show');
-    }
-
-    // 드롭다운 외부 클릭 시 닫기
-    document.addEventListener('click', e => {
-        document.querySelectorAll('.search-dropdown.show').forEach(dd => {
-            if (!dd.parentElement.contains(e.target)) dd.classList.remove('show');
-        });
-    });
-
-    // ══════ 현재 폼 상태 추출 ══════
+    function selectAccount(el, code, name) { const wrap = el.closest('.search-input-wrap'); wrap.querySelector('.acct-search').value = `${code} ${name}`; wrap.querySelector('.acct-code').value = code; wrap.querySelector('.acct-dropdown').classList.remove('show'); }
+    document.addEventListener('click', e => { document.querySelectorAll('.search-dropdown.show').forEach(dd => { if (!dd.parentElement.contains(e.target)) dd.classList.remove('show'); }); });
 
     function getCurrentForm() {
         const lines = [];
         for (const row of document.getElementById('linesBody').rows) {
-            const code = row.querySelector('.acct-code')?.value;
-            if (!code) continue;
-            lines.push({
-                account_code: code,
-                account_name: row.querySelector('.acct-search')?.value || '',
-                side: row.querySelector('.side-select')?.value || '차변',
-                debit_amount: parseAmount(row.querySelector('.debit-input')?.value),
-                credit_amount: parseAmount(row.querySelector('.credit-input')?.value),
-            });
+            const code = row.querySelector('.acct-code')?.value; if (!code) continue;
+            lines.push({ account_code: code, account_name: row.querySelector('.acct-search')?.value || '', side: row.querySelector('.side-select')?.value || '차변', debit_amount: parseAmount(row.querySelector('.debit-input')?.value), credit_amount: parseAmount(row.querySelector('.credit-input')?.value) });
         }
         return { doc_type: document.getElementById('docType')?.value || '', description: document.getElementById('description')?.value || '', lines };
     }
 
-    // ══════ 영수증 업로드 ══════
+    // ══════ 증빙자료 업로드 (이미지면 OCR 수행) ══════
+    async function uploadEvidenceFiles(input) {
+        if (!input.files || input.files.length === 0) return;
+        const evType = document.getElementById('evidenceType').value;
 
-    const uz = document.getElementById('uploadZone');
-    uz.addEventListener('dragover', e => { e.preventDefault(); uz.classList.add('dragover'); });
-    uz.addEventListener('dragleave', () => uz.classList.remove('dragover'));
-    uz.addEventListener('drop', e => { e.preventDefault(); uz.classList.remove('dragover'); if(e.dataTransfer.files.length>0){document.getElementById('receiptFile').files=e.dataTransfer.files; uploadReceipt(document.getElementById('receiptFile'));} });
+        for (const file of input.files) {
+            const ext = file.name.split('.').pop().toLowerCase();
+            const isImage = IMG_EXTS.includes(ext);
+            const isPdf = ext === 'pdf';
+            const canParse = isImage || isPdf;
+            const entry = { file, type: evType, ocrDone: false, ocrResult: null };
+            pendingEvidences.push(entry);
+            renderEvidenceList();
 
-    async function uploadReceipt(input) {
-        if (!input.files||!input.files[0]) return;
-        const fd = new FormData(); fd.append('file', input.files[0]);
-        appendChat('user', `[영수증] ${input.files[0].name}`);
+            // 이미지 또는 PDF면 분석 수행
+            if (canParse) {
+                // 파싱 가능한 증빙 유형이면 문서 파싱
+                if (PARSEABLE_TYPES.includes(evType)) {
+                    entry.parseDone = 'loading';
+                    entry.parsedData = null;
+                    renderEvidenceList();
+                    appendChat('user', `[${evType}] ${file.name}`);
+                    appendChat('ai', `Gemini AI로 ${evType} 문서 분석 중...`);
 
-        // 로딩 표시
-        const rd = document.getElementById('receiptResult');
-        rd.style.display = 'block';
-        rd.innerHTML = `<div style="text-align:center;padding:16px;color:var(--gray-500)">
-            <div style="display:inline-block;width:24px;height:24px;border:3px solid var(--gray-200);border-top-color:var(--hoban-orange);border-radius:50%;animation:spin 0.8s linear infinite;margin-bottom:8px"></div>
-            <div style="font-size:13px">Gemini AI로 영수증 분석 중... (15~20초 소요)</div>
-        </div>`;
-        appendChat('ai', 'Gemini AI로 영수증을 분석하고 있습니다. 잠시 기다려주세요...');
+                    const fd = new FormData(); fd.append('file', file);
+                    try {
+                        const res = await fetch(`/api/evidence/parse-document?evidence_type=${encodeURIComponent(evType)}`, {method:'POST', body:fd});
+                        const d = await res.json();
+                        entry.parseDone = true;
+                        if (d.success && d.fields) {
+                            entry.parsedData = d.fields;
+                            let chatMsg = `${evType} 분석 완료 <span class="ev-ocr-badge" style="background:#E8F5E9">Gemini AI</span><br>`;
+                            chatMsg += `<strong>${d.fields.length}개 항목</strong> 추출됨`;
+                            const titleField = d.fields.find(f => f.label === '계약서 제목');
+                            const amountField = d.fields.find(f => f.label === '계약금액');
+                            if (titleField && titleField.value) chatMsg += `<br>제목: ${titleField.value}`;
+                            if (amountField && amountField.value) chatMsg += `<br>금액: ${Number(amountField.value).toLocaleString()}원`;
+                            appendChat('ai', chatMsg);
+                        } else {
+                            entry.parsedData = null;
+                            appendChat('ai', `문서 분석 실패: ${d.error || '알 수 없는 오류'}`);
+                        }
+                    } catch(e) {
+                        entry.parseDone = true;
+                        entry.parsedData = null;
+                        appendChat('ai', `오류: ${e.message}`);
+                    }
+                    renderEvidenceList();
+                } else if (isImage) {
+                    // 세금계산서/영수증 등은 기존 OCR 수행 (이미지만)
+                    entry.ocrDone = 'loading';
+                    renderEvidenceList();
+                    appendChat('user', `[증빙] ${file.name}`);
+                    appendChat('ai', 'Gemini AI로 증빙 분석 중...');
 
-        try {
-            const res = await fetch('/api/receipt', {method:'POST', body:fd});
-            const d = await res.json();
-            if (d.success) {
-                currentReceiptUrl = d.image_url;
-                // OCR 데이터 저장
-                ocrData = { date: d.date||null, vendor: d.vendor||null, amount: d.amount||null, raw: d.raw_text||null };
+                    const fd = new FormData(); fd.append('file', file);
+                    try {
+                        const res = await fetch('/api/receipt', {method:'POST', body:fd});
+                        const d = await res.json();
+                        entry.ocrDone = true;
+                        if (d.success) {
+                            entry.ocrResult = d;
+                            currentReceiptUrl = d.image_url;
+                            ocrData = { date: d.date||null, vendor: d.vendor||null, amount: d.amount||null, raw: d.raw_text||null };
 
-                // 분석 모드 표시
-                const modeLabel = d.ocr_mode === 'llm_vision' ? 'Gemini AI' : d.ocr_mode === 'tesseract' ? 'Tesseract OCR' : '시뮬레이션';
-                let ocrHtml = `<img src="${d.image_url}" class="receipt-preview">`;
-                ocrHtml += `<div class="ocr-result"><span style="background:${d.ocr_mode==='llm_vision'?'#E8F5E9':'var(--gray-100)'};padding:1px 6px;border-radius:6px;font-size:10px;margin-right:4px">${modeLabel}</span><br>`;
-                ocrHtml += `금액: <strong>${d.amount?Number(d.amount).toLocaleString()+'원':'-'}</strong>`;
-                if(d.supply_amount) ocrHtml += ` (공급가: ${Number(d.supply_amount).toLocaleString()}, 부가세: ${Number(d.tax_amount||0).toLocaleString()})`;
-                ocrHtml += `<br>거래처: ${d.vendor||'-'} / 일자: ${d.date||'-'}`;
-                if(d.doc_type) ocrHtml += ` / 유형: ${d.doc_type}`;
-                ocrHtml += `</div>`;
-                rd.innerHTML = ocrHtml;
+                            const modeLabel = d.ocr_mode === 'llm_vision' ? 'Gemini AI' : d.ocr_mode === 'tesseract' ? 'Tesseract OCR' : '분석';
+                            let chatMsg = `증빙 분석 완료 <span class="ev-ocr-badge" style="background:#E8F5E9">${modeLabel}</span><br>`;
+                            chatMsg += `금액: <strong>${d.amount?Number(d.amount).toLocaleString()+'원':'-'}</strong><br>`;
+                            chatMsg += `거래처: ${d.vendor||'-'} / 일자: ${d.date||'-'}`;
+                            if(d.supply_amount) chatMsg += `<br>공급가: ${Number(d.supply_amount).toLocaleString()}원, 부가세: ${Number(d.tax_amount||0).toLocaleString()}원`;
+                            appendChat('ai', chatMsg);
 
-                let chatMsg = `영수증 분석 완료 <span style="background:#E8F5E9;padding:1px 6px;border-radius:6px;font-size:10px">${modeLabel}</span><br>`;
-                chatMsg += `금액: <strong>${d.amount?Number(d.amount).toLocaleString()+'원':'-'}</strong><br>`;
-                chatMsg += `거래처: ${d.vendor||'-'} / 일자: ${d.date||'-'}`;
-                if(d.supply_amount) chatMsg += `<br>공급가: ${Number(d.supply_amount).toLocaleString()}원, 부가세: ${Number(d.tax_amount||0).toLocaleString()}원`;
-                appendChat('ai', chatMsg);
+                            let ocrHtml = `<div class="ocr-result-inline"><span class="ev-ocr-badge" style="background:${d.ocr_mode==='llm_vision'?'#E8F5E9':'var(--gray-100)'}">${modeLabel}</span> `;
+                            ocrHtml += `금액: <strong>${d.amount?Number(d.amount).toLocaleString()+'원':'-'}</strong>`;
+                            if(d.supply_amount) ocrHtml += ` (공급가: ${Number(d.supply_amount).toLocaleString()}, 부가세: ${Number(d.tax_amount||0).toLocaleString()})`;
+                            ocrHtml += ` | 거래처: ${d.vendor||'-'} | 일자: ${d.date||'-'}</div>`;
+                            document.getElementById('ocrResult').innerHTML = ocrHtml;
+                            document.getElementById('ocrResult').style.display = 'block';
 
-                // LLM이 라인을 직접 생성한 경우 사용, 아니면 기본 2라인
-                if (d.lines && d.lines.length > 0) {
-                    fillFormLines(d.lines);
-                } else {
-                    const cc = d.suggested_credit_account||'2100303';
-                    fillFormLines([
-                        {account_code:d.suggested_account, debit_amount:d.amount, credit_amount:0, account_name:d.suggested_account_name, side:'차변'},
-                        {account_code:cc, debit_amount:0, credit_amount:d.amount, account_name:accounts[cc]||cc, side:'대변'},
-                    ]);
+                            if (d.lines && d.lines.length > 0) { fillFormLines(d.lines); }
+                            else {
+                                const cc = d.suggested_credit_account||'2100303';
+                                fillFormLines([
+                                    {account_code:d.suggested_account, debit_amount:d.amount, credit_amount:0, account_name:d.suggested_account_name, side:'차변'},
+                                    {account_code:cc, debit_amount:0, credit_amount:d.amount, account_name:accounts[cc]||cc, side:'대변'},
+                                ]);
+                            }
+                            if(d.description) document.getElementById('description').value = d.description;
+                            if(d.date) document.getElementById('docDate').value = d.date;
+                            if(d.vendor) document.getElementById('vendorSearch').value = d.vendor;
+                        } else {
+                            entry.ocrResult = {error: d.error};
+                            appendChat('ai', `분석 실패: ${d.error || '알 수 없는 오류'}`);
+                        }
+                    } catch(e) {
+                        entry.ocrDone = true;
+                        entry.ocrResult = {error: e.message};
+                        appendChat('ai', `오류: ${e.message}`);
+                    }
+                    renderEvidenceList();
                 }
-                if(d.description) document.getElementById('description').value = d.description;
-                if(d.date) document.getElementById('docDate').value = d.date;
-                if(d.vendor) { document.getElementById('vendorSearch').value = d.vendor; }
-            } else {
-                rd.innerHTML = `<div style="color:var(--danger);font-size:13px;padding:8px">분석 실패: ${d.error || '알 수 없는 오류'}. 다시 시도해주세요.</div>`;
-                appendChat('ai', `영수증 분석 실패: ${d.error || '알 수 없는 오류'}`);
             }
-        } catch(e) {
-            rd.innerHTML = `<div style="color:var(--danger);font-size:13px;padding:8px">네트워크 오류: ${e.message}</div>`;
-            appendChat('ai', `업로드 오류: ${e.message}`);
-            showToast('업로드 오류: ' + e.message, 'error');
         }
+        input.value = '';
     }
 
-    // ══════ 챗 ══════
+    async function uploadSingleEvidence(docNo, file, evType, parsedData) {
+        const fd = new FormData(); fd.append('file', file);
+        let url = `/api/evidence/${docNo}?evidence_type=${encodeURIComponent(evType)}`;
+        if (parsedData) url += `&parsed_data=${encodeURIComponent(JSON.stringify(parsedData))}`;
+        try {
+            const res = await fetch(url, {method:'POST', body:fd});
+            const d = await res.json();
+            if (d.success) return d.evidence;
+            else showToast(d.error || '업로드 실패', 'error');
+        } catch(e) { showToast('업로드 오류: ' + e.message, 'error'); }
+        return null;
+    }
 
+    function renderEvidenceList() {
+        const listDiv = document.getElementById('evidenceList');
+        const emptyDiv = document.getElementById('evidenceEmpty');
+        const tbody = document.getElementById('evidenceListBody');
+        const countSpan = document.getElementById('evidenceCount');
+        if (pendingEvidences.length === 0) { listDiv.style.display='none'; emptyDiv.style.display='block'; countSpan.textContent='0건'; return; }
+        listDiv.style.display='block'; emptyDiv.style.display='none'; countSpan.textContent=`${pendingEvidences.length}건`;
+        tbody.innerHTML = pendingEvidences.map((ev, i) => {
+            const size = ev.file.size > 1048576 ? (ev.file.size/1048576).toFixed(1)+'MB' : Math.round(ev.file.size/1024)+'KB';
+            const ext = ev.file.name.split('.').pop().toUpperCase();
+            const icon = ext==='PDF' ? '\u{1F4C4}' : IMG_EXTS.includes(ext.toLowerCase()) ? '\u{1F5BC}️' : '\u{1F4CE}';
+            let aiStatus = '';
+            if (ev.parseDone === 'loading') aiStatus = '<span style="color:var(--hoban-orange);font-size:11px">문서 분석 중...</span>';
+            else if (ev.parseDone && ev.parsedData) aiStatus = '<span style="color:var(--success);font-size:11px">V 파싱 완료</span>';
+            else if (ev.parseDone && !ev.parsedData) aiStatus = '<span style="color:var(--danger);font-size:11px">X 실패</span>';
+            else if (ev.ocrDone === 'loading') aiStatus = '<span style="color:var(--hoban-orange);font-size:11px">분석 중...</span>';
+            else if (ev.ocrDone && ev.ocrResult && !ev.ocrResult.error) aiStatus = '<span style="color:var(--success);font-size:11px">V 완료</span>';
+            else if (ev.ocrDone && ev.ocrResult?.error) aiStatus = '<span style="color:var(--danger);font-size:11px">X 실패</span>';
+            else aiStatus = '<span style="color:var(--gray-400);font-size:11px">-</span>';
+
+            let row = `<tr>
+                <td style="text-align:center;color:var(--gray-500)">${i+1}</td>
+                <td><span style="background:var(--gray-100);padding:1px 6px;border-radius:4px;font-size:11px">${ev.type}</span></td>
+                <td>${icon} ${ev.file.name}</td>
+                <td style="text-align:right;color:var(--gray-500)">${size}</td>
+                <td style="text-align:center">${aiStatus}</td>
+                <td style="text-align:center"><button class="btn btn-sm btn-outline" onclick="removeEvidence(${i})" style="padding:1px 5px;font-size:10px;color:var(--danger);border-color:var(--danger)">X</button></td>
+            </tr>`;
+
+            // 파싱된 데이터 테이블 표시
+            if (ev.parsedData && ev.parsedData.length > 0) {
+                row += `<tr><td colspan="6" style="padding:0;border-bottom:2px solid var(--hoban-orange)">
+                    <div style="margin:8px 12px 12px;padding:12px;background:#FFF8F0;border:1px solid #FFE0B2;border-radius:8px">
+                        <div style="font-size:12px;font-weight:600;color:var(--hoban-dark);margin-bottom:8px;display:flex;align-items:center;gap:6px">
+                            <span style="background:var(--hoban-orange);color:white;padding:1px 8px;border-radius:10px;font-size:10px">AI 파싱</span>
+                            ${ev.type} 분석 결과 (${ev.parsedData.length}개 항목)
+                        </div>
+                        <table style="width:100%;border-collapse:collapse;font-size:12px;background:white;border-radius:6px;overflow:hidden">
+                            <thead><tr style="background:var(--hoban-dark);color:white">
+                                <th style="padding:6px 10px;text-align:left;width:140px;font-size:11px;font-weight:500">항목</th>
+                                <th style="padding:6px 10px;text-align:left;font-size:11px;font-weight:500">내용</th>
+                            </tr></thead>
+                            <tbody>${ev.parsedData.map(f => {
+                                const val = f.value || '<span style="color:var(--gray-400)">-</span>';
+                                const isAmount = f.label.includes('금액') && f.value && /^\d+$/.test(f.value);
+                                const displayVal = isAmount ? Number(f.value).toLocaleString() + '원' : val;
+                                return `<tr><td style="padding:5px 10px;font-weight:600;color:var(--gray-700);border-bottom:1px solid var(--gray-100);white-space:nowrap">${f.label}</td><td style="padding:5px 10px;border-bottom:1px solid var(--gray-100)">${displayVal}</td></tr>`;
+                            }).join('')}</tbody>
+                        </table>
+                    </div>
+                </td></tr>`;
+            }
+            return row;
+        }).join('');
+    }
+    function removeEvidence(idx) { pendingEvidences.splice(idx, 1); renderEvidenceList(); }
+
+    // ══════ 연결문서 ══════
+    function addLinkedDocFiles(input) {
+        if (!input.files || input.files.length === 0) return;
+        const docType = document.getElementById('linkedDocType').value;
+        for (const file of input.files) { pendingLinkedDocs.push({file, type: docType}); }
+        renderLinkedDocList();
+        input.value = '';
+    }
+    async function uploadSingleLinkedDoc(docNo, file, docType) {
+        const fd = new FormData(); fd.append('file', file);
+        try {
+            const res = await fetch(`/api/linked-doc/${docNo}?doc_type=${encodeURIComponent(docType)}`, {method:'POST', body:fd});
+            const d = await res.json();
+            if (d.success) return d.linked_doc;
+            else showToast(d.error || '업로드 실패', 'error');
+        } catch(e) { showToast('업로드 오류: ' + e.message, 'error'); }
+        return null;
+    }
+    function renderLinkedDocList() {
+        const listDiv = document.getElementById('linkedDocList');
+        const emptyDiv = document.getElementById('linkedDocEmpty');
+        const tbody = document.getElementById('linkedDocListBody');
+        const countSpan = document.getElementById('linkedDocCount');
+        if (pendingLinkedDocs.length === 0) { listDiv.style.display='none'; emptyDiv.style.display='block'; countSpan.textContent='0건'; return; }
+        listDiv.style.display='block'; emptyDiv.style.display='none'; countSpan.textContent=`${pendingLinkedDocs.length}건`;
+        tbody.innerHTML = pendingLinkedDocs.map((d, i) => {
+            const size = d.file.size > 1048576 ? (d.file.size/1048576).toFixed(1)+'MB' : Math.round(d.file.size/1024)+'KB';
+            const ext = d.file.name.split('.').pop().toUpperCase();
+            const icon = ext==='PDF' ? '\u{1F4C4}' : IMG_EXTS.includes(ext.toLowerCase()) ? '\u{1F5BC}️' : '\u{1F4CE}';
+            return `<tr>
+                <td style="text-align:center;color:var(--gray-500)">${i+1}</td>
+                <td><span style="background:var(--gray-100);padding:1px 6px;border-radius:4px;font-size:11px">${d.type}</span></td>
+                <td>${icon} ${d.file.name}</td>
+                <td style="text-align:right;color:var(--gray-500)">${size}</td>
+                <td style="text-align:center"><button class="btn btn-sm btn-outline" onclick="removeLinkedDoc(${i})" style="padding:1px 5px;font-size:10px;color:var(--danger);border-color:var(--danger)">X</button></td>
+            </tr>`;
+        }).join('');
+    }
+    function removeLinkedDoc(idx) { pendingLinkedDocs.splice(idx, 1); renderLinkedDocList(); }
+
+    // ══════ 챗 ══════
     async function sendChat(text) {
         const input = document.getElementById('chatInput');
         const msg = text||input.value.trim(); if(!msg) return; input.value='';
         appendChat('user', msg);
         chatHistory.push({role:'user', content:msg});
-
         try {
-            const res = await fetch('/api/chat', {
-                method:'POST', headers:{'Content-Type':'application/json'},
-                body: JSON.stringify({ message:msg, history:chatHistory.slice(-10), current_form:getCurrentForm() })
-            });
+            const res = await fetch('/api/chat', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ message:msg, history:chatHistory.slice(-10), current_form:getCurrentForm() }) });
             const d = await res.json();
-
-            // LLM 모드 표시
             const badge = document.getElementById('llmBadge');
             if(d.llm_mode==='claude'){badge.textContent='Claude AI';badge.style.background='#E8F5E9';badge.style.color='#43A047';}
-
             if (d.lines && d.lines.length > 0) {
                 let h = `<strong>${d.message||'전표 반영 완료'}</strong><br>`;
-                if(d.guide) h += `<div class="guide-box" style="margin-top:6px;font-size:12px">${d.guide}</div>`;
+                if(d.guide) h += `<div class="guide-box" style="margin-top:4px;font-size:11px">${d.guide}</div>`;
                 appendChat('ai', h);
                 fillFormLines(d.lines);
                 if(d.description) document.getElementById('description').value = d.description;
                 if(d.doc_type && d.doc_type !== '일반전표') document.getElementById('docType').value = d.doc_type;
-            } else {
-                appendChat('ai', (d.message||'').replace(/\n/g,'<br>'));
-            }
+            } else { appendChat('ai', (d.message||'').replace(/\n/g,'<br>')); }
             chatHistory.push({role:'assistant', content:d.message||''});
         } catch(e) { appendChat('ai','오류: '+e.message); }
     }
-
-    function appendChat(role, html) {
-        const b=document.getElementById('chatBox');
-        const d=document.createElement('div'); d.className=`chat-msg ${role}`; d.innerHTML=html;
-        b.appendChild(d); b.scrollTop=b.scrollHeight;
-    }
+    function appendChat(role, html) { const b=document.getElementById('chatBox'); const d=document.createElement('div'); d.className=`chat-msg ${role}`; d.innerHTML=html; b.appendChild(d); b.scrollTop=b.scrollHeight; }
 
     // ══════ 폼 조작 ══════
-
-    function fillFormLines(lines) {
-        const tb = document.getElementById('linesBody'); tb.innerHTML='';
-        lines.forEach((l,i) => addLineWithData(i+1, l.account_code, l.debit_amount, l.credit_amount, l.account_name||'', l.side||'', l.description||''));
-        updateTotal();
-    }
-
+    function fillFormLines(lines) { const tb=document.getElementById('linesBody'); tb.innerHTML=''; lines.forEach((l,i) => addLineWithData(i+1, l.account_code, l.debit_amount, l.credit_amount, l.account_name||'', l.side||'', l.description||'')); updateTotal(); }
     function addLineWithData(no, code, debit, credit, acctName, side, lineDesc) {
-        const tb = document.getElementById('linesBody'); const tr = document.createElement('tr');
-        const sideVal = side||(debit>0?'차변':'대변');
-        const displayName = code ? `${code} ${acctName||accounts[code]||''}` : '';
-        tr.innerHTML = `
-            <td style="text-align:center;color:var(--gray-500)">${no||tb.rows.length+1}</td>
-            <td><select class="side-select"><option ${sideVal==='차변'?'selected':''}>차변</option><option ${sideVal==='대변'?'selected':''}>대변</option></select></td>
-            <td><div class="search-input-wrap"><input type="text" class="acct-search" value="${displayName}" placeholder="계정 검색..." autocomplete="off" oninput="searchAccount(this)" onfocus="searchAccount(this)"><input type="hidden" class="acct-code" value="${code||''}"><div class="search-dropdown acct-dropdown"></div></div></td>
-            <td><input type="text" class="amt debit-input" value="${debit?Number(debit).toLocaleString():''}" placeholder="0" oninput="formatAmount(this);updateTotal()"></td>
-            <td><input type="text" class="amt credit-input" value="${credit?Number(credit).toLocaleString():''}" placeholder="0" oninput="formatAmount(this);updateTotal()"></td>
-            <td><input type="text" class="line-desc" value="${lineDesc}" placeholder="항목별 적요 (선택)"></td>
-            <td><button class="btn btn-sm btn-outline" onclick="removeLine(this)" style="padding:3px 7px;font-size:12px">X</button></td>`;
+        const tb=document.getElementById('linesBody'); const tr=document.createElement('tr');
+        const sideVal=side||(debit>0?'차변':'대변');
+        const displayName=code?`${code} ${acctName||accounts[code]||''}`:'';
+        tr.innerHTML=`<td style="text-align:center;color:var(--gray-500)">${no||tb.rows.length+1}</td><td><select class="side-select"><option ${sideVal==='차변'?'selected':''}>차변</option><option ${sideVal==='대변'?'selected':''}>대변</option></select></td><td><div class="search-input-wrap"><input type="text" class="acct-search" value="${displayName}" placeholder="계정 검색..." autocomplete="off" oninput="searchAccount(this)" onfocus="searchAccount(this)"><input type="hidden" class="acct-code" value="${code||''}"><div class="search-dropdown acct-dropdown"></div></div></td><td><input type="text" class="amt debit-input" value="${debit?Number(debit).toLocaleString():''}" placeholder="0" oninput="formatAmount(this);updateTotal()"></td><td><input type="text" class="amt credit-input" value="${credit?Number(credit).toLocaleString():''}" placeholder="0" oninput="formatAmount(this);updateTotal()"></td><td><input type="text" class="line-desc" value="${lineDesc}" placeholder="항목별 적요 (선택)"></td><td><button class="btn btn-sm btn-outline" onclick="removeLine(this)" style="padding:3px 7px;font-size:12px">X</button></td>`;
         tb.appendChild(tr);
     }
-
     function addLine() { addLineWithData(0, '', 0, 0, '', '', ''); }
     function removeLine(btn) { const tb=document.getElementById('linesBody'); if(tb.rows.length>1){btn.closest('tr').remove(); renumberLines(); updateTotal();} }
     function renumberLines() { const rows=document.getElementById('linesBody').rows; for(let i=0;i<rows.length;i++) rows[i].cells[0].textContent=i+1; }
     function parseAmount(s) { if(!s) return 0; return parseInt(s.replace(/[^0-9-]/g,''))||0; }
-    function formatAmount(i) { const v=parseAmount(i.value); if(v>0) i.value=v.toLocaleString(); else if(v<0) i.value=v.toLocaleString(); }
-    function clearForm() { document.getElementById('description').value=''; document.getElementById('linesBody').innerHTML=''; addLine(); addLine(); updateTotal(); currentReceiptUrl=null; renumberLines(); }
-
+    function formatAmount(i) { const v=parseAmount(i.value); if(v) i.value=v.toLocaleString(); }
+    function clearForm() { document.getElementById('description').value=''; document.getElementById('linesBody').innerHTML=''; addLine(); addLine(); updateTotal(); currentReceiptUrl=null; renumberLines(); pendingEvidences=[]; pendingLinkedDocs=[]; renderEvidenceList(); renderLinkedDocList(); document.getElementById('ocrResult').style.display='none'; ocrData={date:null,vendor:null,amount:null,raw:null}; }
     function updateTotal() {
         let td=0,tc=0;
         document.querySelectorAll('.debit-input').forEach(e=>td+=parseAmount(e.value));
@@ -522,89 +572,83 @@
     }
 
     // ══════ 전표 저장 ══════
-
-    async function submitJournal(skipOcrCheck) {
+    async function submitJournal(skipOcrCheck, skipBalanceCheck) {
         const lines=[];
         for(const row of document.getElementById('linesBody').rows) {
             const code=row.querySelector('.acct-code')?.value; if(!code) continue;
-            lines.push({
-                account_code:code,
-                account_name: (row.querySelector('.acct-search')?.value||'').replace(code,'').trim(),
-                side:row.querySelector('.side-select').value,
-                debit_amount:parseAmount(row.querySelector('.debit-input').value),
-                credit_amount:parseAmount(row.querySelector('.credit-input').value),
-                vendor_name:document.getElementById('vendorSearch').value,
-                vendor_type:document.getElementById('vendorType').value,
-                description:row.querySelector('.line-desc').value || document.getElementById('description').value,
-            });
+            lines.push({ account_code:code, account_name:(row.querySelector('.acct-search')?.value||'').replace(code,'').trim(), side:row.querySelector('.side-select').value, debit_amount:parseAmount(row.querySelector('.debit-input').value), credit_amount:parseAmount(row.querySelector('.credit-input').value), vendor_name:document.getElementById('vendorSearch').value, vendor_type:document.getElementById('vendorType').value, description:row.querySelector('.line-desc').value||document.getElementById('description').value });
         }
         if(!lines.length){showToast('계정과목을 입력하세요.','error');return;}
 
-        // OCR 불일치 경고 (영수증이 업로드된 경우)
+        // OCR 불일치 경고
         if (!skipOcrCheck && currentReceiptUrl && (ocrData.date || ocrData.vendor || ocrData.amount)) {
             const warnings = [];
             const formDate = document.getElementById('docDate').value;
             const formVendor = document.getElementById('vendorSearch').value.trim();
             let formAmount = 0;
             document.querySelectorAll('.debit-input').forEach(e => formAmount += parseAmount(e.value));
-
-            if (ocrData.date && formDate && ocrData.date !== formDate) {
-                warnings.push(`<tr><td style="font-weight:600">작성일자</td><td style="color:var(--danger)">${ocrData.date}</td><td>${formDate}</td></tr>`);
-            }
-            if (ocrData.vendor && formVendor && !formVendor.includes(ocrData.vendor) && !ocrData.vendor.includes(formVendor)) {
-                warnings.push(`<tr><td style="font-weight:600">거래처</td><td style="color:var(--danger)">${ocrData.vendor}</td><td>${formVendor}</td></tr>`);
-            }
-            if (ocrData.amount && formAmount > 0 && Math.abs(ocrData.amount - formAmount) > 1) {
-                warnings.push(`<tr><td style="font-weight:600">금액</td><td style="color:var(--danger)">${Number(ocrData.amount).toLocaleString()}원</td><td>${Number(formAmount).toLocaleString()}원</td></tr>`);
-            }
-
+            if (ocrData.date && formDate && ocrData.date !== formDate) warnings.push(`<tr><td style="font-weight:600">작성일자</td><td style="color:var(--danger)">${ocrData.date}</td><td>${formDate}</td></tr>`);
+            if (ocrData.vendor && formVendor && !formVendor.includes(ocrData.vendor) && !ocrData.vendor.includes(formVendor)) warnings.push(`<tr><td style="font-weight:600">거래처</td><td style="color:var(--danger)">${ocrData.vendor}</td><td>${formVendor}</td></tr>`);
+            if (ocrData.amount && formAmount > 0 && Math.abs(ocrData.amount - formAmount) > 1) warnings.push(`<tr><td style="font-weight:600">금액</td><td style="color:var(--danger)">${Number(ocrData.amount).toLocaleString()}원</td><td>${Number(formAmount).toLocaleString()}원</td></tr>`);
             if (warnings.length > 0) {
-                const html = `<div style="margin-bottom:12px;color:var(--danger);font-weight:600;font-size:15px">세금계산서/영수증 정보 불일치</div>
-                    <p style="font-size:13px;color:var(--gray-600);margin-bottom:12px">OCR로 추출한 값과 입력한 값이 다릅니다. 확인 후 진행해주세요.</p>
-                    <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:16px">
-                    <tr style="background:var(--gray-100)"><th style="padding:8px;text-align:left">항목</th><th style="padding:8px">OCR 추출값</th><th style="padding:8px">입력값</th></tr>
-                    ${warnings.join('')}
-                    </table>
-                    <div style="display:flex;gap:8px;justify-content:flex-end">
-                        <button class="btn btn-outline" onclick="document.getElementById('ocrWarningModal').style.display='none'">취소 (수정)</button>
-                        <button class="btn btn-primary" onclick="document.getElementById('ocrWarningModal').style.display='none'; submitJournal(true)">확인 후 저장</button>
-                    </div>`;
                 let modal = document.getElementById('ocrWarningModal');
-                if (!modal) {
-                    modal = document.createElement('div');
-                    modal.id = 'ocrWarningModal';
-                    modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(57,55,53,0.6);backdrop-filter:blur(4px);z-index:300;display:flex;justify-content:center;align-items:center';
-                    document.body.appendChild(modal);
-                }
-                modal.innerHTML = `<div style="background:white;border-radius:16px;padding:28px;max-width:500px;width:90%;box-shadow:0 25px 60px rgba(0,0,0,0.2)">${html}</div>`;
-                modal.style.display = 'flex';
-                return;
+                if (!modal) { modal = document.createElement('div'); modal.id = 'ocrWarningModal'; modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(57,55,53,0.6);backdrop-filter:blur(4px);z-index:300;display:flex;justify-content:center;align-items:center'; document.body.appendChild(modal); }
+                modal.innerHTML = `<div style="background:white;border-radius:16px;padding:28px;max-width:500px;width:90%;box-shadow:0 25px 60px rgba(0,0,0,0.2)"><div style="margin-bottom:12px;color:var(--danger);font-weight:600;font-size:15px">증빙 정보 불일치</div><p style="font-size:13px;color:var(--gray-600);margin-bottom:12px">AI가 분석한 값과 입력 값이 다릅니다.</p><table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:16px"><tr style="background:var(--gray-100)"><th style="padding:8px;text-align:left">항목</th><th style="padding:8px">AI 분석값</th><th style="padding:8px">입력값</th></tr>${warnings.join('')}</table><div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn btn-outline" onclick="document.getElementById('ocrWarningModal').style.display='none'">취소</button><button class="btn btn-primary" onclick="document.getElementById('ocrWarningModal').style.display='none';submitJournal(true)">확인 후 저장</button></div></div>`;
+                modal.style.display = 'flex'; return;
             }
         }
 
+        // 차대변 불일치 검증
+        if (!skipBalanceCheck) {
+            try {
+                const bRes = await fetch('/api/check-balance-side', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({lines})});
+                const bData = await bRes.json();
+                if (bData.mismatches && bData.mismatches.length > 0) {
+                    let modal = document.getElementById('balanceWarningModal');
+                    if (!modal) { modal = document.createElement('div'); modal.id = 'balanceWarningModal'; modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(57,55,53,0.6);backdrop-filter:blur(4px);z-index:300;display:flex;justify-content:center;align-items:center'; document.body.appendChild(modal); }
+                    let rows = '';
+                    bData.mismatches.forEach(m => {
+                        rows += `<tr><td style="padding:8px;text-align:center">${m.line_no}</td><td style="padding:8px">${m.account_code}</td><td style="padding:8px">${m.account_name}</td><td style="padding:8px;text-align:center;font-weight:600;color:var(--success)">${m.expected_side}</td><td style="padding:8px;text-align:center;font-weight:600;color:var(--danger)">${m.actual_side}</td><td style="padding:8px;text-align:right">${Number(m.amount).toLocaleString()}원</td></tr>`;
+                    });
+                    modal.innerHTML = `<div style="background:white;border-radius:16px;padding:28px;max-width:600px;width:90%;box-shadow:0 25px 60px rgba(0,0,0,0.2)">
+                        <div style="margin-bottom:12px;color:var(--danger);font-weight:600;font-size:15px">차/대변 방향 불일치</div>
+                        <p style="font-size:13px;color:var(--gray-600);margin-bottom:12px">다음 항목의 차/대변 방향이 계정과목 잔액구분과 다릅니다.</p>
+                        <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:16px">
+                        <tr style="background:var(--gray-100)"><th style="padding:8px">No</th><th style="padding:8px">계정코드</th><th style="padding:8px">계정과목명</th><th style="padding:8px">정상방향</th><th style="padding:8px">입력방향</th><th style="padding:8px;text-align:right">금액</th></tr>
+                        ${rows}</table>
+                        <p style="font-size:12px;color:var(--gray-500);margin-bottom:16px">역분개, 수정분개 등 정당한 사유가 있다면 그대로 저장할 수 있습니다.</p>
+                        <div style="display:flex;gap:8px;justify-content:flex-end">
+                            <button class="btn btn-outline" onclick="document.getElementById('balanceWarningModal').style.display='none'">취소 (수정)</button>
+                            <button class="btn btn-primary" onclick="document.getElementById('balanceWarningModal').style.display='none';submitJournal(true, true)">확인 후 저장</button>
+                        </div></div>`;
+                    modal.style.display = 'flex'; return;
+                }
+            } catch(e) { console.error('balance check error', e); }
+        }
+
         const emp=document.getElementById('createdBy');
-        const data={
-            doc_date:document.getElementById('docDate').value,
-            doc_type:document.getElementById('docType').value,
-            category:document.getElementById('category').value,
-            big_category:document.getElementById('bigCategory').value,
-            description:document.getElementById('description').value,
-            created_by:emp.value,
-            department:emp.options[emp.selectedIndex].dataset.dept||'',
-            project_id:document.getElementById('projectId').value||null,
-            evidence_type:'',
-            receipt_image:currentReceiptUrl,
-            ocr_date: ocrData.date,
-            ocr_vendor: ocrData.vendor,
-            ocr_amount: ocrData.amount,
-            ocr_raw: ocrData.raw,
-            lines
-        };
+        const data={ doc_date:document.getElementById('docDate').value, doc_type:document.getElementById('docType').value, category:document.getElementById('category').value, big_category:document.getElementById('bigCategory').value, description:document.getElementById('description').value, created_by:emp.value, department:emp.options[emp.selectedIndex].dataset.dept||'', project_id:document.getElementById('projectId').value||null, evidence_type:'', receipt_image:currentReceiptUrl, ocr_date:ocrData.date, ocr_vendor:ocrData.vendor, ocr_amount:ocrData.amount, ocr_raw:ocrData.raw, lines };
         try {
             const res=await fetch('/api/journal',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
             const r=await res.json();
             if(r.success){
-                showToast(`전표 ${r.doc_no} 저장 완료!`,'success');
+                savedDocNo = r.doc_no;
+                let attachMsg = '';
+                // 증빙자료 업로드
+                if (pendingEvidences.length > 0) {
+                    let uploaded = 0;
+                    for (const ev of pendingEvidences) { const result = await uploadSingleEvidence(r.doc_no, ev.file, ev.type, ev.parsedData || null); if (result) uploaded++; }
+                    attachMsg += `증빙 ${uploaded}건`;
+                    pendingEvidences = []; renderEvidenceList();
+                }
+                // 연결문서 업로드
+                if (pendingLinkedDocs.length > 0) {
+                    let uploaded = 0;
+                    for (const ld of pendingLinkedDocs) { const result = await uploadSingleLinkedDoc(r.doc_no, ld.file, ld.type); if (result) uploaded++; }
+                    attachMsg += (attachMsg ? ', ' : '') + `연결문서 ${uploaded}건`;
+                    pendingLinkedDocs = []; renderLinkedDocList();
+                }
+                showToast(`전표 ${r.doc_no} 저장 완료!${attachMsg ? ' ('+attachMsg+' 첨부)' : ''}`, 'success');
                 const ad=document.getElementById('aiResult'); const ai=r.ai_result;
                 let h=`<h4>AI 분석 <span class="risk-badge ${ai.risk_level}">${ai.risk_level}</span></h4>`;
                 if(ai.reasons&&ai.reasons.length>0){h+='<div>';ai.reasons.forEach(r=>{h+=`<div class="reason-item">${r}</div>`;});h+='</div>';
