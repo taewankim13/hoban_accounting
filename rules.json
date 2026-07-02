@@ -52,19 +52,6 @@
     "category": "금액"
   },
   {
-    "id": "E004-M",
-    "name": "고액 전표 (5억 초과)",
-    "description": "단일 항목 금액이 5억원을 초과하는 전표",
-    "severity": "Medium",
-    "score": 0.15,
-    "enabled": true,
-    "field": "max_line_amount",
-    "operator": ">",
-    "value": 500000000,
-    "threshold": null,
-    "category": "금액"
-  },
-  {
     "id": "E005",
     "name": "주말/공휴일 기표",
     "description": "주말(토/일)에 기표된 전표",
@@ -78,19 +65,6 @@
     "category": "시점"
   },
   {
-    "id": "E006",
-    "name": "역분개 반복",
-    "description": "전표유형 또는 적요에 '역분개', '취소', '반대분개'가 포함된 전표",
-    "severity": "Medium",
-    "score": 0.2,
-    "enabled": true,
-    "field": "doc_type_contains",
-    "operator": "contains",
-    "value": "역분개,취소,반대분개",
-    "threshold": null,
-    "category": "유형"
-  },
-  {
     "id": "E006-H",
     "name": "해약/환불 전표",
     "description": "전표유형에 '해약' 또는 '환불'이 포함된 특이 전표",
@@ -102,35 +76,6 @@
     "value": "해약,환불",
     "threshold": null,
     "category": "유형"
-  },
-  {
-    "id": "E007",
-    "name": "연결문서 누락 (미분류 고액)",
-    "description": "전표유형이 '미분류'이면서 금액이 5천만원 초과인 전표. 증빙서류(세금계산서, 계약서 등) 미첨부 가능성",
-    "severity": "Medium",
-    "score": 0.15,
-    "enabled": true,
-    "field": "unclassified_high",
-    "operator": "compound",
-    "value": {
-      "doc_type": "미분류",
-      "min_amount": 50000000
-    },
-    "threshold": null,
-    "category": "증빙"
-  },
-  {
-    "category": "계정",
-    "description": "차변과 대변의 계정과목 조합이 회계 기준상 부적절한 전표 (예: 비용↔자본, 수익↔자산 직접 상계 등)",
-    "enabled": true,
-    "field": "invalid_account_pair",
-    "id": "E008",
-    "name": "비인가 계정 조합",
-    "operator": "==",
-    "score": 0.3,
-    "severity": "High",
-    "threshold": null,
-    "value": true
   },
   {
     "id": "E009",
@@ -157,19 +102,6 @@
     "value": true,
     "threshold": 10000,
     "category": "금액"
-  },
-  {
-    "id": "E011",
-    "name": "근무시간 외 기표",
-    "description": "입력일시가 오전 7시 이전 또는 오후 10시 이후인 전표",
-    "severity": "Low",
-    "score": 0.05,
-    "enabled": true,
-    "field": "off_hours",
-    "operator": "==",
-    "value": true,
-    "threshold": null,
-    "category": "시점"
   },
   {
     "id": "E013",
@@ -224,48 +156,6 @@
     "category": "계정"
   },
   {
-    "name": "개인거래처 고액 거래",
-    "description": "거래처 유형이 개인이면서 총금액이 500만원 이상인 전표를 검출합니다.",
-    "field": "personal_vendor_high",
-    "operator": "compound",
-    "value": {
-      "vendor_type": "P",
-      "min_amount": 5000000
-    },
-    "severity": "High",
-    "score": 0.3,
-    "category": "거래처",
-    "enabled": true,
-    "threshold": null,
-    "id": "C001"
-  },
-  {
-    "name": "10억 이상 고액 전표 탐지",
-    "description": "전표 총 금액이 10억 이상인 고액 전표를 탐지합니다.",
-    "field": "total_amount",
-    "operator": ">=",
-    "value": 1000000000,
-    "severity": "High",
-    "score": 0.4,
-    "category": "금액",
-    "enabled": true,
-    "threshold": null,
-    "id": "C002"
-  },
-  {
-    "name": "5억이상 개인 거래처 전표 탐지",
-    "description": "5억이상 개인 거래처 전표 탐지",
-    "field": "description_contains",
-    "operator": "contains",
-    "value": "억이상,개인,거래처",
-    "severity": "Medium",
-    "score": 0.15,
-    "category": "내용",
-    "enabled": true,
-    "threshold": null,
-    "id": "C004"
-  },
-  {
     "name": "교육훈련비 계정 연결문서 누락",
     "description": "교육훈련비가 계정과목명에 포함되면서, 연결문서가 없는 전표",
     "severity": "Medium",
@@ -292,20 +182,20 @@
     "id": "C005"
   },
   {
-    "id": "E017",
-    "name": "증빙자료-전표 연관성 없음",
+    "name": "전표 - 계약서 연관성 검토",
     "description": "증빙자료(계약서 등)의 계약대상, 계약자 상호와 전표 적요를 비교하여 동일 단어가 없는 경우 연관성 없음으로 판단",
     "severity": "Medium",
     "score": 0.25,
+    "category": "증빙",
     "enabled": true,
+    "threshold": null,
     "field": "evidence_description_match",
     "operator": "no_common_word",
     "value": "계약대상,계약자 상호",
-    "threshold": null,
-    "category": "증빙"
+    "id": "E017"
   },
   {
-    "name": "계정과목이 수도광열비 인 전표의 미지급금이 증빙자료 당...",
+    "name": "수도광열비 전표 - 고지서 당월요금계 비교 검토",
     "description": "계정과목이 수도광열비 인 전표의 미지급금이 증빙자료 당월요금계랑 값이 다른 전표 탐지",
     "severity": "Medium",
     "score": 0.15,
@@ -329,5 +219,44 @@
     "operator": "AND",
     "value": "2개 조건",
     "id": "C006"
+  },
+  {
+    "name": "도급기성 청구 전표, 연결문서의 금회기성 금액 비교 점검",
+    "description": "도급기성 청구 관련 전표에서 연결문서의 금회기성 금액 일치 여부",
+    "severity": "Medium",
+    "score": 0.15,
+    "category": "내용",
+    "enabled": true,
+    "threshold": null,
+    "conditions": [
+      {
+        "field": "account_name",
+        "operator": "contains",
+        "value": "미수금"
+      },
+      {
+        "field": "linkeddoc_current_amount",
+        "operator": "!=",
+        "value": "total_debit"
+      }
+    ],
+    "logic": "AND",
+    "field": "multi_condition",
+    "operator": "AND",
+    "value": "2개 조건",
+    "id": "C007"
+  },
+  {
+    "name": "차변금액 합계 0원 전표",
+    "description": "차변금액 합계가 0원인 전표를 탐지합니다.",
+    "severity": "High",
+    "score": 0.4,
+    "category": "금액",
+    "enabled": true,
+    "threshold": null,
+    "field": "debit_amount",
+    "operator": "==",
+    "value": 0,
+    "id": "C008"
   }
 ]

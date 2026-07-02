@@ -830,6 +830,28 @@
                     <td style="padding:5px 8px;font-size:11px;color:var(--gray-500)">${ld.created_at || '-'}</td>
                     <td style="padding:5px 8px;text-align:center"><button class="btn btn-sm btn-outline" onclick="deleteLinkedDoc(${ld.id}, '${j.doc_no}')" style="padding:1px 6px;font-size:10px;color:var(--danger);border-color:var(--danger)">삭제</button></td>
                 </tr>`;
+                if (ld.parsed_data && ld.parsed_data.length > 0) {
+                    h += `<tr><td colspan="6" style="padding:0;border-bottom:2px solid #1565C0">
+                        <div style="margin:6px 8px 10px;padding:10px;background:#E3F2FD;border:1px solid #90CAF9;border-radius:8px">
+                            <div style="font-size:11px;font-weight:600;color:var(--hoban-dark);margin-bottom:6px;display:flex;align-items:center;gap:6px">
+                                <span style="background:#1565C0;color:white;padding:1px 8px;border-radius:10px;font-size:10px">AI 파싱</span>
+                                연결문서 분석 결과 (${ld.parsed_data.length}개 항목)
+                            </div>
+                            <table style="width:100%;border-collapse:collapse;font-size:12px;background:white;border-radius:6px;overflow:hidden">
+                                <thead><tr style="background:#1565C0;color:white">
+                                    <th style="padding:5px 10px;text-align:left;width:130px;font-size:11px;font-weight:500">항목</th>
+                                    <th style="padding:5px 10px;text-align:left;font-size:11px;font-weight:500">내용</th>
+                                </tr></thead>
+                                <tbody>${ld.parsed_data.map(f => {
+                                    const val = f.value || '<span style="color:var(--gray-400)">-</span>';
+                                    const isAmount = (f.label.includes('금액') || f.label.includes('기성') || f.label.includes('가액') || f.label.includes('세액') || f.label.includes('요금')) && f.value && /^\d+$/.test(f.value);
+                                    const displayVal = isAmount ? Number(f.value).toLocaleString() + '원' : val;
+                                    return '<tr><td style="padding:4px 10px;font-weight:600;color:var(--gray-700);border-bottom:1px solid var(--gray-100);white-space:nowrap">' + f.label + '</td><td style="padding:4px 10px;border-bottom:1px solid var(--gray-100)">' + displayVal + '</td></tr>';
+                                }).join('')}</tbody>
+                            </table>
+                        </div>
+                    </td></tr>`;
+                }
             });
             h += `</tbody></table>`;
         } else {
@@ -921,8 +943,12 @@
     async function uploadModalLinkedDoc(input, docNo) {
         if (!input.files || input.files.length === 0) return;
         const docType = document.getElementById('modalLdType').value;
+        const IMG_EXT_LD = ['jpg','jpeg','png','gif','bmp','tiff','tif'];
         let uploaded = 0;
         for (const file of input.files) {
+            const ext = file.name.split('.').pop().toLowerCase();
+            const canParse = IMG_EXT_LD.includes(ext) || ext === 'pdf';
+            if (canParse) showToast('연결문서 AI 분석 중...', '');
             const fd = new FormData();
             fd.append('file', file);
             try {

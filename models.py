@@ -120,6 +120,7 @@ class LinkedDocument(Base):
     file_path = Column(String(500))                              # 저장 경로
     file_ext = Column(String(20))                                # 확장자
     file_size = Column(Integer, default=0)                       # 파일 크기 (bytes)
+    parsed_data = Column(Text, nullable=True)                    # JSON: LLM 파싱 결과 [{label, value}, ...]
     created_at = Column(DateTime, default=datetime.now)
 
     journal = relationship("JournalEntry", back_populates="linked_docs")

@@ -481,11 +481,32 @@
     function removeEvidence(idx) { pendingEvidences.splice(idx, 1); renderEvidenceList(); }
 
     // ══════ 연결문서 ══════
-    function addLinkedDocFiles(input) {
+    async function addLinkedDocFiles(input) {
         if (!input.files || input.files.length === 0) return;
         const docType = document.getElementById('linkedDocType').value;
-        for (const file of input.files) { pendingLinkedDocs.push({file, type: docType}); }
-        renderLinkedDocList();
+        for (const file of input.files) {
+            const ext = file.name.split('.').pop().toLowerCase();
+            const canParse = IMG_EXTS.includes(ext) || ext === 'pdf';
+            const entry = {file, type: docType, parsedData: null};
+            pendingLinkedDocs.push(entry);
+            renderLinkedDocList();
+
+            if (canParse) {
+                entry.parseDone = 'loading';
+                renderLinkedDocList();
+                const fd = new FormData(); fd.append('file', file);
+                try {
+                    const res = await fetch(`/api/evidence/parse-linked-doc`, {method:'POST', body:fd});
+                    const d = await res.json();
+                    entry.parseDone = true;
+                    if (d.success && d.fields) {
+                        entry.parsedData = d.fields;
+                        appendChat('ai', `연결문서 분석 완료: <strong>${d.fields.length}개 항목</strong> 추출됨`);
+                    }
+                } catch(e) { entry.parseDone = true; console.error('linked doc parse error', e); }
+                renderLinkedDocList();
+            }
+        }
         input.value = '';
     }
     async function uploadSingleLinkedDoc(docNo, file, docType) {
@@ -509,13 +530,35 @@
             const size = d.file.size > 1048576 ? (d.file.size/1048576).toFixed(1)+'MB' : Math.round(d.file.size/1024)+'KB';
             const ext = d.file.name.split('.').pop().toUpperCase();
             const icon = ext==='PDF' ? '\u{1F4C4}' : IMG_EXTS.includes(ext.toLowerCase()) ? '\u{1F5BC}️' : '\u{1F4CE}';
-            return `<tr>
+            let row = `<tr>
                 <td style="text-align:center;color:var(--gray-500)">${i+1}</td>
                 <td><span style="background:var(--gray-100);padding:1px 6px;border-radius:4px;font-size:11px">${d.type}</span></td>
-                <td>${icon} ${d.file.name}</td>
+                <td>${icon} ${d.file.name}${d.parseDone==='loading'?' <span class="ev-ocr-badge" style="background:#E3F2FD;color:#1565C0">분석중...</span>':''}</td>
                 <td style="text-align:right;color:var(--gray-500)">${size}</td>
                 <td style="text-align:center"><button class="btn btn-sm btn-outline" onclick="removeLinkedDoc(${i})" style="padding:1px 5px;font-size:10px;color:var(--danger);border-color:var(--danger)">X</button></td>
             </tr>`;
+            if (d.parsedData && d.parsedData.length > 0) {
+                row += `<tr><td colspan="5" style="padding:0;border-bottom:2px solid #1565C0">
+                    <div style="margin:4px 8px 8px;padding:8px;background:#E3F2FD;border:1px solid #90CAF9;border-radius:8px">
+                        <div style="font-size:11px;font-weight:600;margin-bottom:4px;display:flex;align-items:center;gap:6px">
+                            <span style="background:#1565C0;color:white;padding:1px 8px;border-radius:10px;font-size:10px">AI 파싱</span>
+                            연결문서 분석 결과 (${d.parsedData.length}개 항목)
+                        </div>
+                        <table style="width:100%;border-collapse:collapse;font-size:11px;background:white;border-radius:6px;overflow:hidden">
+                            <thead><tr style="background:#1565C0;color:white">
+                                <th style="padding:4px 8px;text-align:left;width:120px;font-size:10px">항목</th>
+                                <th style="padding:4px 8px;text-align:left;font-size:10px">내용</th>
+                            </tr></thead>
+                            <tbody>${d.parsedData.map(f => {
+                                const isAmt = (f.label.includes('금액') || f.label.includes('기성') || f.label.includes('가액') || f.label.includes('세액')) && f.value && /^\\d+$/.test(f.value);
+                                const dv = isAmt ? Number(f.value).toLocaleString() + '원' : (f.value || '-');
+                                return '<tr><td style="padding:3px 8px;font-weight:600;color:var(--gray-700);border-bottom:1px solid var(--gray-100);white-space:nowrap">' + f.label + '</td><td style="padding:3px 8px;border-bottom:1px solid var(--gray-100)">' + dv + '</td></tr>';
+                            }).join('')}</tbody>
+                        </table>
+                    </div>
+                </td></tr>`;
+            }
+            return row;
         }).join('');
     }
     function removeLinkedDoc(idx) { pendingLinkedDocs.splice(idx, 1); renderLinkedDocList(); }

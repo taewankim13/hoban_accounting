@@ -464,6 +464,7 @@ def get_journal(doc_no: str, db: Session = Depends(get_db)):
                 "doc_type": d.doc_type,
                 "file_name": d.file_name, "file_path": d.file_path,
                 "file_ext": d.file_ext, "file_size": d.file_size,
+                "parsed_data": _json.loads(d.parsed_data) if d.parsed_data else None,
                 "created_at": d.created_at.strftime("%Y-%m-%d %H:%M") if d.created_at else None,
             }
             for d in sorted(journal.linked_docs, key=lambda x: x.seq_no)
@@ -805,6 +806,31 @@ async def parse_evidence_document_api(file: UploadFile = File(...),
             os.remove(save_path)
 
 
+@app.post("/api/evidence/parse-linked-doc", response_class=JSONResponse)
+async def parse_linked_doc_api(file: UploadFile = File(...)):
+    """연결문서 이미지/PDF를 LLM으로 파싱"""
+    ext = os.path.splitext(file.filename)[1].lower()
+    parseable_exts = IMG_EXTS | {'.pdf'}
+    if ext not in parseable_exts:
+        return {"success": False, "error": "이미지 또는 PDF 파일만 파싱할 수 있습니다."}
+
+    saved_name = f"parse_ld_{uuid.uuid4().hex[:8]}{ext}"
+    save_path = os.path.join("static", "uploads", "linked_docs", saved_name)
+    content = await file.read()
+    with open(save_path, "wb") as f:
+        f.write(content)
+
+    try:
+        from llm_vision import parse_linked_document
+        result = parse_linked_document(save_path)
+        return result
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+    finally:
+        if os.path.exists(save_path):
+            os.remove(save_path)
+
+
 @app.post("/api/evidence/{doc_no}", response_class=JSONResponse)
 async def upload_evidence(doc_no: str, file: UploadFile = File(...),
                           request: Request = None, db: Session = Depends(get_db)):
@@ -941,6 +967,23 @@ async def upload_linked_doc(doc_no: str, file: UploadFile = File(...),
     params = request.query_params if request else {}
     d_type = params.get("doc_type", "기타")
 
+    # 이미지/PDF면 LLM 파싱 시도
+    parsed_data_str = None
+    parsed_data_param = params.get("parsed_data", "")
+    IMG_EXTS = {'.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff', '.tif'}
+    if parsed_data_param:
+        parsed_data_str = parsed_data_param
+    elif ext in IMG_EXTS or ext == '.pdf':
+        try:
+            from llm_vision import parse_linked_document
+            parse_result = parse_linked_document(save_path)
+            if parse_result.get("success") and parse_result.get("fields"):
+                import json as _json2
+                parsed_data_str = _json2.dumps(parse_result["fields"], ensure_ascii=False)
+                print(f"[연결문서] 자동 파싱 완료: {len(parse_result['fields'])}개 항목")
+        except Exception as e:
+            print(f"[연결문서] 파싱 오류 (무시): {e}")
+
     linked_doc = LinkedDocument(
         journal_id=journal.id,
         seq_no=next_seq,
@@ -949,12 +992,14 @@ async def upload_linked_doc(doc_no: str, file: UploadFile = File(...),
         file_path=f"/static/uploads/linked_docs/{saved_name}",
         file_ext=ext,
         file_size=len(content),
+        parsed_data=parsed_data_str,
     )
     db.add(linked_doc)
     journal.has_linked_doc = "Y"
     db.commit()
     db.refresh(linked_doc)
 
+    import json as _json3
     return {
         "success": True,
         "linked_doc": {
@@ -962,6 +1007,7 @@ async def upload_linked_doc(doc_no: str, file: UploadFile = File(...),
             "doc_type": linked_doc.doc_type,
             "file_name": linked_doc.file_name, "file_path": linked_doc.file_path,
             "file_ext": linked_doc.file_ext, "file_size": linked_doc.file_size,
+            "parsed_data": _json3.loads(linked_doc.parsed_data) if linked_doc.parsed_data else None,
             "created_at": linked_doc.created_at.strftime("%Y-%m-%d %H:%M") if linked_doc.created_at else None,
         }
     }
@@ -1020,14 +1066,20 @@ def reanalyze_with_rules():
     if reanalyze_status["running"]:
         return {"success": False, "message": "이미 재분석이 진행 중입니다."}
 
+    reanalyze_status.update({"running": True, "progress": 0, "total": 0, "done": False, "result": None})
+
     def run_reanalysis():
         from rule_engine import load_rules, apply_rules_to_journal
         import collections
         db = next(get_db())
         try:
             rules = load_rules()
-            journals = db.query(JournalEntry).options(joinedload(JournalEntry.lines)).all()
-            reanalyze_status.update({"running": True, "progress": 0, "total": len(journals), "done": False, "result": None})
+            journals = db.query(JournalEntry).options(
+                joinedload(JournalEntry.lines),
+                joinedload(JournalEntry.evidences),
+                joinedload(JournalEntry.linked_docs),
+            ).all()
+            reanalyze_status.update({"total": len(journals)})
 
             # 거래처별 최빈 계정코드 패턴 맵 빌드 (account_pattern_mismatch 룰용)
             vendor_acct_counts = collections.defaultdict(lambda: collections.Counter())

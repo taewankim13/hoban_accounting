@@ -348,6 +348,129 @@ def parse_evidence_document(image_path: str, evidence_type: str) -> dict:
             os.remove(converted_path)
 
 
+LINKED_DOC_PARSE_PROMPT = """이 이미지는 회사 내부 연결문서(기안서, 품의서, 검수확인서, 발주서, 도급기성 청구보고 등)입니다.
+이미지에서 다음 기본 항목을 추출하세요.
+
+기본 항목 (반드시 포함):
+1. 문서제목 - 문서의 제목 또는 건명
+2. 부서 - 기안부서 또는 담당부서
+3. 문서번호 - 기안번호 또는 관리번호
+4. 기안일자 - 기안일 또는 작성일 (YYYY-MM-DD 형식)
+5. 기안자 - 기안자 또는 작성자 성명
+6. 현장명 - 관련 현장 또는 프로젝트명
+7. 공급가액 - 공급가액 (원 단위, 숫자만)
+8. 부가세액 - 부가가치세 (원 단위, 숫자만)
+9. 합계금액 - 총 금액 (원 단위, 숫자만)
+
+추가 항목 (이미지에서 발견되는 경우 자유롭게 추가):
+예: 거래처명, 거래처코드, 계약금액, 기성비율, 전회기성, 금회기성, 누계기성, 잔액, 선급금, 준공일자, 착공일자, 검수일자, 납품장소, 품목, 수량, 단가, 결재선, 협조부서, 비고, 특기사항 등
+
+특별 규칙 - 도급기성/하도급기성/외주기성/기성청구/기성보고 문서인 경우:
+- 반드시 "금회기성" 항목을 추출하세요 (당월/금회/금차 기성금액)
+- "전회기성" (전월/전회/전차 누계기성금액)도 추출하세요
+- "누계기성" (누적 기성금액)도 추출하세요
+- "기성비율" (기성률 %)도 추출하세요
+
+규칙:
+- 기본 항목 중 이미지에서 확인할 수 없는 항목은 값을 빈 문자열("")로 남기세요
+- 추가 항목은 이미지에서 확인된 것만 포함하세요
+- 금액은 숫자만 입력하세요 (예: 50000000)
+
+반드시 아래 JSON 배열 형식으로만 응답하세요. 다른 텍스트는 포함하지 마세요:
+[
+  {"label": "문서제목", "value": ""},
+  {"label": "부서", "value": ""},
+  {"label": "문서번호", "value": ""},
+  {"label": "기안일자", "value": ""},
+  {"label": "기안자", "value": ""},
+  {"label": "현장명", "value": ""},
+  {"label": "공급가액", "value": ""},
+  {"label": "부가세액", "value": ""},
+  {"label": "합계금액", "value": ""}
+]"""
+
+
+def parse_linked_document(image_path: str) -> dict:
+    """연결문서를 LLM Vision으로 파싱하여 구조화된 데이터를 추출한다."""
+    if not HAS_LLM_VISION:
+        return {"success": False, "error": "ALPHA_API_KEY가 설정되지 않았습니다."}
+
+    converted_path = None
+    try:
+        ext = os.path.splitext(image_path)[1].lower()
+        actual_path = image_path
+        if ext in PDF_EXTS:
+            converted_path = pdf_to_image_path(image_path)
+            if not converted_path:
+                return {"success": False, "error": "PDF 변환에 실패했습니다."}
+            actual_path = converted_path
+
+        img_base64, mime = resize_and_encode_image(actual_path)
+
+        payload = {
+            "model": MODEL,
+            "messages": [{
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": LINKED_DOC_PARSE_PROMPT},
+                    {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{img_base64}"}}
+                ]
+            }],
+            "max_tokens": 4096,
+        }
+
+        headers = {
+            "Authorization": f"Bearer {ALPHA_API_KEY}",
+            "Content-Type": "application/json",
+        }
+
+        response = requests.post(API_URL, headers=headers, json=payload, timeout=120)
+        response.raise_for_status()
+
+        result = response.json()
+        text = (result["choices"][0]["message"].get("content") or "").strip()
+
+        if not text:
+            return {"success": False, "error": "LLM 응답이 비어있습니다."}
+
+        import re as _re
+        json_match = _re.search(r'```json\s*(.*?)\s*```', text, _re.DOTALL)
+        if json_match:
+            text = json_match.group(1)
+        if not text.startswith('['):
+            idx = text.find('[')
+            if idx >= 0:
+                text = text[idx:]
+            last_bracket = text.rfind(']')
+            if last_bracket >= 0:
+                text = text[:last_bracket + 1]
+
+        fields = json.loads(text)
+        if not isinstance(fields, list):
+            return {"success": False, "error": "LLM 응답 형식이 올바르지 않습니다."}
+
+        validated = []
+        for item in fields:
+            if isinstance(item, dict) and "label" in item:
+                validated.append({
+                    "label": str(item.get("label", "")),
+                    "value": str(item.get("value", ""))
+                })
+
+        print(f"[연결문서파싱] 파싱 완료: {len(validated)}개 항목 추출")
+        return {"success": True, "fields": validated}
+
+    except requests.exceptions.RequestException as e:
+        return {"success": False, "error": f"API 호출 오류: {str(e)}"}
+    except json.JSONDecodeError:
+        return {"success": False, "error": "LLM 응답 JSON 파싱 실패"}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+    finally:
+        if converted_path and os.path.exists(converted_path):
+            os.remove(converted_path)
+
+
 def map_to_account(parsed: dict) -> dict:
     """LLM 파싱 결과를 전표 입력용 데이터로 변환한다."""
     doc_type = parsed.get("doc_type", "")

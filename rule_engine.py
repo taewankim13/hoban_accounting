@@ -61,11 +61,14 @@ def _evaluate_single_condition(journal, field, op, val, threshold, context):
         elif op == ">=": return max_line >= nval
         return False
 
-    elif field == "total_amount":
+    elif field in ("total_amount", "debit_amount"):
         nval = to_num(val)
         if op == ">": return total_debit > nval
         elif op == "<": return total_debit < nval and total_debit > 0
         elif op == ">=": return total_debit >= nval
+        elif op == "<=": return total_debit <= nval
+        elif op == "==": return total_debit == nval
+        elif op == "!=": return total_debit != nval
         return False
 
     elif field == "is_weekend":
@@ -353,6 +356,103 @@ def _evaluate_single_condition(journal, field, op, val, threshold, context):
 
         return False
 
+    elif field.startswith("linkeddoc_"):
+        LINKED_DOC_FIELD_LABELS = {
+            "linkeddoc_title": ["문서제목"],
+            "linkeddoc_site": ["현장명"],
+            "linkeddoc_current_amount": ["금회기성", "금회기성액"],
+            "linkeddoc_contract_amount": ["계약금액", "도급금액"],
+            "linkeddoc_orderer": ["발주처", "발주자", "발주기관"],
+        }
+        target_labels = LINKED_DOC_FIELD_LABELS.get(field)
+        if not target_labels:
+            return False
+        docs = getattr(journal, 'linked_docs', None)
+        if not docs:
+            return False
+        import json as _json
+
+        doc_values = []
+        for doc in docs:
+            pd_raw = getattr(doc, 'parsed_data', None)
+            if not pd_raw:
+                continue
+            try:
+                pd = _json.loads(pd_raw) if isinstance(pd_raw, str) else pd_raw
+            except:
+                continue
+            if not isinstance(pd, list):
+                continue
+            for item in pd:
+                if isinstance(item, dict) and item.get("label") in target_labels and item.get("value"):
+                    doc_values.append(item["value"])
+        if not doc_values:
+            return False
+
+        journal_col = str(val) if val else "description"
+        if journal_col == "description":
+            j_val = journal.description or ""
+        elif journal_col == "doc_date":
+            j_val = journal.doc_date or ""
+        elif journal_col == "doc_type":
+            j_val = journal.doc_type or ""
+        elif journal_col == "vendor_name":
+            j_val = " ".join(getattr(l, 'vendor_name', '') or '' for l in getattr(journal, 'lines', []))
+        elif journal_col == "account_name":
+            j_val = " ".join(getattr(l, 'account_name', '') or '' for l in getattr(journal, 'lines', []))
+        elif journal_col == "total_debit":
+            j_val = float(journal.total_debit or 0)
+        elif journal_col == "total_credit":
+            j_val = float(journal.total_credit or 0)
+        elif journal_col == "project_name":
+            j_val = getattr(journal, 'project_name_raw', '') or ''
+        elif journal_col == "created_by":
+            j_val = journal.created_by or ""
+        else:
+            j_val = getattr(journal, journal_col, "") or ""
+
+        doc_text = " ".join(doc_values)
+        label_display = target_labels[0]
+
+        def _extract_doc_tokens(text):
+            parts = re.split(r'[\s,\(\)\[\]\/\-·\.\:]+', str(text))
+            return {p for p in parts if len(p) >= 2}
+
+        if op in ("has_common_word", "no_common_word"):
+            doc_tokens = _extract_doc_tokens(doc_text)
+            j_tokens = _extract_doc_tokens(str(j_val))
+            has_match = any(dt in jt or jt in dt for dt in doc_tokens for jt in j_tokens)
+            if op == "no_common_word":
+                if not has_match:
+                    journal._mismatch_detail = f"연결문서 '{label_display}'과(와) 전표 '{journal_col}' 간 동일 단어 없음"
+                    return True
+                return False
+            return has_match
+
+        elif op in (">", ">=", "<", "<=", "==", "!="):
+            try:
+                doc_num = float(re.sub(r'[^\d.]', '', doc_values[0]))
+                j_num = float(j_val) if isinstance(j_val, (int, float)) else float(re.sub(r'[^\d.]', '', str(j_val)))
+            except (ValueError, IndexError):
+                return False
+            if op == ">": return doc_num > j_num
+            if op == ">=": return doc_num >= j_num
+            if op == "<": return doc_num < j_num
+            if op == "<=": return doc_num <= j_num
+            if op == "==":
+                if doc_num != j_num:
+                    journal._mismatch_detail = f"연결문서 '{label_display}'({doc_num:,.0f}) ≠ 전표 '{journal_col}'({j_num:,.0f})"
+                return doc_num == j_num
+            if op == "!=":
+                if doc_num != j_num:
+                    journal._mismatch_detail = f"연결문서 '{label_display}'({doc_num:,.0f}) ≠ 전표 '{journal_col}'({j_num:,.0f})"
+                return doc_num != j_num
+
+        elif op == "contains":
+            return any(str(v) in str(j_val) or str(j_val) in str(v) for v in doc_values)
+
+        return False
+
     elif field == "evidence_description_match":
         evs = getattr(journal, 'evidences', None)
         if not evs:
@@ -614,6 +714,16 @@ def parse_with_llm(text: str) -> dict | None:
 
 ### 증빙자료 분석 필드
 - evidence_description_match: 증빙자료 파싱 데이터와 전표 적요 간 연관성 비교. 연산자: no_common_word(동일 단어 없음=연관성 없음), has_common_word(동일 단어 있음=연관성 있음). value: 비교할 증빙 필드명(쉼표구분, 예: "계약대상,계약자 상호")
+- evidence_title: 증빙 제목과 전표 컬럼 비교. 연산자: has_common_word, no_common_word, contains. value: 비교 대상 전표 컬럼(description 등)
+- evidence_contract_amount: 증빙 계약금과 전표 금액 비교. 연산자: ==, !=, >, <. value: 비교 대상 전표 컬럼(total_debit 등)
+- evidence_monthly_charge: 증빙 당월요금계와 전표 금액 비교. 연산자: ==, !=, >, <. value: 비교 대상 전표 컬럼(total_debit 등)
+
+### 연결문서 분석 필드
+- linkeddoc_title: 연결문서 문서제목과 전표 컬럼 비교. 연산자: has_common_word, no_common_word, contains. value: 비교 대상 전표 컬럼(description 등)
+- linkeddoc_site: 연결문서 현장명과 전표 현장명 비교. 연산자: has_common_word, no_common_word. value: 비교 대상 전표 컬럼(project_name 등)
+- linkeddoc_current_amount: 연결문서 금회기성과 전표 금액 비교. 연산자: ==, !=, >, <. value: 비교 대상 전표 컬럼(total_debit 등)
+- linkeddoc_contract_amount: 연결문서 계약금액과 전표 금액 비교. 연산자: ==, !=, >, <. value: 비교 대상 전표 컬럼(total_debit 등)
+- linkeddoc_orderer: 연결문서 발주처와 전표 거래처 비교. 연산자: has_common_word, no_common_word, contains. value: 비교 대상 전표 컬럼(vendor_name 등)
 
 ### 특수 탐지 필드
 - balance: 차대변 잔액(불일치 금액). 연산자: !=, value: 0
@@ -745,7 +855,7 @@ def parse_with_llm(text: str) -> dict | None:
 
         # 유효성 검증: field가 비어있거나 알 수 없는 값이면 None 반환하여 로컬 폴백으로 넘기기
         known_fields = {
-            "max_line_amount","total_amount","balance","is_weekend","day_of_month",
+            "max_line_amount","total_amount","debit_amount","balance","is_weekend","day_of_month",
             "doc_type_contains","description_contains","account_code_contains",
             "account_name_contains","vendor_name_contains","line_count",
             "has_linked_doc","has_evidence","odd_amount","off_hours","empty_description",
@@ -755,6 +865,8 @@ def parse_with_llm(text: str) -> dict | None:
             "evidence_title","evidence_target","evidence_vendor",
             "evidence_contract_amount","evidence_rent","evidence_monthly_charge",
             "evidence_period","evidence_base_month","evidence_base_date",
+            "linkeddoc_title","linkeddoc_site","linkeddoc_current_amount",
+            "linkeddoc_contract_amount","linkeddoc_orderer",
         }
         if result.get("conditions"):
             bad = any(c.get("field", "") not in known_fields for c in result["conditions"])
