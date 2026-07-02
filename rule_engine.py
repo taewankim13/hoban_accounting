@@ -61,7 +61,7 @@ def _evaluate_single_condition(journal, field, op, val, threshold, context):
         elif op == ">=": return max_line >= nval
         return False
 
-    elif field in ("total_amount", "debit_amount"):
+    elif field == "total_amount":
         nval = to_num(val)
         if op == ">": return total_debit > nval
         elif op == "<": return total_debit < nval and total_debit > 0
@@ -69,6 +69,26 @@ def _evaluate_single_condition(journal, field, op, val, threshold, context):
         elif op == "<=": return total_debit <= nval
         elif op == "==": return total_debit == nval
         elif op == "!=": return total_debit != nval
+        return False
+
+    elif field in ("debit_amount", "credit_amount"):
+        nval = to_num(val)
+        for line in journal.lines:
+            amt = line.debit_amount if field == "debit_amount" else line.credit_amount
+            if amt is None or amt == 0:
+                continue
+            hit = False
+            if op == ">": hit = amt > nval
+            elif op == ">=": hit = amt >= nval
+            elif op == "<": hit = amt < nval
+            elif op == "<=": hit = amt <= nval
+            elif op == "==": hit = amt == nval
+            elif op == "!=": hit = amt != nval
+            if hit:
+                side_label = "차변" if field == "debit_amount" else "대변"
+                acct = line.account_name or line.account_code or ""
+                journal._mismatch_detail = f"{acct} {side_label}금액 {amt:,.0f}원 (조건: {op} {nval:,.0f})"
+                return True
         return False
 
     elif field == "is_weekend":
@@ -693,7 +713,7 @@ def parse_with_llm(text: str) -> dict | None:
 ## 사용 가능한 필드 (field) — 반드시 이 목록의 값만 사용
 
 ### 전표 헤더 필드
-- total_amount: 전표 총 금액(차변합계). 연산자: >, >=, <, <=
+- total_amount: 전표 차변합계(전표 전체 차변 총합). 연산자: >, >=, <, <=, ==, !=
 - description_contains: 적요 텍스트에 키워드 포함 여부. 연산자: contains, value: "키워드" 또는 "키워드1,키워드2"
 - doc_type_contains: 전표유형에 키워드 포함. 연산자: contains, value: "키워드"
 - has_linked_doc: 연결문서 여부. 연산자: ==, value: "Y" 또는 "N"
@@ -701,6 +721,8 @@ def parse_with_llm(text: str) -> dict | None:
 - empty_description: 적요 미입력(5자 미만). 연산자: ==, value: true
 
 ### 전표 항목(라인) 필드
+- debit_amount: 개별 항목 차변금액(1개 계정과목의 차변금액). 연산자: >, >=, <, <=, ==, !=
+- credit_amount: 개별 항목 대변금액(1개 계정과목의 대변금액). 연산자: >, >=, <, <=, ==, !=
 - account_name_contains: 계정과목명에 키워드 포함(부분일치). 연산자: contains, value: "교육훈련비" 등
 - account_code_contains: 계정코드 포함. 연산자: contains, value: "4100" 등
 - vendor_name_contains: 거래처명에 키워드 포함. 연산자: contains, value: "키워드"
@@ -855,7 +877,7 @@ def parse_with_llm(text: str) -> dict | None:
 
         # 유효성 검증: field가 비어있거나 알 수 없는 값이면 None 반환하여 로컬 폴백으로 넘기기
         known_fields = {
-            "max_line_amount","total_amount","debit_amount","balance","is_weekend","day_of_month",
+            "max_line_amount","total_amount","debit_amount","credit_amount","balance","is_weekend","day_of_month",
             "doc_type_contains","description_contains","account_code_contains",
             "account_name_contains","vendor_name_contains","line_count",
             "has_linked_doc","has_evidence","odd_amount","off_hours","empty_description",

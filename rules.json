@@ -254,7 +254,7 @@
     "category": "금액",
     "enabled": true,
     "threshold": null,
-    "field": "debit_amount",
+    "field": "total_amount",
     "operator": "==",
     "value": 0,
     "id": "C008"
