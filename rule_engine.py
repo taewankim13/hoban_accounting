@@ -782,7 +782,7 @@ def parse_with_llm(text: str) -> dict | None:
         res = requests.post(
             "https://workspace.kr.pwc.com/api/workspace/coding_agent/v1/chat/completions",
             headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
-            json={"model": "Gemini_3.1_Pro", "messages": [{"role": "user", "content": prompt}], "max_tokens": 1024},
+            json={"model": "Gemini_3.1_Pro", "messages": [{"role": "user", "content": prompt}], "max_tokens": 16384},
             timeout=30,
         )
         res.raise_for_status()
@@ -793,7 +793,7 @@ def parse_with_llm(text: str) -> dict | None:
             res2 = requests.post(
                 "https://workspace.kr.pwc.com/api/workspace/coding_agent/v1/chat/completions",
                 headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
-                json={"model": "Gemini_3.1_Pro", "messages": [{"role": "user", "content": f"다음 전표 이상탐지 룰을 JSON으로 만들어줘. 반드시 JSON만 응답해: {text}"}], "max_tokens": 2048},
+                json={"model": "Gemini_3.1_Pro", "messages": [{"role": "user", "content": f"다음 전표 이상탐지 룰을 JSON으로 만들어줘. 반드시 JSON만 응답해: {text}"}], "max_tokens": 16384},
                 timeout=30,
             )
             content = res2.json()["choices"][0]["message"].get("content", "").strip()

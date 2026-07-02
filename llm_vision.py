@@ -131,7 +131,7 @@ def analyze_receipt_with_llm(image_path: str) -> dict:
                     ]
                 }
             ],
-            "max_tokens": 4096,
+            "max_tokens": 16384,
         }
 
         headers = {
@@ -290,7 +290,7 @@ def parse_evidence_document(image_path: str, evidence_type: str) -> dict:
                     {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{img_base64}"}}
                 ]
             }],
-            "max_tokens": 4096,
+            "max_tokens": 16384,
         }
 
         headers = {
@@ -416,7 +416,7 @@ def parse_linked_document(image_path: str) -> dict:
                     {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{img_base64}"}}
                 ]
             }],
-            "max_tokens": 4096,
+            "max_tokens": 16384,
         }
 
         headers = {
