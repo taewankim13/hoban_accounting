@@ -796,13 +796,15 @@ async def parse_evidence_document_api(file: UploadFile = File(...),
         f.write(content)
 
     try:
+        import asyncio
         from llm_vision import parse_evidence_document, PARSEABLE_EVIDENCE_TYPES
         if evidence_type not in PARSEABLE_EVIDENCE_TYPES:
             return {"success": False, "error": f"파싱을 지원하지 않는 증빙 유형입니다: {evidence_type}"}
 
-        result = parse_evidence_document(save_path, evidence_type)
+        result = await asyncio.to_thread(parse_evidence_document, save_path, evidence_type)
         return result
     except Exception as e:
+        print(f"[증빙파싱API] 오류: {e}")
         return {"success": False, "error": str(e)}
     finally:
         if os.path.exists(save_path):
@@ -824,10 +826,12 @@ async def parse_linked_doc_api(file: UploadFile = File(...)):
         f.write(content)
 
     try:
+        import asyncio
         from llm_vision import parse_linked_document
-        result = parse_linked_document(save_path)
+        result = await asyncio.to_thread(parse_linked_document, save_path)
         return result
     except Exception as e:
+        print(f"[연결문서파싱API] 오류: {e}")
         return {"success": False, "error": str(e)}
     finally:
         if os.path.exists(save_path):
@@ -838,68 +842,76 @@ async def parse_linked_doc_api(file: UploadFile = File(...)):
 async def upload_evidence(doc_no: str, file: UploadFile = File(...),
                           request: Request = None, db: Session = Depends(get_db)):
     """증빙자료 업로드"""
-    from fastapi import Form
-    journal = db.query(JournalEntry).filter(JournalEntry.doc_no == doc_no).first()
-    if not journal:
-        return JSONResponse({"error": "전표를 찾을 수 없습니다."}, status_code=404)
+    try:
+        journal = db.query(JournalEntry).filter(JournalEntry.doc_no == doc_no).first()
+        if not journal:
+            return JSONResponse({"error": "전표를 찾을 수 없습니다."}, status_code=404)
 
-    ext = os.path.splitext(file.filename)[1].lower()
-    if ext not in ALLOWED_EVIDENCE_EXTS:
-        return JSONResponse({"error": f"허용되지 않는 파일 형식입니다: {ext}"}, status_code=400)
+        ext = os.path.splitext(file.filename)[1].lower()
+        if ext not in ALLOWED_EVIDENCE_EXTS:
+            return JSONResponse({"error": f"허용되지 않는 파일 형식입니다: {ext}"}, status_code=400)
 
-    # 다음 순번 계산
-    max_seq = db.query(func.coalesce(func.max(Evidence.seq_no), 0)).filter(
-        Evidence.journal_id == journal.id).scalar()
-    next_seq = max_seq + 1
+        max_seq = db.query(func.coalesce(func.max(Evidence.seq_no), 0)).filter(
+            Evidence.journal_id == journal.id).scalar()
+        next_seq = max_seq + 1
 
-    # 파일 저장
-    saved_name = f"{doc_no}_{next_seq}_{uuid.uuid4().hex[:8]}{ext}"
-    save_path = os.path.join("static", "uploads", "evidences", saved_name)
-    content = await file.read()
-    with open(save_path, "wb") as f:
-        f.write(content)
+        saved_name = f"{doc_no}_{next_seq}_{uuid.uuid4().hex[:8]}{ext}"
+        save_path = os.path.join("static", "uploads", "evidences", saved_name)
+        content = await file.read()
+        with open(save_path, "wb") as f:
+            f.write(content)
 
-    # evidence_type은 쿼리 파라미터로 받음
-    params = request.query_params if request else {}
-    ev_type = params.get("evidence_type", "기타")
-    parsed_data_str = params.get("parsed_data", None)
+        params = request.query_params if request else {}
+        ev_type = params.get("evidence_type", "기타")
+        parsed_data_str = params.get("parsed_data", None)
 
-    # 이미지/PDF이고 파싱 가능한 유형인데 parsed_data가 없으면 자동 파싱
-    if (ext in IMG_EXTS or ext == '.pdf') and not parsed_data_str:
-        try:
-            from llm_vision import parse_evidence_document, PARSEABLE_EVIDENCE_TYPES
-            if ev_type in PARSEABLE_EVIDENCE_TYPES:
-                parse_result = parse_evidence_document(save_path, ev_type)
-                if parse_result.get("success"):
-                    parsed_data_str = _json.dumps(parse_result["fields"], ensure_ascii=False)
-        except Exception as e:
-            print(f"[증빙파싱] 자동 파싱 실패: {e}")
+        if not parsed_data_str:
+            form = await request.form()
+            parsed_data_str = form.get("parsed_data", None)
+            if form.get("evidence_type"):
+                ev_type = form.get("evidence_type")
 
-    evidence = Evidence(
-        journal_id=journal.id,
-        seq_no=next_seq,
-        evidence_type=ev_type,
-        file_name=file.filename,
-        file_path=f"/static/uploads/evidences/{saved_name}",
-        file_ext=ext,
-        file_size=len(content),
-        parsed_data=parsed_data_str,
-    )
-    db.add(evidence)
-    db.commit()
-    db.refresh(evidence)
+        if (ext in IMG_EXTS or ext == '.pdf') and not parsed_data_str:
+            try:
+                import asyncio
+                from llm_vision import parse_evidence_document, PARSEABLE_EVIDENCE_TYPES
+                if ev_type in PARSEABLE_EVIDENCE_TYPES:
+                    parse_result = await asyncio.to_thread(parse_evidence_document, save_path, ev_type)
+                    if parse_result.get("success"):
+                        parsed_data_str = _json.dumps(parse_result["fields"], ensure_ascii=False)
+                    else:
+                        print(f"[증빙파싱] 자동 파싱 실패: {parse_result.get('error')}")
+            except Exception as e:
+                print(f"[증빙파싱] 자동 파싱 예외: {e}")
 
-    return {
-        "success": True,
-        "evidence": {
-            "id": evidence.id, "seq_no": evidence.seq_no,
-            "evidence_type": evidence.evidence_type,
-            "file_name": evidence.file_name, "file_path": evidence.file_path,
-            "file_ext": evidence.file_ext, "file_size": evidence.file_size,
-            "parsed_data": _json.loads(evidence.parsed_data) if evidence.parsed_data else None,
-            "created_at": evidence.created_at.strftime("%Y-%m-%d %H:%M") if evidence.created_at else None,
+        evidence = Evidence(
+            journal_id=journal.id,
+            seq_no=next_seq,
+            evidence_type=ev_type,
+            file_name=file.filename,
+            file_path=f"/static/uploads/evidences/{saved_name}",
+            file_ext=ext,
+            file_size=len(content),
+            parsed_data=parsed_data_str,
+        )
+        db.add(evidence)
+        db.commit()
+        db.refresh(evidence)
+
+        return {
+            "success": True,
+            "evidence": {
+                "id": evidence.id, "seq_no": evidence.seq_no,
+                "evidence_type": evidence.evidence_type,
+                "file_name": evidence.file_name, "file_path": evidence.file_path,
+                "file_ext": evidence.file_ext, "file_size": evidence.file_size,
+                "parsed_data": _json.loads(evidence.parsed_data) if evidence.parsed_data else None,
+                "created_at": evidence.created_at.strftime("%Y-%m-%d %H:%M") if evidence.created_at else None,
+            }
         }
-    }
+    except Exception as e:
+        print(f"[증빙업로드] 오류: {e}")
+        return JSONResponse({"success": False, "error": f"업로드 처리 중 오류: {str(e)}"}, status_code=500)
 
 
 @app.get("/api/evidence/{doc_no}", response_class=JSONResponse)
@@ -938,6 +950,35 @@ def delete_evidence(evidence_id: int, db: Session = Depends(get_db)):
     db.delete(evidence)
     db.commit()
     return {"success": True}
+
+
+@app.post("/api/evidence/{evidence_id}/reparse", response_class=JSONResponse)
+async def reparse_evidence(evidence_id: int, db: Session = Depends(get_db)):
+    """증빙자료 AI 재파싱"""
+    evidence = db.query(Evidence).filter(Evidence.id == evidence_id).first()
+    if not evidence:
+        return JSONResponse({"error": "증빙자료를 찾을 수 없습니다."}, status_code=404)
+
+    file_path = evidence.file_path.lstrip("/")
+    if not os.path.exists(file_path):
+        return {"success": False, "error": "파일을 찾을 수 없습니다."}
+
+    try:
+        import asyncio
+        from llm_vision import parse_evidence_document, PARSEABLE_EVIDENCE_TYPES
+        ev_type = evidence.evidence_type or ""
+        if ev_type not in PARSEABLE_EVIDENCE_TYPES:
+            return {"success": False, "error": f"파싱을 지원하지 않는 유형입니다: {ev_type}"}
+
+        result = await asyncio.to_thread(parse_evidence_document, file_path, ev_type)
+        if result.get("success") and result.get("fields"):
+            evidence.parsed_data = _json.dumps(result["fields"], ensure_ascii=False)
+            db.commit()
+            return {"success": True, "fields_count": len(result["fields"])}
+        else:
+            return {"success": False, "error": result.get("error", "파싱 실패")}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
 
 
 # ──────────────────────────────────

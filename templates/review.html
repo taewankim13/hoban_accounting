@@ -381,6 +381,14 @@
     </div>
 
     <div class="toast" id="toast"></div>
+    <div id="uploadOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:10000;justify-content:center;align-items:center">
+        <div style="background:white;border-radius:16px;padding:32px 40px;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.2);max-width:360px">
+            <div id="uploadSpinner" style="width:48px;height:48px;border:4px solid var(--gray-200);border-top-color:var(--hoban-orange);border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 16px"></div>
+            <div id="uploadStatus" style="font-size:15px;font-weight:600;color:var(--hoban-dark)">AI 분석 중...</div>
+            <div id="uploadSubStatus" style="font-size:12px;color:var(--gray-500);margin-top:6px">LLM이 문서를 분석하고 있습니다. 30초~2분 소요될 수 있습니다.</div>
+        </div>
+    </div>
+    <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
 
     <script>
     const EN = {'E001':'차대변 불일치','E002':'계정 착오','E003':'중복 전표','E004':'금액 이상','E004-M':'고액(5억+)','E005':'주말 기표','E006':'역분개','E006-H':'해약/환불','E007':'증빙 누락','E008':'비인가 계정','E009':'월말 대량','E010':'단수 금액','E011':'시간외 기표','E012':'개인거래처 고액','E013':'적요 미입력','E014':'다건 항목','E015':'반복거래 계정 이탈'};
@@ -763,7 +771,8 @@
                     <td style="padding:5px 8px;font-size:11px;color:var(--gray-500)">${ev.created_at || '-'}</td>
                     <td style="padding:5px 8px;text-align:center"><button class="btn btn-sm btn-outline" onclick="deleteEvidence(${ev.id}, '${j.doc_no}')" style="padding:1px 6px;font-size:10px;color:var(--danger);border-color:var(--danger)">삭제</button></td>
                 </tr>`;
-                // 파싱된 데이터 테이블 표시
+                const REPARSE_TYPES = ['계약서', '공과금 고지서'];
+                const canReparse = REPARSE_TYPES.includes(ev.evidence_type) && ['.pdf','.jpg','.jpeg','.png','.gif','.bmp','.tiff'].includes(ev.file_ext);
                 if (ev.parsed_data && ev.parsed_data.length > 0) {
                     h += `<tr><td colspan="6" style="padding:0;border-bottom:2px solid var(--hoban-orange)">
                         <div style="margin:6px 8px 10px;padding:10px;background:#FFF8F0;border:1px solid #FFE0B2;border-radius:8px">
@@ -778,12 +787,18 @@
                                 </tr></thead>
                                 <tbody>${ev.parsed_data.map(f => {
                                     const val = f.value || '<span style="color:var(--gray-400)">-</span>';
-                                    const isAmount = f.label.includes('금액') && f.value && /^\\d+$/.test(f.value);
+                                    const isNum = /^\d+$/.test(f.value || '');
+                                    const isAmount = f.label.includes('금액') && isNum;
                                     const displayVal = isAmount ? Number(f.value).toLocaleString() + '원' : val;
                                     return '<tr><td style="padding:4px 10px;font-weight:600;color:var(--gray-700);border-bottom:1px solid var(--gray-100);white-space:nowrap">' + f.label + '</td><td style="padding:4px 10px;border-bottom:1px solid var(--gray-100)">' + displayVal + '</td></tr>';
                                 }).join('')}</tbody>
                             </table>
                         </div>
+                    </td></tr>`;
+                } else if (canReparse) {
+                    h += `<tr><td colspan="6" style="padding:4px 8px;border-bottom:1px solid var(--gray-200)">
+                        <button class="btn btn-sm btn-outline" onclick="reparseEvidence(${ev.id}, '${j.doc_no}')" style="font-size:11px;padding:3px 10px;color:var(--hoban-orange);border-color:var(--hoban-orange)">AI 재분석</button>
+                        <span style="font-size:11px;color:var(--gray-400);margin-left:6px">파싱 데이터가 없습니다</span>
                     </td></tr>`;
                 }
             });
@@ -887,6 +902,14 @@
         document.getElementById('detailModal').classList.add('show');
     }
 
+    function showUploadOverlay(msg, sub) {
+        const ov = document.getElementById('uploadOverlay');
+        ov.style.display = 'flex';
+        document.getElementById('uploadStatus').textContent = msg || 'AI 분석 중...';
+        document.getElementById('uploadSubStatus').textContent = sub || 'LLM이 문서를 분석하고 있습니다. 30초~2분 소요될 수 있습니다.';
+    }
+    function hideUploadOverlay() { document.getElementById('uploadOverlay').style.display = 'none'; }
+
     async function uploadModalEvidence(input, docNo) {
         if (!input.files || input.files.length === 0) return;
         const evType = document.getElementById('modalEvType').value;
@@ -896,35 +919,73 @@
         for (const file of input.files) {
             const ext = file.name.split('.').pop().toLowerCase();
             const isImage = IMG_EXT.includes(ext);
-            let parsedDataParam = '';
-
-            // 파싱 가능한 유형이고 이미지이면 먼저 파싱
             const isPdf = ext === 'pdf';
+            let parsedFields = null;
+
             if (PARSEABLE.includes(evType) && (isImage || isPdf)) {
-                showToast(`${evType} 문서 AI 분석 중...`, '');
+                showUploadOverlay(`${evType} AI 분석 중...`, `${file.name} 파일을 분석하고 있습니다. 30초~2분 소요될 수 있습니다.`);
                 try {
                     const pfd = new FormData(); pfd.append('file', file);
                     const pRes = await fetch(`/api/evidence/parse-document?evidence_type=${encodeURIComponent(evType)}`, {method:'POST', body:pfd});
                     const pData = await pRes.json();
                     if (pData.success && pData.fields) {
-                        parsedDataParam = `&parsed_data=${encodeURIComponent(JSON.stringify(pData.fields))}`;
+                        parsedFields = pData.fields;
+                        document.getElementById('uploadStatus').textContent = 'AI 분석 완료! 업로드 중...';
+                    } else {
+                        console.warn('파싱 실패:', pData.error || 'unknown');
+                        document.getElementById('uploadStatus').textContent = '파싱 실패, 파일 업로드 중...';
                     }
-                } catch(e) { console.error('parse error', e); }
+                } catch(e) {
+                    console.error('parse error', e);
+                    document.getElementById('uploadStatus').textContent = '파싱 오류, 파일 업로드 중...';
+                }
             }
 
             const fd = new FormData();
             fd.append('file', file);
+            fd.append('evidence_type', evType);
+            if (parsedFields) fd.append('parsed_data', JSON.stringify(parsedFields));
             try {
-                const res = await fetch(`/api/evidence/${docNo}?evidence_type=${encodeURIComponent(evType)}${parsedDataParam}`, {method: 'POST', body: fd});
+                if (!document.getElementById('uploadOverlay').style.display || document.getElementById('uploadOverlay').style.display === 'none')
+                    showUploadOverlay('파일 업로드 중...', file.name);
+                const res = await fetch(`/api/evidence/${docNo}?evidence_type=${encodeURIComponent(evType)}`, {method: 'POST', body: fd});
+                if (!res.ok) {
+                    const errText = await res.text();
+                    console.error('upload error response:', res.status, errText);
+                    showToast(`업로드 실패 (HTTP ${res.status})`, 'error');
+                    continue;
+                }
                 const d = await res.json();
                 if (d.success) uploaded++;
                 else showToast(d.error || '업로드 실패', 'error');
-            } catch(e) { showToast('업로드 오류: ' + e.message, 'error'); }
+            } catch(e) {
+                console.error('upload fetch error:', e);
+                showToast('업로드 오류: ' + e.message, 'error');
+            }
         }
+        hideUploadOverlay();
         input.value = '';
         if (uploaded > 0) {
             showToast(`증빙자료 ${uploaded}건 업로드 완료`, 'success');
             showDetail(docNo);
+        }
+    }
+
+    async function reparseEvidence(evId, docNo) {
+        showUploadOverlay('증빙자료 AI 재분석 중...', 'LLM이 문서를 분석하고 있습니다. 30초~2분 소요될 수 있습니다.');
+        try {
+            const res = await fetch(`/api/evidence/${evId}/reparse`, {method: 'POST'});
+            const d = await res.json();
+            hideUploadOverlay();
+            if (d.success) {
+                showToast(`AI 재분석 완료 (${d.fields_count || 0}개 항목 추출)`, 'success');
+                showDetail(docNo);
+            } else {
+                showToast(d.error || '재분석 실패', 'error');
+            }
+        } catch(e) {
+            hideUploadOverlay();
+            showToast('재분석 오류: ' + e.message, 'error');
         }
     }
 
