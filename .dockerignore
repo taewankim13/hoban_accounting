@@ -8,4 +8,4 @@ test_img.png
 hoban_test.py
 generate_receipts.py
 sample_data.py
-*.csv
+new_account_code_master.csv
