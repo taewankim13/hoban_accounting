@@ -312,13 +312,16 @@ def review_page(request: Request, risk: str = None, project: str = None,
         else:
             if not (project and project != "all"):
                 query = query.outerjoin(Project, JournalEntry.project_id == Project.id)
+            query = query.outerjoin(JournalLine, JournalEntry.id == JournalLine.journal_id)
             query = query.filter(
                 JournalEntry.doc_no.like(kw) |
                 JournalEntry.doc_date.like(kw) |
                 JournalEntry.description.like(kw) |
                 JournalEntry.created_by.like(kw) |
-                Project.name.like(kw)
-            )
+                Project.name.like(kw) |
+                JournalLine.account_name.like(kw) |
+                JournalLine.vendor_name.like(kw)
+            ).distinct()
     if error_code and error_code != "all":
         # 정확한 코드 매칭: E004가 E004-M을 포함하지 않도록
         # 패턴: 코드가 정확히 일치 (시작/콤마 뒤 + 끝/콤마 앞)
