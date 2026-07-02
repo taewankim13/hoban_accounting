@@ -21,7 +21,7 @@
         .card-grid .journal-card .jc-meta{font-size:11px;gap:8px}
         .card-grid .journal-card .jc-meta span{white-space:nowrap}
         /* 테이블 뷰 */
-        .table-view{display:none}
+        .table-view{display:block}
         .table-view table{width:100%;border-collapse:collapse;font-size:13px;background:white;border-radius:10px;overflow:hidden;box-shadow:0 2px 8px rgba(87,85,83,0.08)}
         .table-view th{background:var(--hoban-dark);color:white;padding:10px 12px;text-align:left;font-weight:500;font-size:12px;white-space:nowrap;cursor:pointer;user-select:none;position:relative}
         .table-view th:hover{background:#6D6B69}
@@ -236,8 +236,8 @@
             <button class="btn btn-sm btn-outline" onclick="openSideMismatch()" style="margin-left:auto;margin-right:8px;font-size:12px;border-color:#E53935;color:#E53935">차/대변 불일치 검토</button>
             <button class="btn btn-sm btn-outline" onclick="openOcrCheck()" style="margin-right:8px;font-size:12px;border-color:var(--hoban-orange);color:var(--hoban-orange)">OCR 값 일치 점검</button>
             <div class="view-toggle">
-                <button id="btnCard" class="active" onclick="setView('card')">카드</button>
-                <button id="btnTable" onclick="setView('table')">테이블</button>
+                <button id="btnCard" onclick="setView('card')">카드</button>
+                <button id="btnTable" class="active" onclick="setView('table')">테이블</button>
             </div>
         </div>
 
@@ -288,7 +288,7 @@
         </div>
 
         <!-- 카드 뷰 -->
-        <div class="card-grid" id="cardView">
+        <div class="card-grid" id="cardView" style="display:none">
         {% for j in journals %}
         <div class="journal-card risk-{{ j.ai_risk_level }}" onclick="showDetail('{{ j.doc_no }}')">
             <div class="jc-header">
@@ -677,8 +677,8 @@
             localStorage.setItem('reviewView', 'card');
         }
     }
-    // 이전 선택 복원
-    if (localStorage.getItem('reviewView') === 'table') setView('table');
+    // 이전 선택 복원 (기본: 테이블)
+    if (localStorage.getItem('reviewView') === 'card') setView('card');
 
     async function showDetail(docNo) {
         const res = await fetch(`/api/journal/${docNo}`);
