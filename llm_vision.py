@@ -180,6 +180,10 @@ def analyze_receipt_with_llm(image_path: str) -> dict:
             "raw_text": text,
         }
 
+    except requests.exceptions.ConnectionError:
+        return {"success": False, "error": f"LLM API 서버 연결 불가. 사내 네트워크에서만 접근 가능합니다.", "ocr_mode": "llm_vision"}
+    except requests.exceptions.Timeout:
+        return {"success": False, "error": "LLM API 응답 시간 초과 (120초)", "ocr_mode": "llm_vision"}
     except requests.exceptions.RequestException as e:
         return {"success": False, "error": f"API 호출 오류: {str(e)}", "ocr_mode": "llm_vision"}
     except json.JSONDecodeError:
@@ -337,6 +341,10 @@ def parse_evidence_document(image_path: str, evidence_type: str) -> dict:
         print(f"[증빙파싱] {evidence_type} 파싱 완료: {len(validated)}개 항목 추출")
         return {"success": True, "fields": validated, "evidence_type": evidence_type}
 
+    except requests.exceptions.ConnectionError:
+        return {"success": False, "error": f"LLM API 서버 연결 불가 ({API_URL}). 사내 네트워크에서만 접근 가능합니다."}
+    except requests.exceptions.Timeout:
+        return {"success": False, "error": "LLM API 응답 시간 초과 (120초). 네트워크 상태를 확인하세요."}
     except requests.exceptions.RequestException as e:
         return {"success": False, "error": f"API 호출 오류: {str(e)}"}
     except json.JSONDecodeError:
@@ -460,6 +468,10 @@ def parse_linked_document(image_path: str) -> dict:
         print(f"[연결문서파싱] 파싱 완료: {len(validated)}개 항목 추출")
         return {"success": True, "fields": validated}
 
+    except requests.exceptions.ConnectionError:
+        return {"success": False, "error": f"LLM API 서버 연결 불가. 사내 네트워크에서만 접근 가능합니다."}
+    except requests.exceptions.Timeout:
+        return {"success": False, "error": "LLM API 응답 시간 초과 (120초)"}
     except requests.exceptions.RequestException as e:
         return {"success": False, "error": f"API 호출 오류: {str(e)}"}
     except json.JSONDecodeError:

@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func
 
 from database import engine, get_db, Base
-from models import JournalEntry, JournalLine, Project, Evidence, LinkedDocument, DEPARTMENTS, EMPLOYEES
+from models import JournalEntry, JournalLine, Project, Evidence, LinkedDocument, SavedRule, DEPARTMENTS, EMPLOYEES
 from ai_engine import analyze_journal
 from receipt_parser import parse_receipt_image
 import json as _json

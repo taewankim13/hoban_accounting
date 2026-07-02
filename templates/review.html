@@ -932,8 +932,10 @@
                         parsedFields = pData.fields;
                         document.getElementById('uploadStatus').textContent = 'AI 분석 완료! 업로드 중...';
                     } else {
-                        console.warn('파싱 실패:', pData.error || 'unknown');
+                        const errMsg = pData.error || '알 수 없는 오류';
+                        console.warn('파싱 실패:', errMsg);
                         document.getElementById('uploadStatus').textContent = '파싱 실패, 파일 업로드 중...';
+                        document.getElementById('uploadSubStatus').textContent = errMsg;
                     }
                 } catch(e) {
                     console.error('parse error', e);

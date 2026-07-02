@@ -5,6 +5,14 @@ from datetime import datetime
 from database import Base
 
 
+class SavedRule(Base):
+    """탐지 룰 (DB 영속 저장)"""
+    __tablename__ = "saved_rules"
+
+    rule_id = Column(String(20), primary_key=True)
+    rule_json = Column(Text, nullable=False)
+
+
 class Project(Base):
     """건설 프로젝트 (현장)"""
     __tablename__ = "projects"

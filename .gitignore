@@ -14,9 +14,6 @@ dist/
 build/
 *.egg
 
-# Rules (user-editable, seeded from default_rules.json)
-rules.json
-
 # Uploads (user-generated)
 static/uploads/*.png
 static/uploads/*.jpg

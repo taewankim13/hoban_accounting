@@ -1,7 +1,7 @@
 """컨테이너 시작 시 DB 초기화 + CSV 임포트 + 룰 분석 자동 실행"""
 import os
 from database import engine, SessionLocal, Base
-from models import JournalEntry
+from models import JournalEntry, SavedRule
 
 def init_db():
     Base.metadata.create_all(bind=engine)

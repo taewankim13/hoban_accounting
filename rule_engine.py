@@ -4,7 +4,6 @@ import os
 import re
 from datetime import datetime
 
-RULES_PATH = "rules.json"
 DEFAULT_RULES_PATH = "default_rules.json"
 SKILL_PATH = os.path.join(".claude", "skills", "anomaly-detection", "SKILL.md")
 
@@ -21,23 +20,51 @@ def _load_balance_side_map():
     return _balance_side_cache
 
 
+def _seed_rules_if_empty():
+    """DB에 룰이 없으면 default_rules.json에서 시드한다."""
+    from database import SessionLocal
+    from models import SavedRule
+    db = SessionLocal()
+    try:
+        count = db.query(SavedRule).count()
+        if count == 0 and os.path.exists(DEFAULT_RULES_PATH):
+            with open(DEFAULT_RULES_PATH, "r", encoding="utf-8") as f:
+                defaults = json.load(f)
+            for rule in defaults:
+                db.add(SavedRule(rule_id=rule["id"], rule_json=json.dumps(rule, ensure_ascii=False)))
+            db.commit()
+            print(f"[룰엔진] DB에 {len(defaults)}개 기본 룰 시드 완료")
+    finally:
+        db.close()
+
+
 def load_rules() -> list[dict]:
-    """rules.json에서 룰 목록을 로드한다. 없으면 default_rules.json에서 복사."""
-    if not os.path.exists(RULES_PATH):
-        if os.path.exists(DEFAULT_RULES_PATH):
-            import shutil
-            shutil.copy2(DEFAULT_RULES_PATH, RULES_PATH)
-            print(f"[룰엔진] {DEFAULT_RULES_PATH} → {RULES_PATH} 초기 복사 완료")
-        else:
-            return []
-    with open(RULES_PATH, "r", encoding="utf-8") as f:
-        return json.load(f)
+    """DB에서 룰 목록을 로드한다. DB가 비어있으면 default_rules.json에서 시드."""
+    from database import SessionLocal
+    from models import SavedRule
+    db = SessionLocal()
+    try:
+        count = db.query(SavedRule).count()
+        if count == 0:
+            _seed_rules_if_empty()
+        rows = db.query(SavedRule).all()
+        return [json.loads(r.rule_json) for r in rows]
+    finally:
+        db.close()
 
 
 def save_rules(rules: list[dict]):
-    """룰 목록을 rules.json에 저장하고 SKILL.md에도 반영한다."""
-    with open(RULES_PATH, "w", encoding="utf-8") as f:
-        json.dump(rules, f, ensure_ascii=False, indent=2)
+    """룰 목록을 DB에 저장하고 SKILL.md에도 반영한다."""
+    from database import SessionLocal
+    from models import SavedRule
+    db = SessionLocal()
+    try:
+        db.query(SavedRule).delete()
+        for rule in rules:
+            db.add(SavedRule(rule_id=rule["id"], rule_json=json.dumps(rule, ensure_ascii=False)))
+        db.commit()
+    finally:
+        db.close()
     sync_to_skill_md(rules)
 
 
