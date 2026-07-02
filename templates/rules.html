@@ -332,6 +332,7 @@
             {value:'evidence_period', label:'증빙 - 기간', col:'(증빙파싱)'},
             {value:'evidence_base_month', label:'증빙 - 기준년월', col:'(증빙파싱)'},
             {value:'evidence_base_date', label:'증빙 - 기준일자', col:'(증빙파싱)'},
+            {value:'evidence_vat', label:'증빙 - 부가세액', col:'(증빙파싱)'},
         ]},
         { group: '연결문서 분석', fields: [
             {value:'linkeddoc_title', label:'연결문서 - 문서제목', col:'(연결문서파싱)'},
@@ -348,7 +349,7 @@
     const EVIDENCE_COMPARE_FIELDS = new Set([
         'evidence_title','evidence_target','evidence_vendor',
         'evidence_contract_amount','evidence_rent','evidence_monthly_charge',
-        'evidence_period','evidence_base_month','evidence_base_date',
+        'evidence_period','evidence_base_month','evidence_base_date','evidence_vat',
         'linkeddoc_title','linkeddoc_site','linkeddoc_current_amount',
         'linkeddoc_contract_amount','linkeddoc_orderer'
     ]);
@@ -466,7 +467,7 @@
             if (!conds[idx].value) conds[idx].value = '계약대상,계약자 상호';
         } else if (EVIDENCE_COMPARE_FIELDS.has(value)) {
             const numFields = new Set(['evidence_contract_amount','evidence_rent','evidence_monthly_charge',
-                'linkeddoc_current_amount','linkeddoc_contract_amount']);
+                'linkeddoc_current_amount','linkeddoc_contract_amount','evidence_vat']);
             conds[idx].operator = numFields.has(value) ? '==' : 'has_common_word';
             conds[idx].value = numFields.has(value) ? 'total_debit' : 'description';
         }

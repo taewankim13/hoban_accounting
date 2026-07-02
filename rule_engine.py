@@ -5,6 +5,7 @@ import re
 from datetime import datetime
 
 RULES_PATH = "rules.json"
+DEFAULT_RULES_PATH = "default_rules.json"
 SKILL_PATH = os.path.join(".claude", "skills", "anomaly-detection", "SKILL.md")
 
 _balance_side_cache = None
@@ -21,9 +22,14 @@ def _load_balance_side_map():
 
 
 def load_rules() -> list[dict]:
-    """rules.json에서 룰 목록을 로드한다."""
+    """rules.json에서 룰 목록을 로드한다. 없으면 default_rules.json에서 복사."""
     if not os.path.exists(RULES_PATH):
-        return []
+        if os.path.exists(DEFAULT_RULES_PATH):
+            import shutil
+            shutil.copy2(DEFAULT_RULES_PATH, RULES_PATH)
+            print(f"[룰엔진] {DEFAULT_RULES_PATH} → {RULES_PATH} 초기 복사 완료")
+        else:
+            return []
     with open(RULES_PATH, "r", encoding="utf-8") as f:
         return json.load(f)
 
@@ -306,6 +312,7 @@ def _evaluate_single_condition(journal, field, op, val, threshold, context):
             "evidence_period": ["계약기간", "검침기간"],
             "evidence_base_month": ["기준년월"],
             "evidence_base_date": ["기준일자", "계약일자", "고지일자"],
+            "evidence_vat": ["부가세액", "부가세", "부가가치세"],
         }
         target_labels = EVIDENCE_FIELD_LABELS.get(field)
         if not target_labels:
@@ -900,7 +907,7 @@ def parse_with_llm(text: str) -> dict | None:
             "multi_condition","evidence_description_match",
             "evidence_title","evidence_target","evidence_vendor",
             "evidence_contract_amount","evidence_rent","evidence_monthly_charge",
-            "evidence_period","evidence_base_month","evidence_base_date",
+            "evidence_period","evidence_base_month","evidence_base_date","evidence_vat",
             "linkeddoc_title","linkeddoc_site","linkeddoc_current_amount",
             "linkeddoc_contract_amount","linkeddoc_orderer",
         }
