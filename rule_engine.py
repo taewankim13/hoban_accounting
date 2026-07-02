@@ -7,6 +7,18 @@ from datetime import datetime
 RULES_PATH = "rules.json"
 SKILL_PATH = os.path.join(".claude", "skills", "anomaly-detection", "SKILL.md")
 
+_balance_side_cache = None
+
+def _load_balance_side_map():
+    global _balance_side_cache
+    if _balance_side_cache is None:
+        try:
+            with open(os.path.join(os.path.dirname(__file__), 'account_balance_side.json'), 'r', encoding='utf-8') as f:
+                _balance_side_cache = json.load(f)
+        except:
+            _balance_side_cache = {}
+    return _balance_side_cache
+
 
 def load_rules() -> list[dict]:
     """rules.json에서 룰 목록을 로드한다."""
@@ -248,18 +260,20 @@ def _evaluate_single_condition(journal, field, op, val, threshold, context):
     elif field == "revenue_expense_side_error":
         is_reversal = any(kw in doc_type for kw in ['역분개', '취소', '반대분개', '해약', '환불'])
         if not is_reversal:
+            balance_map = _load_balance_side_map()
             mismatch_lines = []
             for line in journal.lines:
                 code = (line.account_code or "").strip()
-                if not code: continue
-                prefix2 = code[:2]
+                if not code:
+                    continue
+                expected_side = balance_map.get(code)
+                if not expected_side:
+                    continue
                 acct_name = (line.account_name or code)
-                if prefix2 in ('41', '43') and line.debit_amount > 0:
-                    mismatch_lines.append(f"수익계정 '{acct_name}'({code})이 차변에 {line.debit_amount:,.0f}원 기표됨 (대변이 정상)")
-                elif prefix2 in ('42', '44', '45') and line.credit_amount > 0:
-                    mismatch_lines.append(f"비용계정 '{acct_name}'({code})이 대변에 {line.credit_amount:,.0f}원 기표됨 (차변이 정상)")
-                elif prefix2 == '21' and line.debit_amount > 0:
-                    mismatch_lines.append(f"부채계정 '{acct_name}'({code})이 차변에 {line.debit_amount:,.0f}원 기표됨 (대변이 정상)")
+                if expected_side == "차변" and line.credit_amount and line.credit_amount > 0 and (not line.debit_amount or line.debit_amount == 0):
+                    mismatch_lines.append(f"'{acct_name}'({code}) 정상방향=차변인데 대변에 {line.credit_amount:,.0f}원 기표됨")
+                elif expected_side == "대변" and line.debit_amount and line.debit_amount > 0 and (not line.credit_amount or line.credit_amount == 0):
+                    mismatch_lines.append(f"'{acct_name}'({code}) 정상방향=대변인데 차변에 {line.debit_amount:,.0f}원 기표됨")
             if mismatch_lines:
                 journal._mismatch_detail = "; ".join(mismatch_lines[:3])
                 return True
