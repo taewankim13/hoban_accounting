@@ -217,7 +217,7 @@
     "threshold": null,
     "conditions": [
       {
-        "field": "account_name",
+        "field": "account_name_contains",
         "operator": "contains",
         "value": "미수금"
       },

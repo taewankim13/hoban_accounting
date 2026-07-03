@@ -63,7 +63,11 @@ def run_ai_analysis(db: Session):
     from rule_engine import load_rules, apply_rules_to_journal
 
     rules = load_rules()
-    journals = db.query(JournalEntry).options(joinedload(JournalEntry.lines)).all()
+    journals = db.query(JournalEntry).options(
+        joinedload(JournalEntry.lines),
+        joinedload(JournalEntry.evidences),
+        joinedload(JournalEntry.linked_docs),
+    ).all()
 
     # 거래처별 최빈 계정 패턴 맵 빌드 (E015 룰용)
     vendor_acct_counts = collections.defaultdict(lambda: collections.Counter())
