@@ -480,6 +480,72 @@ def get_journal(doc_no: str, db: Session = Depends(get_db)):
     }
 
 
+@app.post("/api/journal/{doc_no}/reanalyze", response_class=JSONResponse)
+def reanalyze_single_journal(doc_no: str, db: Session = Depends(get_db)):
+    """단일 전표 재분석 (증빙/연결문서 업로드 후 호출)"""
+    import collections
+    from rule_engine import load_rules, apply_rules_to_journal
+
+    journal = db.query(JournalEntry).options(
+        joinedload(JournalEntry.lines),
+        joinedload(JournalEntry.evidences),
+        joinedload(JournalEntry.linked_docs),
+    ).filter(JournalEntry.doc_no == doc_no).first()
+    if not journal:
+        return JSONResponse({"error": "전표를 찾을 수 없습니다."}, status_code=404)
+
+    rules = load_rules()
+
+    vendor_acct_counts = collections.defaultdict(lambda: collections.Counter())
+    all_journals = db.query(JournalEntry).options(joinedload(JournalEntry.lines)).all()
+    for j in all_journals:
+        for line in j.lines:
+            vname = (line.vendor_name or "").strip()
+            acct = (line.account_code or "").strip()
+            if vname and acct:
+                vendor_acct_counts[vname][acct] += 1
+    vendor_account_map = {}
+    for vname, counter in vendor_acct_counts.items():
+        most_common_acct, freq = counter.most_common(1)[0]
+        acct_name = most_common_acct
+        for j2 in all_journals:
+            for line in j2.lines:
+                if line.account_code == most_common_acct and line.account_name and line.account_name != most_common_acct:
+                    acct_name = line.account_name
+                    break
+            if acct_name != most_common_acct:
+                break
+        vendor_account_map[vname] = (most_common_acct, acct_name, freq)
+
+    dup_key_map = collections.defaultdict(list)
+    for j in all_journals:
+        acct_set = frozenset((l.account_code, l.debit_amount, l.credit_amount) for l in j.lines)
+        vendors = frozenset(l.vendor_name for l in j.lines if l.vendor_name)
+        key = (j.doc_date, j.total_debit, acct_set, vendors)
+        dup_key_map[key].append(j.doc_no)
+    dup_map = {k: v for k, v in dup_key_map.items() if len(v) >= 2}
+
+    journal._vendor_account_map = vendor_account_map
+    journal._duplicate_map = dup_map
+    result = apply_rules_to_journal(journal, rules)
+
+    journal.ai_risk_level = result["risk_level"]
+    journal.ai_risk_score = result["risk_score"]
+    journal.ai_error_codes = ",".join(result["error_codes"]) if result["error_codes"] else None
+    journal.ai_reason = "\n".join(result["reasons"]) if result["reasons"] else None
+    journal.ai_recommendation = "\n".join(result["recommendations"]) if result["recommendations"] else None
+    journal.ai_analyzed_at = datetime.now()
+    db.commit()
+
+    return {
+        "success": True,
+        "risk_level": result["risk_level"],
+        "risk_score": result["risk_score"],
+        "error_codes": result["error_codes"],
+        "reasons": result["reasons"],
+    }
+
+
 @app.post("/api/journal/{doc_no}/approve", response_class=JSONResponse)
 def approve_journal(doc_no: str, db: Session = Depends(get_db)):
     journal = db.query(JournalEntry).filter(JournalEntry.doc_no == doc_no).first()

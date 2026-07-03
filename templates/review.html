@@ -991,7 +991,8 @@
         hideUploadOverlay();
         input.value = '';
         if (uploaded > 0) {
-            showToast(`증빙자료 ${uploaded}건 업로드 완료`, 'success');
+            showToast(`증빙자료 ${uploaded}건 업로드 완료. 룰 재분석 중...`, 'success');
+            await fetch(`/api/journal/${docNo}/reanalyze`, {method: 'POST'});
             showDetail(docNo);
         }
     }
@@ -1046,7 +1047,8 @@
         }
         input.value = '';
         if (uploaded > 0) {
-            showToast(`연결문서 ${uploaded}건 업로드 완료`, 'success');
+            showToast(`연결문서 ${uploaded}건 업로드 완료. 룰 재분석 중...`, 'success');
+            await fetch(`/api/journal/${docNo}/reanalyze`, {method: 'POST'});
             showDetail(docNo);
         }
     }
