@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
     <title>전표 검토 - 호반건설 FDS</title>
     <link rel="stylesheet" href="/static/css/style.css">
     <style>
@@ -189,18 +191,21 @@
             <a href="/review?risk=정상&project={{ current_project }}&doc_type={{ current_doc_type }}&error_code={{ current_error_code }}&vendor_type={{ current_vendor_type }}{{ sq }}" class="filter-btn {{ 'active' if current_risk == '정상' }}">정상</a>
         </div>
 
-        <!-- 필터: 이상사유 -->
+        <!-- 필터: 이상사유 (다중 선택 AND 조건) -->
         {% if error_stats %}
         <div class="filter-bar" style="margin-top:4px">
             <span style="font-size:13px; color:var(--gray-500); padding:6px 0; margin-right:4px; white-space:nowrap;">이상사유:</span>
-            <a href="/review?risk={{ current_risk }}&project={{ current_project }}&doc_type={{ current_doc_type }}&vendor_type={{ current_vendor_type }}{{ sq }}" class="filter-btn {{ 'active' if current_error_code == 'all' }}" style="font-size:12px">전체</a>
+            <button onclick="clearErrorCodes()" class="filter-btn {{ 'active' if selected_error_codes|length == 0 }}" style="font-size:12px;font-family:inherit">전체</button>
             {% for code, info in error_stats.items() %}
-            <a href="/review?risk={{ current_risk }}&project={{ current_project }}&doc_type={{ current_doc_type }}&vendor_type={{ current_vendor_type }}&error_code={{ code }}{{ sq }}"
-               class="filter-btn {{ 'active' if current_error_code == code }}" style="font-size:12px">
+            <button onclick="toggleErrorCode('{{ code }}')"
+               class="filter-btn {% if code in selected_error_codes %}active{% endif %}" style="font-size:12px;font-family:inherit">
                 {{ info.name }}
                 <span class="badge {% if info.severity == 'High' %}high-bg{% elif info.severity == 'Medium' %}medium-bg{% else %}low-bg{% endif %}">{{ info.count }}</span>
-            </a>
+            </button>
             {% endfor %}
+            {% if selected_error_codes|length >= 2 %}
+            <span style="font-size:11px; color:var(--hoban-orange); margin-left:4px; font-weight:600; white-space:nowrap">AND · {{ selected_error_codes|length }}개 선택</span>
+            {% endif %}
         </div>
         {% endif %}
 
@@ -392,6 +397,24 @@
 
     <script>
     const EN = {'E001':'차대변 불일치','E002':'계정 착오','E003':'중복 전표','E004':'금액 이상','E004-M':'고액(5억+)','E005':'주말 기표','E006':'역분개','E006-H':'해약/환불','E007':'증빙 누락','E008':'비인가 계정','E009':'월말 대량','E010':'단수 금액','E011':'시간외 기표','E012':'개인거래처 고액','E013':'적요 미입력','E014':'다건 항목','E015':'반복거래 계정 이탈'};
+
+    function toggleErrorCode(code) {
+        const url = new URL(window.location.href);
+        let codes = (url.searchParams.get('error_code') || '').split(',').filter(c => c && c !== 'all');
+        const idx = codes.indexOf(code);
+        if (idx >= 0) codes.splice(idx, 1);
+        else codes.push(code);
+        if (codes.length === 0) url.searchParams.delete('error_code');
+        else url.searchParams.set('error_code', codes.join(','));
+        url.searchParams.set('page', '1');
+        window.location.href = url.toString();
+    }
+    function clearErrorCodes() {
+        const url = new URL(window.location.href);
+        url.searchParams.delete('error_code');
+        url.searchParams.set('page', '1');
+        window.location.href = url.toString();
+    }
 
     function doSearch(e) {
         e.preventDefault();

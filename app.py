@@ -323,14 +323,14 @@ def review_page(request: Request, risk: str = None, project: str = None,
                 JournalLine.vendor_name.like(kw)
             ).distinct()
     if error_code and error_code != "all":
-        # 정확한 코드 매칭: E004가 E004-M을 포함하지 않도록
-        # 패턴: 코드가 정확히 일치 (시작/콤마 뒤 + 끝/콤마 앞)
-        query = query.filter(
-            (JournalEntry.ai_error_codes == error_code) |
-            (JournalEntry.ai_error_codes.like(error_code + ',%')) |
-            (JournalEntry.ai_error_codes.like('%,' + error_code)) |
-            (JournalEntry.ai_error_codes.like('%,' + error_code + ',%'))
-        )
+        selected_codes = [c.strip() for c in error_code.split(',') if c.strip()]
+        for code in selected_codes:
+            query = query.filter(
+                (JournalEntry.ai_error_codes == code) |
+                (JournalEntry.ai_error_codes.like(code + ',%')) |
+                (JournalEntry.ai_error_codes.like('%,' + code)) |
+                (JournalEntry.ai_error_codes.like('%,' + code + ',%'))
+            )
 
     total_filtered = query.count()
     journals = query.order_by(
@@ -382,6 +382,7 @@ def review_page(request: Request, risk: str = None, project: str = None,
         "current_project": project or "all",
         "current_doc_type": doc_type or "all",
         "current_error_code": error_code or "all",
+        "selected_error_codes": [c.strip() for c in (error_code or '').split(',') if c.strip() and c.strip() != 'all'],
         "current_vendor_type": vendor_type or "all",
         "current_search": search or "",
         "current_search_field": search_field or "all",

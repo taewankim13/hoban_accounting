@@ -9,6 +9,27 @@ SKILL_PATH = os.path.join(".claude", "skills", "anomaly-detection", "SKILL.md")
 
 _balance_side_cache = None
 
+def _parse_date_range(text):
+    """기간 문자열(예: '2026.01.01 ~ 2026.12.31')에서 시작/종료일을 추출한다."""
+    s = re.sub(r'\(.*?\)', '', str(text)).strip()
+    parts = re.split(r'\s*[~–—]\s*|\s+\-\s+', s, maxsplit=1)
+    if len(parts) != 2:
+        return None, None
+    def _p(ds):
+        ds = ds.strip().rstrip('.')
+        for fmt in ('%Y.%m.%d', '%Y-%m-%d', '%Y/%m/%d', '%Y%m%d',
+                     '%Y. %m. %d', '%Y.%m.%d.'):
+            try:
+                return datetime.strptime(ds, fmt)
+            except ValueError:
+                continue
+        m = re.search(r'(\d{4})\s*년\s*(\d{1,2})\s*월\s*(\d{1,2})\s*일', ds)
+        if m:
+            return datetime(int(m.group(1)), int(m.group(2)), int(m.group(3)))
+        return None
+    return _p(parts[0]), _p(parts[1])
+
+
 def _load_balance_side_map():
     global _balance_side_cache
     if _balance_side_cache is None:
@@ -334,12 +355,13 @@ def _evaluate_single_condition(journal, field, op, val, threshold, context):
             "evidence_target": ["계약대상", "대상주소"],
             "evidence_vendor": ["계약자 상호", "거래처명"],
             "evidence_contract_amount": ["계약금액", "합계금액"],
-            "evidence_rent": ["차임(월세)", "차임", "월세"],
+            "evidence_rent": ["차임(월세)", "차임", "월세", "월세액", "임대료", "월임차료", "임차료"],
             "evidence_monthly_charge": ["당월요금계"],
             "evidence_period": ["계약기간", "검침기간"],
             "evidence_base_month": ["기준년월"],
             "evidence_base_date": ["기준일자", "계약일자", "고지일자"],
             "evidence_vat": ["부가세액", "부가세", "부가가치세"],
+            "evidence_deposit": ["보증금", "임대보증금", "전세보증금", "임차보증금"],
         }
         target_labels = EVIDENCE_FIELD_LABELS.get(field)
         if not target_labels:
@@ -366,6 +388,7 @@ def _evaluate_single_condition(journal, field, op, val, threshold, context):
         if not ev_values:
             return False
 
+        j_line_amounts = None
         journal_col = str(val) if val else "description"
         if journal_col == "description":
             j_val = journal.description or ""
@@ -381,6 +404,13 @@ def _evaluate_single_condition(journal, field, op, val, threshold, context):
             j_val = float(journal.total_debit or 0)
         elif journal_col == "total_credit":
             j_val = float(journal.total_credit or 0)
+        elif journal_col in ("debit_amount", "credit_amount"):
+            j_line_amounts = []
+            for line in journal.lines:
+                amt = line.debit_amount if journal_col == "debit_amount" else line.credit_amount
+                if amt and amt > 0:
+                    j_line_amounts.append((amt, line.account_name or line.account_code or ""))
+            j_val = 0
         elif journal_col == "project_name":
             j_val = getattr(journal, 'project_name_raw', '') or ''
         elif journal_col == "created_by":
@@ -409,6 +439,30 @@ def _evaluate_single_condition(journal, field, op, val, threshold, context):
         elif op in (">", ">=", "<", "<=", "==", "!="):
             try:
                 ev_num = float(re.sub(r'[^\d.]', '', ev_values[0]))
+            except (ValueError, IndexError):
+                return False
+            if j_line_amounts is not None:
+                side_label = "차변" if journal_col == "debit_amount" else "대변"
+                if op == "!=":
+                    for amt, acct_name in j_line_amounts:
+                        if ev_num == amt:
+                            return False
+                    if j_line_amounts:
+                        amounts_str = ", ".join(f"{n}({a:,.0f})" for a, n in j_line_amounts[:3])
+                        journal._mismatch_detail = f"증빙 '{label_display}'({ev_num:,.0f})과 일치하는 {side_label}금액 없음 [{amounts_str}]"
+                    return bool(j_line_amounts)
+                for amt, acct_name in j_line_amounts:
+                    hit = False
+                    if op == ">": hit = ev_num > amt
+                    elif op == ">=": hit = ev_num >= amt
+                    elif op == "<": hit = ev_num < amt
+                    elif op == "<=": hit = ev_num <= amt
+                    elif op == "==": hit = ev_num == amt
+                    if hit:
+                        journal._mismatch_detail = f"증빙 '{label_display}'({ev_num:,.0f}) {op} {acct_name} {side_label}금액({amt:,.0f})"
+                        return True
+                return False
+            try:
                 j_num = float(j_val) if isinstance(j_val, (int, float)) else float(re.sub(r'[^\d.]', '', str(j_val)))
             except (ValueError, IndexError):
                 return False
@@ -422,6 +476,29 @@ def _evaluate_single_condition(journal, field, op, val, threshold, context):
         elif op == "contains":
             return any(str(v) in str(j_val) or str(j_val) in str(v) for v in ev_values)
 
+        elif op in ("date_not_in_range", "date_in_range"):
+            j_date_str = journal.doc_date or ""
+            try:
+                j_date = datetime.strptime(j_date_str, "%Y-%m-%d")
+            except (ValueError, TypeError):
+                return False
+            in_any = False
+            matched_period = ""
+            for ev_val in ev_values:
+                start, end = _parse_date_range(ev_val)
+                if start and end and start <= j_date <= end:
+                    in_any = True
+                    matched_period = ev_val
+                    break
+            if op == "date_not_in_range":
+                if not in_any:
+                    period_str = ", ".join(ev_values[:2])
+                    journal._mismatch_detail = f"전표일자({j_date_str})가 증빙 '{label_display}'({period_str}) 기간에 포함되지 않음"
+                    return True
+                return False
+            else:
+                return in_any
+
         return False
 
     elif field.startswith("linkeddoc_"):
@@ -429,7 +506,7 @@ def _evaluate_single_condition(journal, field, op, val, threshold, context):
             "linkeddoc_title": ["문서제목"],
             "linkeddoc_site": ["현장명"],
             "linkeddoc_current_amount": ["금회기성", "금회기성액"],
-            "linkeddoc_contract_amount": ["계약금액", "도급금액"],
+            "linkeddoc_contract_amount": ["계약금액", "도급금액", "도급계약금액"],
             "linkeddoc_orderer": ["발주처", "발주자", "발주기관"],
         }
         target_labels = LINKED_DOC_FIELD_LABELS.get(field)
@@ -457,6 +534,7 @@ def _evaluate_single_condition(journal, field, op, val, threshold, context):
         if not doc_values:
             return False
 
+        j_line_amounts = None
         journal_col = str(val) if val else "description"
         if journal_col == "description":
             j_val = journal.description or ""
@@ -472,6 +550,13 @@ def _evaluate_single_condition(journal, field, op, val, threshold, context):
             j_val = float(journal.total_debit or 0)
         elif journal_col == "total_credit":
             j_val = float(journal.total_credit or 0)
+        elif journal_col in ("debit_amount", "credit_amount"):
+            j_line_amounts = []
+            for line in journal.lines:
+                amt = line.debit_amount if journal_col == "debit_amount" else line.credit_amount
+                if amt and amt > 0:
+                    j_line_amounts.append((amt, line.account_name or line.account_code or ""))
+            j_val = 0
         elif journal_col == "project_name":
             j_val = getattr(journal, 'project_name_raw', '') or ''
         elif journal_col == "created_by":
@@ -500,6 +585,30 @@ def _evaluate_single_condition(journal, field, op, val, threshold, context):
         elif op in (">", ">=", "<", "<=", "==", "!="):
             try:
                 doc_num = float(re.sub(r'[^\d.]', '', doc_values[0]))
+            except (ValueError, IndexError):
+                return False
+            if j_line_amounts is not None:
+                side_label = "차변" if journal_col == "debit_amount" else "대변"
+                if op == "!=":
+                    for amt, acct_name in j_line_amounts:
+                        if doc_num == amt:
+                            return False
+                    if j_line_amounts:
+                        amounts_str = ", ".join(f"{n}({a:,.0f})" for a, n in j_line_amounts[:3])
+                        journal._mismatch_detail = f"연결문서 '{label_display}'({doc_num:,.0f})과 일치하는 {side_label}금액 없음 [{amounts_str}]"
+                    return bool(j_line_amounts)
+                for amt, acct_name in j_line_amounts:
+                    hit = False
+                    if op == ">": hit = doc_num > amt
+                    elif op == ">=": hit = doc_num >= amt
+                    elif op == "<": hit = doc_num < amt
+                    elif op == "<=": hit = doc_num <= amt
+                    elif op == "==": hit = doc_num == amt
+                    if hit:
+                        journal._mismatch_detail = f"연결문서 '{label_display}'({doc_num:,.0f}) {op} {acct_name} {side_label}금액({amt:,.0f})"
+                        return True
+                return False
+            try:
                 j_num = float(j_val) if isinstance(j_val, (int, float)) else float(re.sub(r'[^\d.]', '', str(j_val)))
             except (ValueError, IndexError):
                 return False
@@ -758,6 +867,10 @@ def parse_with_llm(text: str) -> dict | None:
         prompt = f"""당신은 전표 이상탐지 룰 생성 전문가입니다.
 사용자의 자연어 설명을 분석하여 JSON 형식의 룰을 생성하세요.
 
+## 이름/설명 생성 규칙
+- name: 사용자 의도를 간결하게 요약한 룰 이름 (예: "고액 전표 탐지", "전표-증빙 부가세액 불일치", "임차료-증빙 월세액 불일치")
+- description: 해당 룰이 무엇을 탐지하는지 상세히 풀어서 설명 (예: "전표 내 계정과목명에 부가세가 포함된 항목의 차변금액과 증빙자료의 부가세액이 불일치하는 경우 탐지")
+
 ## 사용 가능한 필드 (field) — 반드시 이 목록의 값만 사용
 
 ### 전표 헤더 필드
@@ -787,6 +900,14 @@ def parse_with_llm(text: str) -> dict | None:
 - evidence_title: 증빙 제목과 전표 컬럼 비교. 연산자: has_common_word, no_common_word, contains. value: 비교 대상 전표 컬럼(description 등)
 - evidence_contract_amount: 증빙 계약금과 전표 금액 비교. 연산자: ==, !=, >, <. value: 비교 대상 전표 컬럼(total_debit 등)
 - evidence_monthly_charge: 증빙 당월요금계와 전표 금액 비교. 연산자: ==, !=, >, <. value: 비교 대상 전표 컬럼(total_debit 등)
+- evidence_period: 증빙 계약기간과 전표 일자 비교. 연산자: date_not_in_range(전표일자가 기간 밖), date_in_range(전표일자가 기간 내). value: "doc_date"
+- evidence_rent: 증빙 월세액/차임과 전표 금액 비교. 연산자: ==, !=. value: 비교 대상 전표 컬럼(debit_amount, total_debit 등)
+- evidence_vat: 증빙 부가세액과 전표 금액 비교. 연산자: ==, !=. value: 비교 대상 전표 컬럼(debit_amount, total_debit 등)
+- evidence_deposit: 증빙 보증금과 전표 금액 비교. 연산자: ==, !=. value: 비교 대상 전표 컬럼(debit_amount, total_debit 등)
+- evidence_target: 증빙 대상/계약대상과 전표 컬럼 비교. 연산자: has_common_word, no_common_word. value: 비교 대상 전표 컬럼(description, vendor_name 등)
+- evidence_vendor: 증빙 거래처/계약자와 전표 컬럼 비교. 연산자: has_common_word, no_common_word. value: 비교 대상 전표 컬럼(vendor_name 등)
+- evidence_base_month: 증빙 기준년월과 전표 컬럼 비교. 연산자: ==, !=. value: 비교 대상 전표 컬럼
+- evidence_base_date: 증빙 기준일자와 전표 컬럼 비교. 연산자: ==, !=. value: 비교 대상 전표 컬럼(doc_date 등)
 
 ### 연결문서 분석 필드
 - linkeddoc_title: 연결문서 문서제목과 전표 컬럼 비교. 연산자: has_common_word, no_common_word, contains. value: 비교 대상 전표 컬럼(description 등)
@@ -804,7 +925,7 @@ def parse_with_llm(text: str) -> dict | None:
 - odd_amount: 단수 금액. 연산자: ==, value: true
 - personal_vendor_high: 개인거래처 고액. 연산자: compound, value: {{"vendor_type":"P","min_amount":금액}}
 
-## 사용 가능한 연산자: ">", ">=", "<", "<=", "==", "!=", "contains", "compound", "no_common_word", "has_common_word"
+## 사용 가능한 연산자: ">", ">=", "<", "<=", "==", "!=", "contains", "compound", "no_common_word", "has_common_word", "date_not_in_range", "date_in_range"
 ## 위험등급 (severity): "High", "Medium", "Low"
 ## 카테고리: "금액", "시점", "유형", "내용", "계정", "거래처", "정합성", "증빙", "중복", "기타"
 ## 점수: 0~1 (High=0.3~0.5, Medium=0.15~0.25, Low=0.05~0.1)
@@ -934,7 +1055,7 @@ def parse_with_llm(text: str) -> dict | None:
             "multi_condition","evidence_description_match",
             "evidence_title","evidence_target","evidence_vendor",
             "evidence_contract_amount","evidence_rent","evidence_monthly_charge",
-            "evidence_period","evidence_base_month","evidence_base_date","evidence_vat",
+            "evidence_period","evidence_base_month","evidence_base_date","evidence_vat","evidence_deposit",
             "linkeddoc_title","linkeddoc_site","linkeddoc_current_amount",
             "linkeddoc_contract_amount","linkeddoc_orderer",
         }

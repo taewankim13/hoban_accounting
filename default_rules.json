@@ -91,19 +91,6 @@
     "category": "시점"
   },
   {
-    "id": "E010",
-    "name": "단수 금액",
-    "description": "금액이 10원 단위로 떨어지지 않는 비정상 단수 금액 (1만원 초과 거래 대상)",
-    "severity": "Low",
-    "score": 0.05,
-    "enabled": true,
-    "field": "odd_amount",
-    "operator": "==",
-    "value": true,
-    "threshold": 10000,
-    "category": "금액"
-  },
-  {
     "id": "E013",
     "name": "적요 미입력",
     "description": "적요(거래 설명)가 비어있거나 5자 미만인 전표",
@@ -145,7 +132,7 @@
   {
     "id": "E016",
     "name": "수익/비용 전표 차대변 오류",
-    "description": "수익계정(41xx,43xx)은 대변에만, 비용계정(42xx,44xx,45xx)은 차변에만 입력되어야 함. 차대변이 반대로 기표된 전표를 탐지 (역분개/취소 전표 제외)",
+    "description": "account_balance_side.json(757개 계정코드별 차/대변 정상방향)을 기준으로 기표 방향이 반대인 전표를 탐지 (역분개/취소 전표 제외)",
     "severity": "High",
     "score": 0.4,
     "enabled": true,
@@ -258,5 +245,127 @@
     "operator": "==",
     "value": 0,
     "id": "C008"
+  },
+  {
+    "id": "E018",
+    "name": "전표 회계일자 - 증빙 계약기간 내 기간포함여부",
+    "description": "전표의 회계일자가 증빙 계약서 계약기간 내에 있는지 확인",
+    "severity": "Medium",
+    "score": 0.2,
+    "enabled": true,
+    "field": "evidence_period",
+    "operator": "date_not_in_range",
+    "value": "doc_date",
+    "threshold": null,
+    "category": "증빙"
+  },
+  {
+    "id": "E019",
+    "name": "임차료-증빙(월세액) 일치 여부",
+    "description": "임차료 전표 금액과 증빙자료의 월세액 일치 여부 검토",
+    "severity": "Medium",
+    "score": 0.2,
+    "enabled": true,
+    "conditions": [
+      {
+        "field": "account_name_contains",
+        "operator": "contains",
+        "value": "임차료"
+      },
+      {
+        "field": "evidence_rent",
+        "operator": "!=",
+        "value": "debit_amount"
+      }
+    ],
+    "logic": "AND",
+    "field": "multi_condition",
+    "operator": "AND",
+    "value": "2개 조건",
+    "threshold": null,
+    "category": "증빙"
+  },
+  {
+    "id": "C009",
+    "name": "전표 - 증빙 간 부가세액 불일치",
+    "description": "전표 내 계정과목명에 '부가세'가 포함된 항목의 차변금액과 증빙자료의 부가세액이 불일치하는 경우 탐지",
+    "severity": "Medium",
+    "score": 0.2,
+    "enabled": true,
+    "conditions": [
+      {
+        "field": "account_name_contains",
+        "operator": "contains",
+        "value": "부가세"
+      },
+      {
+        "field": "evidence_vat",
+        "operator": "!=",
+        "value": "debit_amount"
+      }
+    ],
+    "logic": "AND",
+    "field": "multi_condition",
+    "operator": "AND",
+    "value": "2개 조건",
+    "threshold": null,
+    "category": "증빙"
+  },
+  {
+    "id": "C010",
+    "name": "전표 - 증빙(계약서) 간 월세액 비교 검토",
+    "description": "계약서가 첨부된 전표에서 증빙자료의 월세액과 전표 차변금액이 불일치하는 경우 탐지",
+    "severity": "Medium",
+    "score": 0.2,
+    "enabled": true,
+    "conditions": [
+      {
+        "field": "has_evidence",
+        "operator": "==",
+        "value": "Y"
+      },
+      {
+        "field": "evidence_rent",
+        "operator": "!=",
+        "value": "debit_amount"
+      }
+    ],
+    "logic": "AND",
+    "field": "multi_condition",
+    "operator": "AND",
+    "value": "2개 조건",
+    "threshold": null,
+    "category": "증빙"
+  },
+  {
+    "id": "C011",
+    "name": "전표 - 증빙(계약서) 간 보증금 비교 검토",
+    "description": "계약서가 첨부되고 적요에 '보증금'이 포함된 전표에서 증빙자료의 보증금과 전표 차변금액이 불일치하는 경우 탐지",
+    "severity": "Medium",
+    "score": 0.2,
+    "enabled": true,
+    "conditions": [
+      {
+        "field": "has_evidence",
+        "operator": "==",
+        "value": "Y"
+      },
+      {
+        "field": "description_contains",
+        "operator": "contains",
+        "value": "보증금"
+      },
+      {
+        "field": "evidence_deposit",
+        "operator": "!=",
+        "value": "debit_amount"
+      }
+    ],
+    "logic": "AND",
+    "field": "multi_condition",
+    "operator": "AND",
+    "value": "3개 조건",
+    "threshold": null,
+    "category": "증빙"
   }
 ]

@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
     <title>룰 관리 - 호반건설 FDS</title>
     <link rel="stylesheet" href="/static/css/style.css">
     <style>
@@ -333,6 +335,7 @@
             {value:'evidence_base_month', label:'증빙 - 기준년월', col:'(증빙파싱)'},
             {value:'evidence_base_date', label:'증빙 - 기준일자', col:'(증빙파싱)'},
             {value:'evidence_vat', label:'증빙 - 부가세액', col:'(증빙파싱)'},
+            {value:'evidence_deposit', label:'증빙 - 보증금', col:'(증빙파싱)'},
         ]},
         { group: '연결문서 분석', fields: [
             {value:'linkeddoc_title', label:'연결문서 - 문서제목', col:'(연결문서파싱)'},
@@ -346,10 +349,13 @@
     const FIELD_LABELS = {};
     FIELD_GROUPS.forEach(g => g.fields.forEach(f => { FIELD_LABELS[f.value] = f.label; }));
 
+    const OP_LABELS = {'>':'초과 (>)','>=':'이상 (>=)','<':'미만 (<)','<=':'이하 (<=)','==':'같음 (==)','!=':'불일치 (!=)','contains':'포함','no_common_word':'공통 단어 없음','has_common_word':'공통 단어 있음','date_not_in_range':'기간 밖','date_in_range':'기간 내','compound':'복합'};
+    const VAL_LABELS = {'description':'전표 적요','doc_type':'전표유형','doc_date':'회계일자','vendor_name':'거래처명','account_name':'계정과목명','total_debit':'차변금액 합계','total_credit':'대변금액 합계','debit_amount':'개별 차변금액','credit_amount':'개별 대변금액','project_name':'프로젝트명','created_by':'작성자'};
+
     const EVIDENCE_COMPARE_FIELDS = new Set([
         'evidence_title','evidence_target','evidence_vendor',
         'evidence_contract_amount','evidence_rent','evidence_monthly_charge',
-        'evidence_period','evidence_base_month','evidence_base_date','evidence_vat',
+        'evidence_period','evidence_base_month','evidence_base_date','evidence_vat','evidence_deposit',
         'linkeddoc_title','linkeddoc_site','linkeddoc_current_amount',
         'linkeddoc_contract_amount','linkeddoc_orderer'
     ]);
@@ -362,6 +368,8 @@
         {value:'account_name', label:'계정과목명'},
         {value:'total_debit', label:'차변합계'},
         {value:'total_credit', label:'대변합계'},
+        {value:'debit_amount', label:'차변금액 (개별항목)'},
+        {value:'credit_amount', label:'대변금액 (개별항목)'},
         {value:'project_name', label:'현장명'},
         {value:'created_by', label:'입력자'},
     ];
@@ -371,7 +379,8 @@
         <option value="<">< 미만</option><option value="<="><= 이하</option>
         <option value="==">== 일치</option><option value="!=">!= 불일치</option>
         <option value="contains">포함</option><option value="compound">복합 조건</option>
-        <option value="no_common_word">동일 단어 없음 (연관성 없음)</option><option value="has_common_word">동일 단어 있음 (연관성 있음)</option>`;
+        <option value="no_common_word">동일 단어 없음 (연관성 없음)</option><option value="has_common_word">동일 단어 있음 (연관성 있음)</option>
+        <option value="date_not_in_range">기간 미포함 (일자가 기간 밖)</option><option value="date_in_range">기간 포함 (일자가 기간 내)</option>`;
 
     // ══════ 재분석 ══════
     async function startReanalyze() {
@@ -468,8 +477,16 @@
         } else if (EVIDENCE_COMPARE_FIELDS.has(value)) {
             const numFields = new Set(['evidence_contract_amount','evidence_rent','evidence_monthly_charge',
                 'linkeddoc_current_amount','linkeddoc_contract_amount','evidence_vat']);
-            conds[idx].operator = numFields.has(value) ? '==' : 'has_common_word';
-            conds[idx].value = numFields.has(value) ? 'total_debit' : 'description';
+            if (value === 'evidence_period') {
+                conds[idx].operator = 'date_not_in_range';
+                conds[idx].value = 'doc_date';
+            } else if (numFields.has(value)) {
+                conds[idx].operator = '==';
+                conds[idx].value = 'total_debit';
+            } else {
+                conds[idx].operator = 'has_common_word';
+                conds[idx].value = 'description';
+            }
         }
         const logic = prefix === 'b' ? builderLogic : modalLogic;
         const containerId = prefix === 'b' ? 'bConditions' : 'mConditions';
@@ -564,39 +581,57 @@
     renderConditions('bConditions', builderConditions, builderLogic, 'b');
 
     // ══════ AI 대화형 빌더 ══════
+    function _valDisplay(v) {
+        if (typeof v === 'string' && VAL_LABELS[v]) return VAL_LABELS[v];
+        if (v === true || v === 'true') return 'true (예)';
+        if (v === false || v === 'false') return 'false (아니오)';
+        if (v === 'Y') return 'Y (있음)';
+        if (v === 'N') return 'N (없음)';
+        if (typeof v === 'number') return v.toLocaleString();
+        if (typeof v === 'object') return JSON.stringify(v);
+        return String(v);
+    }
+
     async function builderChat(text) {
         const input = document.getElementById('builderInput');
         const msg = text || input.value.trim(); if(!msg) return; input.value='';
         appendBuilder('user', msg);
-        appendBuilder('ai', '<div style="color:var(--gray-500)">Gemini AI로 룰을 생성하고 있습니다...</div>');
+        appendBuilder('ai', '<div style="color:var(--gray-500)">AI가 룰을 분석하고 있습니다...</div>');
         try {
             const res = await fetch('/api/rules/parse-nl', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({text:msg})});
             const d = await res.json();
             const chatBox = document.getElementById('builderChatBox');
             const lastAi = chatBox.querySelector('.chat-msg.ai:last-child');
-            if(lastAi && lastAi.textContent.includes('생성하고 있습니다')) lastAi.remove();
+            if(lastAi && lastAi.textContent.includes('분석하고 있습니다')) lastAi.remove();
             if(d.success) {
                 const r = d.rule;
                 document.getElementById('bName').value = r.name || '';
                 document.getElementById('bDesc').value = r.description || '';
-                if (r.conditions && r.conditions.length > 0) {
-                    builderConditions = r.conditions;
-                    builderLogic = r.logic || 'AND';
-                } else {
-                    builderConditions = [{field: r.field || 'max_line_amount', operator: r.operator || '>', value: r.value !== undefined ? r.value : ''}];
-                    builderLogic = 'AND';
-                }
-                renderConditions('bConditions', builderConditions, builderLogic, 'b');
                 safeSetSelect('bSeverity', r.severity);
                 document.getElementById('bScore').value = r.score || 0.15;
                 safeSetSelect('bCategory', r.category);
 
-                let reply = `룰 구성 완료: <strong>${r.name||''}</strong><br>`;
-                builderConditions.forEach((c,i) => {
-                    if(i>0) reply += `<span style="color:var(--hoban-orange);font-weight:700">${builderLogic}</span> `;
-                    reply += `<span style="background:#E3F2FD;padding:1px 6px;border-radius:6px;font-size:11px">${FIELD_LABELS[c.field]||c.field} ${c.operator} ${typeof c.value==='object'?JSON.stringify(c.value):c.value}</span> `;
+                const conditions = (r.conditions && r.conditions.length > 0)
+                    ? r.conditions
+                    : [{field: r.field, operator: r.operator, value: r.value}];
+                const logic = r.logic || 'AND';
+
+                let reply = `<div style="margin-bottom:6px"><strong>${r.name||''}</strong></div>`;
+                reply += `<div style="font-size:12px;color:#555;margin-bottom:10px">${r.description||''}</div>`;
+                reply += `<div style="background:#F8F8F8;border-radius:8px;padding:12px;font-size:12px">`;
+                reply += `<div style="font-weight:700;margin-bottom:8px;color:var(--hoban-dark)">추천 조건 가이드</div>`;
+                conditions.forEach((c, i) => {
+                    if (i > 0) reply += `<div style="text-align:center;margin:4px 0;font-weight:700;color:var(--hoban-orange);font-size:11px">${logic}</div>`;
+                    reply += `<div style="background:white;border:1px solid #E0E0E0;border-radius:6px;padding:8px 10px;margin-bottom:4px">`;
+                    reply += `<div style="font-weight:600;color:var(--hoban-dark);margin-bottom:4px;font-size:11px">조건 ${i+1}</div>`;
+                    reply += `<div style="display:flex;gap:10px;flex-wrap:wrap;font-size:12px">`;
+                    reply += `<span>필드: <strong style="color:#1565C0">${FIELD_LABELS[c.field]||c.field}</strong></span>`;
+                    reply += `<span>연산자: <strong style="color:#E65100">${OP_LABELS[c.operator]||c.operator}</strong></span>`;
+                    reply += `<span>값: <strong style="color:#2E7D32">${_valDisplay(c.value)}</strong></span>`;
+                    reply += `</div></div>`;
                 });
-                reply += `<br><span style="font-size:11px;color:var(--gray-500)">오른쪽에서 조건을 수정/추가하세요.</span>`;
+                reply += `<div style="margin-top:8px;font-size:11px;color:var(--gray-500)">위 내용을 참고하여 오른쪽 조건 편집에서 직접 설정하세요.</div>`;
+                reply += `</div>`;
                 appendBuilder('ai', reply);
             } else {
                 appendBuilder('ai', d.message || '조건을 이해하지 못했습니다.');
