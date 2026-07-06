@@ -5,7 +5,7 @@ import os
 import re
 from datetime import datetime
 from database import engine, SessionLocal, Base
-from models import JournalEntry, JournalLine, Project
+from models import JournalEntry, JournalLine, Project, Evidence, LinkedDocument
 
 
 def detect_format(header: list[str]) -> str:
@@ -52,6 +52,8 @@ def import_hoban_csv(csv_path: str):
     db = SessionLocal()
 
     # 기존 데이터 전체 삭제
+    db.query(Evidence).delete()
+    db.query(LinkedDocument).delete()
     db.query(JournalLine).delete()
     db.query(JournalEntry).delete()
     db.query(Project).delete()
@@ -97,7 +99,7 @@ def import_v2(db, rows):
     # rows는 이미 DictReader로 읽었으므로, 원본 CSV를 다시 읽어 인덱스 기반 매핑 생성
     acct_code_fix = {}
     try:
-        csv_path_candidates = ['hoban_data_2.csv', 'hoban_data_1.csv']
+        csv_path_candidates = ['hoban_data_3.csv', 'hoban_data_2.csv', 'hoban_data_1.csv']
         for cp in csv_path_candidates:
             if os.path.exists(cp):
                 import csv as _csv
@@ -377,5 +379,5 @@ def import_v1(db, rows):
 
 if __name__ == "__main__":
     import sys
-    path = sys.argv[1] if len(sys.argv) > 1 else "hoban_data_2.csv"
+    path = sys.argv[1] if len(sys.argv) > 1 else "hoban_data_3.csv"
     import_hoban_csv(path)
