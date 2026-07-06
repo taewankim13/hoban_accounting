@@ -93,25 +93,26 @@ def import_v2(db, rows):
     """hoban_data_2.csv 형식 임포트 (거래번호 기반)"""
     acct_master = load_account_master()
 
-    # 중복 컬럼명 문제 해결: 인덱스 기반으로 올바른 계정코드 읽기
-    # CSV에서 '계정코드'가 [50]과 [115]에 중복. DictReader는 [115](부가세용, 대부분 NULL)를 사용
-    # 실제 전표 계정코드는 [50]번 컬럼
-    # rows는 이미 DictReader로 읽었으므로, 원본 CSV를 다시 읽어 인덱스 기반 매핑 생성
+    # 중복 컬럼명 문제 해결: 인덱스 기반으로 올바른 계정코드/계정과목명 읽기
+    # DictReader는 중복 컬럼의 마지막 값을 사용하므로, 첫 번째 계정코드/계정과목명을 인덱스로 추출
     acct_code_fix = {}
+    acct_name_fix = {}
     try:
-        csv_path_candidates = ['hoban_data_3.csv', 'hoban_data_2.csv', 'hoban_data_1.csv']
+        csv_path_candidates = ['hoban_data_4.csv', 'hoban_data_3.csv', 'hoban_data_2.csv']
         for cp in csv_path_candidates:
             if os.path.exists(cp):
                 import csv as _csv
                 with open(cp, 'r', encoding='utf-8-sig') as _f:
                     reader = _csv.reader(_f)
                     header = next(reader)
-                    # 계정코드가 여러 개인 경우 50번째(전표 계정코드) 사용
                     acct_idx = None
+                    acct_name_idx = None
                     slip_idx = None
                     for i, h in enumerate(header):
                         if h.strip() == '계정코드' and acct_idx is None:
                             acct_idx = i
+                        if h.strip() == '계정과목명' and acct_name_idx is None:
+                            acct_name_idx = i
                         if h.strip() == '전표번호' and slip_idx is None:
                             slip_idx = i
                     if acct_idx is not None and slip_idx is not None:
@@ -121,7 +122,13 @@ def import_v2(db, rows):
                                 acct_code = data_row[acct_idx].strip()
                                 if slip_no and acct_code and acct_code != 'NULL':
                                     acct_code_fix[slip_no] = acct_code
+                                if acct_name_idx is not None and len(data_row) > acct_name_idx:
+                                    acct_name = data_row[acct_name_idx].strip()
+                                    if slip_no and acct_name and acct_name != 'NULL':
+                                        acct_name_fix[slip_no] = acct_name
                         print(f"[임포트] 계정코드 인덱스 매핑: {len(acct_code_fix)}건 (col[{acct_idx}])")
+                        if acct_name_idx is not None:
+                            print(f"[임포트] 계정과목명 인덱스 매핑: {len(acct_name_fix)}건 (col[{acct_name_idx}])")
                 break
     except Exception as e:
         print(f"[임포트] 계정코드 매핑 실패: {e}")
@@ -215,7 +222,7 @@ def import_v2(db, rows):
             doc_type=doc_type,
             category='',
             big_category='',
-            description=safe(first.get('비고', ''))[:500],
+            description=(safe(first.get('적요', '')) or safe(first.get('비고', '')))[:500],
             created_by=safe(first.get('입력자')),
             input_datetime=input_datetime,
             modified_datetime=safe(first.get('수정일자')),
@@ -239,18 +246,21 @@ def import_v2(db, rows):
             side = '차변' if side_raw == 'D' else '대변' if side_raw == 'C' else side_raw
             amt = float(safe(lr.get('회계금액'), '0') or 0)
 
-            # 계정코드: 전표번호 기반 인덱스 매핑 우선, DictReader 폴백
+            # 계정코드/과목명: 전표번호 기반 인덱스 매핑 우선, DictReader 폴백
             slip_no = safe(lr.get('전표번호'))
             raw_acct = acct_code_fix.get(slip_no, '') or safe(lr.get('계정코드'))
+            raw_acct_name = acct_name_fix.get(slip_no, '') or acct_master.get(raw_acct, raw_acct)
+
+            line_desc = safe(lr.get('적요', '')) or safe(lr.get('비고', ''))
 
             line = JournalLine(
                 line_no=int(safe(lr.get('전표조회순서'), '0') or 0),
                 side=side,
                 account_code=raw_acct,
-                account_name=acct_master.get(raw_acct, raw_acct),
+                account_name=raw_acct_name,
                 debit_amount=amt if side_raw == 'D' else 0,
                 credit_amount=amt if side_raw == 'C' else 0,
-                description=safe(lr.get('비고', ''))[:500],
+                description=line_desc[:500],
                 vendor_code=safe(lr.get('거래처코드')),
                 vendor_type=safe(lr.get('거래처유형')),
                 vendor_name=safe(lr.get('거래처명칭')),
@@ -379,5 +389,5 @@ def import_v1(db, rows):
 
 if __name__ == "__main__":
     import sys
-    path = sys.argv[1] if len(sys.argv) > 1 else "hoban_data_3.csv"
+    path = sys.argv[1] if len(sys.argv) > 1 else "hoban_data_4.csv"
     import_hoban_csv(path)

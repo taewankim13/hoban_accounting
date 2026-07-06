@@ -16,7 +16,7 @@ def run():
         print(f"[startup] DB에 이미 {count}건의 전표가 있습니다. 임포트 생략.")
         return
 
-    csv_path = "hoban_data_3.csv"
+    csv_path = "hoban_data_4.csv"
     if not os.path.exists(csv_path):
         print(f"[startup] {csv_path} 파일이 없습니다. 임포트 생략.")
         return
