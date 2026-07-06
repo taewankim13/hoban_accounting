@@ -222,7 +222,7 @@ def import_v2(db, rows):
             doc_type=doc_type,
             category='',
             big_category='',
-            description=(safe(first.get('적요', '')) or safe(first.get('비고', '')))[:500],
+            description=safe(first.get('비고', ''))[:500],
             created_by=safe(first.get('입력자')),
             input_datetime=input_datetime,
             modified_datetime=safe(first.get('수정일자')),
@@ -251,7 +251,7 @@ def import_v2(db, rows):
             raw_acct = acct_code_fix.get(slip_no, '') or safe(lr.get('계정코드'))
             raw_acct_name = acct_name_fix.get(slip_no, '') or acct_master.get(raw_acct, raw_acct)
 
-            line_desc = safe(lr.get('적요', '')) or safe(lr.get('비고', ''))
+            line_desc = safe(lr.get('비고', ''))
 
             line = JournalLine(
                 line_no=int(safe(lr.get('전표조회순서'), '0') or 0),
