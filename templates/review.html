@@ -24,8 +24,8 @@
         .card-grid .journal-card .jc-meta span{white-space:nowrap}
         /* 테이블 뷰 */
         .table-view{display:block}
-        .table-view table{width:100%;border-collapse:collapse;font-size:13px;background:white;border-radius:10px;overflow:hidden;box-shadow:0 2px 8px rgba(87,85,83,0.08)}
-        .table-view th{background:var(--hoban-dark);color:white;padding:10px 12px;text-align:left;font-weight:500;font-size:12px;white-space:nowrap;cursor:pointer;user-select:none;position:relative}
+        .table-view table{width:100%;border-collapse:collapse;font-size:13px;background:white;box-shadow:0 2px 8px rgba(87,85,83,0.08)}
+        .table-view th{background:var(--hoban-dark);color:white;padding:10px 12px;text-align:left;font-weight:500;font-size:12px;white-space:nowrap;cursor:pointer;user-select:none;position:sticky;top:var(--sticky-top,0);z-index:40}
         .table-view th:hover{background:#6D6B69}
         .table-view th .sort-icon{margin-left:4px;font-size:10px;opacity:0.5}
         .table-view th.sort-asc .sort-icon{opacity:1}
@@ -37,6 +37,13 @@
         .table-view .amt{text-align:right;font-variant-numeric:tabular-nums}
         @media(max-width:1024px){.card-grid{grid-template-columns:repeat(2,1fr)}}
         @media(max-width:640px){.card-grid{grid-template-columns:1fr}}
+        /* Compact risk stat cards */
+        .stats-grid{display:flex;gap:8px;margin-bottom:6px}
+        .stat-card{padding:4px 14px !important;min-height:auto !important;border-radius:6px !important;flex:0 0 auto !important}
+        .stat-value{font-size:16px !important;line-height:1 !important;margin:0 !important}
+        .stat-label{font-size:10px !important;margin-top:1px !important}
+        /* Sticky filter area */
+        .sticky-filters{position:sticky;top:0;z-index:50;background:#F5F3F0;padding:6px 0 2px;border-bottom:1px solid var(--gray-200)}
     </style>
 </head>
 <body>
@@ -155,6 +162,7 @@
             </div>
         </div>
 
+        <div class="sticky-filters" id="stickyFilters">
         <!-- 검색창 -->
         <div style="margin-bottom:12px">
             <form id="searchForm" onsubmit="doSearch(event)" style="display:flex;gap:8px;align-items:center">
@@ -254,6 +262,7 @@
                 <button id="btnTable" class="active" onclick="setView('table')">테이블</button>
             </div>
         </div>
+        </div><!-- /sticky-filters -->
 
         <!-- 테이블 뷰 -->
         <div class="table-view" id="tableView">
@@ -1080,6 +1089,14 @@
     document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeModal();document.getElementById('criteriaModal').classList.remove('show');closeOcrModal();closeSideModal();}});
     document.getElementById('criteriaModal').addEventListener('click',e=>{if(e.target===e.currentTarget)e.target.classList.remove('show');});
     document.getElementById('detailModal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal();});
+
+    function updateStickyTop() {
+        const sf = document.getElementById('stickyFilters');
+        if (sf) document.documentElement.style.setProperty('--sticky-top', sf.offsetHeight + 'px');
+    }
+    updateStickyTop();
+    window.addEventListener('resize', updateStickyTop);
+    new MutationObserver(updateStickyTop).observe(document.getElementById('stickyFilters'), {childList:true,subtree:true});
     </script>
 </body>
 </html>
