@@ -43,8 +43,8 @@ def startup():
     db = next(get_db())
     count = db.query(JournalEntry).count()
     if count == 0:
-        # CSV 실제 데이터 임포트 (hoban_data_4 우선)
-        csv_path = "hoban_data_4.csv" if os.path.exists("hoban_data_4.csv") else "hoban_data_3.csv"
+        # CSV 실제 데이터 임포트 (hoban_data_5 우선)
+        csv_path = next((p for p in ["hoban_data_5.csv", "hoban_data_4.csv"] if os.path.exists(p)), "hoban_data_5.csv")
         if os.path.exists(csv_path):
             from import_csv import import_hoban_csv
             import_hoban_csv(csv_path)

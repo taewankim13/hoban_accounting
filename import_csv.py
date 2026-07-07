@@ -46,31 +46,46 @@ def safe(val, default=''):
     return default if v == 'NULL' or v == '' else v
 
 
-def import_hoban_csv(csv_path: str, data_month: str = None):
-    """CSV 파일을 읽어 DB에 임포트한다. data_month가 주어지면 해당 월 데이터만 교체."""
+def import_hoban_csv(csv_path: str, data_month: str = None, keep_attachments: bool = False):
+    """CSV 파일을 읽어 DB에 임포트한다. data_month가 주어지면 해당 월 데이터만 교체.
+    keep_attachments=True이면 증빙/연결문서를 유지하고 전표 데이터만 교체한다."""
     Base.metadata.create_all(bind=engine)
     db = SessionLocal()
+
+    attachment_map = {}  # old_journal_id → doc_no
 
     if data_month:
         # 해당 월 데이터만 삭제
         month_journals = db.query(JournalEntry).filter(JournalEntry.data_month == data_month).all()
         month_ids = [j.id for j in month_journals]
         if month_ids:
-            db.query(Evidence).filter(Evidence.journal_id.in_(month_ids)).delete(synchronize_session=False)
-            db.query(LinkedDocument).filter(LinkedDocument.journal_id.in_(month_ids)).delete(synchronize_session=False)
+            if not keep_attachments:
+                db.query(Evidence).filter(Evidence.journal_id.in_(month_ids)).delete(synchronize_session=False)
+                db.query(LinkedDocument).filter(LinkedDocument.journal_id.in_(month_ids)).delete(synchronize_session=False)
+            else:
+                for j in month_journals:
+                    attachment_map[j.id] = j.doc_no
             db.query(JournalLine).filter(JournalLine.journal_id.in_(month_ids)).delete(synchronize_session=False)
             db.query(JournalEntry).filter(JournalEntry.id.in_(month_ids)).delete(synchronize_session=False)
         db.commit()
         print(f"[임포트] {data_month} 월 기존 데이터 {len(month_ids)}건 삭제 완료")
     else:
-        # 전체 삭제
-        db.query(Evidence).delete()
-        db.query(LinkedDocument).delete()
-        db.query(JournalLine).delete()
-        db.query(JournalEntry).delete()
-        db.query(Project).delete()
+        if keep_attachments:
+            # 증빙/연결문서 매핑 저장
+            for entry in db.query(JournalEntry).all():
+                attachment_map[entry.id] = entry.doc_no
+            db.query(JournalLine).delete()
+            db.query(JournalEntry).delete()
+            db.query(Project).delete()
+        else:
+            # 전체 삭제
+            db.query(Evidence).delete()
+            db.query(LinkedDocument).delete()
+            db.query(JournalLine).delete()
+            db.query(JournalEntry).delete()
+            db.query(Project).delete()
         db.commit()
-        print("[임포트] 기존 데이터 전체 삭제 완료")
+        print(f"[임포트] 기존 데이터 삭제 완료 (keep_attachments={keep_attachments})")
 
     # CSV 읽기
     with open(csv_path, "r", encoding="utf-8-sig") as f:
@@ -87,6 +102,27 @@ def import_hoban_csv(csv_path: str, data_month: str = None):
         import_v1(db, rows, data_month=data_month)
     elif fmt == 'v2':
         import_v2(db, rows, data_month=data_month)
+
+    # 증빙/연결문서 재연결
+    if keep_attachments and attachment_map:
+        new_id_map = {}
+        for entry in db.query(JournalEntry).all():
+            new_id_map[entry.doc_no] = entry.id
+        old_to_new = {}
+        for old_id, doc_no in attachment_map.items():
+            if doc_no in new_id_map:
+                old_to_new[old_id] = new_id_map[doc_no]
+        relinked = 0
+        for ev in db.query(Evidence).all():
+            if ev.journal_id in old_to_new:
+                ev.journal_id = old_to_new[ev.journal_id]
+                relinked += 1
+        for ld in db.query(LinkedDocument).all():
+            if ld.journal_id in old_to_new:
+                ld.journal_id = old_to_new[ld.journal_id]
+                relinked += 1
+        db.commit()
+        print(f"[임포트] 증빙/연결문서 {relinked}건 재연결 완료")
 
     db.close()
 
@@ -110,7 +146,7 @@ def import_v2(db, rows, data_month: str = None):
     acct_code_fix = {}
     acct_name_fix = {}
     try:
-        csv_path_candidates = ['hoban_data_4.csv', 'hoban_data_3.csv', 'hoban_data_2.csv']
+        csv_path_candidates = ['hoban_data_5.csv', 'hoban_data_4.csv', 'hoban_data_3.csv', 'hoban_data_2.csv']
         for cp in csv_path_candidates:
             if os.path.exists(cp):
                 import csv as _csv
@@ -403,5 +439,5 @@ def import_v1(db, rows, data_month: str = None):
 
 if __name__ == "__main__":
     import sys
-    path = sys.argv[1] if len(sys.argv) > 1 else "hoban_data_4.csv"
+    path = sys.argv[1] if len(sys.argv) > 1 else "hoban_data_5.csv"
     import_hoban_csv(path)
