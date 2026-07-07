@@ -40,6 +40,7 @@ class JournalEntry(Base):
     doc_date = Column(String(10))                               # 전표일자 (YYYYMMDD or YYYY-MM-DD)
     fiscal_year = Column(String(4), nullable=True)              # 회계연도
     doc_month = Column(String(2), nullable=True)                # 전표월
+    data_month = Column(String(7), nullable=True, index=True)   # 데이터 업로드 월 (YYYY-MM)
     doc_type = Column(String(50), nullable=True)                # 전표유형
     category = Column(String(20), nullable=True)                # 구분 (손익/부채/자산/자본)
     big_category = Column(String(30), nullable=True)            # 대분류

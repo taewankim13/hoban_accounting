@@ -175,7 +175,7 @@
                 </div>
                 <button type="submit" class="btn btn-primary btn-sm" style="padding:8px 18px;border-radius:20px">검색</button>
                 {% if current_search %}
-                <a href="/review?risk={{ current_risk }}&project={{ current_project }}&doc_type={{ current_doc_type }}&error_code={{ current_error_code }}&vendor_type={{ current_vendor_type }}" class="btn btn-outline btn-sm" style="padding:8px 14px;border-radius:20px;font-size:12px">초기화</a>
+                <a href="/review?risk={{ current_risk }}&project={{ current_project }}&doc_type={{ current_doc_type }}&error_code={{ current_error_code }}&vendor_type={{ current_vendor_type }}{{ sm }}" class="btn btn-outline btn-sm" style="padding:8px 14px;border-radius:20px;font-size:12px">초기화</a>
                 {% endif %}
             </form>
         </div>
@@ -183,12 +183,13 @@
         <!-- 필터: 위험등급 -->
         {% set sf = '&search_field=' + current_search_field if current_search_field and current_search_field != 'all' else '' %}
         {% set sq = '&search=' + current_search + sf if current_search else '' %}
+        {% set sm = '&month=' + current_month if current_month and current_month != 'all' else '' %}
         <div class="filter-bar">
-            <a href="/review?project={{ current_project }}&doc_type={{ current_doc_type }}&error_code={{ current_error_code }}&vendor_type={{ current_vendor_type }}{{ sq }}" class="filter-btn {{ 'active' if current_risk == 'all' }}">전체 <span class="badge">{{ total }}</span></a>
-            <a href="/review?risk=High&project={{ current_project }}&doc_type={{ current_doc_type }}&error_code={{ current_error_code }}&vendor_type={{ current_vendor_type }}{{ sq }}" class="filter-btn {{ 'active' if current_risk == 'High' }}">고위험 <span class="badge high-bg">{{ high }}</span></a>
-            <a href="/review?risk=Medium&project={{ current_project }}&doc_type={{ current_doc_type }}&error_code={{ current_error_code }}&vendor_type={{ current_vendor_type }}{{ sq }}" class="filter-btn {{ 'active' if current_risk == 'Medium' }}">주의 <span class="badge medium-bg">{{ medium }}</span></a>
-            <a href="/review?risk=Low&project={{ current_project }}&doc_type={{ current_doc_type }}&error_code={{ current_error_code }}&vendor_type={{ current_vendor_type }}{{ sq }}" class="filter-btn {{ 'active' if current_risk == 'Low' }}">참고 <span class="badge low-bg">{{ low }}</span></a>
-            <a href="/review?risk=정상&project={{ current_project }}&doc_type={{ current_doc_type }}&error_code={{ current_error_code }}&vendor_type={{ current_vendor_type }}{{ sq }}" class="filter-btn {{ 'active' if current_risk == '정상' }}">정상</a>
+            <a href="/review?project={{ current_project }}&doc_type={{ current_doc_type }}&error_code={{ current_error_code }}&vendor_type={{ current_vendor_type }}{{ sm }}{{ sq }}" class="filter-btn {{ 'active' if current_risk == 'all' }}">전체 <span class="badge">{{ total }}</span></a>
+            <a href="/review?risk=High&project={{ current_project }}&doc_type={{ current_doc_type }}&error_code={{ current_error_code }}&vendor_type={{ current_vendor_type }}{{ sm }}{{ sq }}" class="filter-btn {{ 'active' if current_risk == 'High' }}">고위험 <span class="badge high-bg">{{ high }}</span></a>
+            <a href="/review?risk=Medium&project={{ current_project }}&doc_type={{ current_doc_type }}&error_code={{ current_error_code }}&vendor_type={{ current_vendor_type }}{{ sm }}{{ sq }}" class="filter-btn {{ 'active' if current_risk == 'Medium' }}">주의 <span class="badge medium-bg">{{ medium }}</span></a>
+            <a href="/review?risk=Low&project={{ current_project }}&doc_type={{ current_doc_type }}&error_code={{ current_error_code }}&vendor_type={{ current_vendor_type }}{{ sm }}{{ sq }}" class="filter-btn {{ 'active' if current_risk == 'Low' }}">참고 <span class="badge low-bg">{{ low }}</span></a>
+            <a href="/review?risk=정상&project={{ current_project }}&doc_type={{ current_doc_type }}&error_code={{ current_error_code }}&vendor_type={{ current_vendor_type }}{{ sm }}{{ sq }}" class="filter-btn {{ 'active' if current_risk == '정상' }}">정상</a>
         </div>
 
         <!-- 필터: 이상사유 (다중 선택 AND 조건) -->
@@ -209,10 +210,18 @@
         </div>
         {% endif %}
 
-        <!-- 필터: 프로젝트 + 전표유형 + 보기전환 -->
+        <!-- 필터: 월 + 프로젝트 + 전표유형 + 보기전환 -->
         <div style="display:flex; gap:16px; flex-wrap:wrap; margin-bottom:16px; margin-top:8px; align-items:center">
             <div>
-                <select onchange="location.href='/review?risk={{ current_risk }}&doc_type={{ current_doc_type }}&error_code={{ current_error_code }}&vendor_type={{ current_vendor_type }}{{ sq }}&project='+this.value" style="padding:7px 12px; border:1px solid var(--gray-300); border-radius:20px; font-size:13px">
+                <select onchange="location.href='/review?risk={{ current_risk }}&project={{ current_project }}&doc_type={{ current_doc_type }}&error_code={{ current_error_code }}&vendor_type={{ current_vendor_type }}{{ sq }}&month='+this.value" style="padding:7px 12px; border:1px solid var(--gray-300); border-radius:20px; font-size:13px; {% if current_month and current_month != 'all' %}border-color:var(--hoban-orange);color:var(--hoban-orange);font-weight:600{% endif %}">
+                    <option value="all" {{ 'selected' if current_month == 'all' }}>전체 월</option>
+                    {% for m in available_months %}
+                    <option value="{{ m.month }}" {{ 'selected' if current_month == m.month }}>{{ m.month }} ({{ m.count }}건)</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <select onchange="location.href='/review?risk={{ current_risk }}&doc_type={{ current_doc_type }}&error_code={{ current_error_code }}&vendor_type={{ current_vendor_type }}{{ sm }}{{ sq }}&project='+this.value" style="padding:7px 12px; border:1px solid var(--gray-300); border-radius:20px; font-size:13px">
                     <option value="all" {{ 'selected' if current_project == 'all' }}>전체 현장</option>
                     {% for p in projects %}
                     <option value="{{ p.code }}" {{ 'selected' if current_project == p.code }}>{{ p.name }}</option>
@@ -220,7 +229,7 @@
                 </select>
             </div>
             <div>
-                <select onchange="location.href='/review?risk={{ current_risk }}&project={{ current_project }}&error_code={{ current_error_code }}&vendor_type={{ current_vendor_type }}{{ sq }}&doc_type='+this.value" style="padding:7px 12px; border:1px solid var(--gray-300); border-radius:20px; font-size:13px">
+                <select onchange="location.href='/review?risk={{ current_risk }}&project={{ current_project }}&error_code={{ current_error_code }}&vendor_type={{ current_vendor_type }}{{ sm }}{{ sq }}&doc_type='+this.value" style="padding:7px 12px; border:1px solid var(--gray-300); border-radius:20px; font-size:13px">
                     <option value="all" {{ 'selected' if current_doc_type == 'all' }}>전체 전표유형</option>
                     {% for dt in doc_types %}
                     <option value="{{ dt }}" {{ 'selected' if current_doc_type == dt }}>{{ dt }}</option>
@@ -228,7 +237,7 @@
                 </select>
             </div>
             <div>
-                <select onchange="location.href='/review?risk={{ current_risk }}&project={{ current_project }}&error_code={{ current_error_code }}&vendor_type={{ current_vendor_type }}&doc_type={{ current_doc_type }}{{ sq }}&vendor_type='+this.value" style="padding:7px 12px; border:1px solid var(--gray-300); border-radius:20px; font-size:13px">
+                <select onchange="location.href='/review?risk={{ current_risk }}&project={{ current_project }}&error_code={{ current_error_code }}&vendor_type={{ current_vendor_type }}&doc_type={{ current_doc_type }}{{ sm }}{{ sq }}&vendor_type='+this.value" style="padding:7px 12px; border:1px solid var(--gray-300); border-radius:20px; font-size:13px">
                     <option value="all" {{ 'selected' if current_vendor_type == 'all' }}>전체 거래처유형</option>
                     <option value="F" {{ 'selected' if current_vendor_type == 'F' }}>법인(F)</option>
                     <option value="P" {{ 'selected' if current_vendor_type == 'P' }}>개인(P)</option>
@@ -340,7 +349,7 @@
         <div class="pagination">
             {% for p in range(1, total_pages + 1) %}
                 {% if p <= 10 or p == total_pages or (p >= current_page - 2 and p <= current_page + 2) %}
-                <a href="/review?risk={{ current_risk }}&project={{ current_project }}&doc_type={{ current_doc_type }}&error_code={{ current_error_code }}&vendor_type={{ current_vendor_type }}{{ sq }}&page={{ p }}" class="{{ 'active' if p == current_page }}">{{ p }}</a>
+                <a href="/review?risk={{ current_risk }}&project={{ current_project }}&doc_type={{ current_doc_type }}&error_code={{ current_error_code }}&vendor_type={{ current_vendor_type }}{{ sm }}{{ sq }}&page={{ p }}" class="{{ 'active' if p == current_page }}">{{ p }}</a>
                 {% endif %}
             {% endfor %}
         </div>

@@ -1,0 +1,22 @@
+version: "3.8"
+
+services:
+  fds:
+    build: .
+    container_name: hoban-fds
+    restart: unless-stopped
+    ports:
+      - "8001:8001"
+    volumes:
+      # DB 영속화 — 컨테이너 재시작해도 데이터 유지
+      - fds-db:/app/data
+      # 업로드 파일 영속화
+      - fds-uploads:/app/static/uploads
+    env_file:
+      - .env
+    environment:
+      - PORT=8001
+
+volumes:
+  fds-db:
+  fds-uploads:

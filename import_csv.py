@@ -46,19 +46,31 @@ def safe(val, default=''):
     return default if v == 'NULL' or v == '' else v
 
 
-def import_hoban_csv(csv_path: str):
-    """CSV 파일을 읽어 DB에 임포트한다."""
+def import_hoban_csv(csv_path: str, data_month: str = None):
+    """CSV 파일을 읽어 DB에 임포트한다. data_month가 주어지면 해당 월 데이터만 교체."""
     Base.metadata.create_all(bind=engine)
     db = SessionLocal()
 
-    # 기존 데이터 전체 삭제
-    db.query(Evidence).delete()
-    db.query(LinkedDocument).delete()
-    db.query(JournalLine).delete()
-    db.query(JournalEntry).delete()
-    db.query(Project).delete()
-    db.commit()
-    print("[임포트] 기존 데이터 삭제 완료")
+    if data_month:
+        # 해당 월 데이터만 삭제
+        month_journals = db.query(JournalEntry).filter(JournalEntry.data_month == data_month).all()
+        month_ids = [j.id for j in month_journals]
+        if month_ids:
+            db.query(Evidence).filter(Evidence.journal_id.in_(month_ids)).delete(synchronize_session=False)
+            db.query(LinkedDocument).filter(LinkedDocument.journal_id.in_(month_ids)).delete(synchronize_session=False)
+            db.query(JournalLine).filter(JournalLine.journal_id.in_(month_ids)).delete(synchronize_session=False)
+            db.query(JournalEntry).filter(JournalEntry.id.in_(month_ids)).delete(synchronize_session=False)
+        db.commit()
+        print(f"[임포트] {data_month} 월 기존 데이터 {len(month_ids)}건 삭제 완료")
+    else:
+        # 전체 삭제
+        db.query(Evidence).delete()
+        db.query(LinkedDocument).delete()
+        db.query(JournalLine).delete()
+        db.query(JournalEntry).delete()
+        db.query(Project).delete()
+        db.commit()
+        print("[임포트] 기존 데이터 전체 삭제 완료")
 
     # CSV 읽기
     with open(csv_path, "r", encoding="utf-8-sig") as f:
@@ -72,9 +84,9 @@ def import_hoban_csv(csv_path: str):
     print(f"[임포트] 데이터 형식: {fmt}")
 
     if fmt == 'v1':
-        import_v1(db, rows)
+        import_v1(db, rows, data_month=data_month)
     elif fmt == 'v2':
-        import_v2(db, rows)
+        import_v2(db, rows, data_month=data_month)
 
     db.close()
 
@@ -89,7 +101,7 @@ def load_account_master():
         return {}
 
 
-def import_v2(db, rows):
+def import_v2(db, rows, data_month: str = None):
     """hoban_data_2.csv 형식 임포트 (거래번호 기반)"""
     acct_master = load_account_master()
 
@@ -239,6 +251,7 @@ def import_v2(db, rows):
             draft_doc_no=safe(first.get('문서번호')),
             total_debit=total_debit,
             total_credit=total_credit,
+            data_month=data_month or fmt_date(safe(first.get('회계일자'), ''))[:7],
         )
 
         for lr in line_rows:
@@ -279,7 +292,7 @@ def import_v2(db, rows):
     return count
 
 
-def import_v1(db, rows):
+def import_v1(db, rows, data_month: str = None):
     """hoban_data_1.csv 형식 임포트 (회계연도 기반) - 기존 로직"""
 
     grouped = collections.OrderedDict()
@@ -353,6 +366,7 @@ def import_v1(db, rows):
             draft_doc_no=safe(first.get("기안문서번호")) or None,
             func_area=safe(first.get("기능영역명")) or None,
             total_debit=0, total_credit=0,
+            data_month=data_month or fmt_date(safe(first.get("전표일자", ''), ''))[:7],
         )
 
         for lr in line_rows:

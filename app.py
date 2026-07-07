@@ -128,30 +128,51 @@ def run_ai_analysis(db: Session):
 # 대시보드
 # ──────────────────────────────────
 @app.get("/", response_class=HTMLResponse)
-def home(request: Request, db: Session = Depends(get_db)):
-    total = db.query(JournalEntry).count()
-    high = db.query(JournalEntry).filter(JournalEntry.ai_risk_level == "High").count()
-    medium = db.query(JournalEntry).filter(JournalEntry.ai_risk_level == "Medium").count()
-    low = db.query(JournalEntry).filter(JournalEntry.ai_risk_level == "Low").count()
-    normal = db.query(JournalEntry).filter(JournalEntry.ai_risk_level == "정상").count()
+def home(request: Request, month: str = None, db: Session = Depends(get_db)):
+    # 사용 가능한 월 목록
+    month_rows = db.query(JournalEntry.data_month, func.count(JournalEntry.id)).filter(
+        JournalEntry.data_month.isnot(None)
+    ).group_by(JournalEntry.data_month).order_by(JournalEntry.data_month.desc()).all()
+    available_months = [{"month": m, "count": c} for m, c in month_rows if m]
+
+    # 월 필터 적용
+    def base_q():
+        q = db.query(JournalEntry)
+        if month and month != "all":
+            q = q.filter(JournalEntry.data_month == month)
+        return q
+
+    total = base_q().count()
+    high = base_q().filter(JournalEntry.ai_risk_level == "High").count()
+    medium = base_q().filter(JournalEntry.ai_risk_level == "Medium").count()
+    low = base_q().filter(JournalEntry.ai_risk_level == "Low").count()
+    normal = base_q().filter(JournalEntry.ai_risk_level == "정상").count()
 
     projects = db.query(Project).all()
     project_stats = []
     for p in projects:
-        p_total = db.query(JournalEntry).filter(JournalEntry.project_id == p.id).count()
-        p_high = db.query(JournalEntry).filter(JournalEntry.project_id == p.id, JournalEntry.ai_risk_level == "High").count()
-        p_amount = db.query(func.coalesce(func.sum(JournalEntry.total_debit), 0)).filter(JournalEntry.project_id == p.id).scalar()
+        pq = base_q().filter(JournalEntry.project_id == p.id)
+        p_total = pq.count()
+        p_high = pq.filter(JournalEntry.ai_risk_level == "High").count()
+        p_amount = db.query(func.coalesce(func.sum(JournalEntry.total_debit), 0)).filter(JournalEntry.project_id == p.id)
+        if month and month != "all":
+            p_amount = p_amount.filter(JournalEntry.data_month == month)
+        p_amount = p_amount.scalar()
         if p_total > 0:
             project_stats.append({"code": p.code, "name": p.name, "total": p_total, "high": p_high, "amount": p_amount})
 
-    # 전표유형별 통계
-    doc_types = db.query(JournalEntry.doc_type, func.count()).group_by(JournalEntry.doc_type).all()
+    doc_types_q = db.query(JournalEntry.doc_type, func.count()).group_by(JournalEntry.doc_type)
+    if month and month != "all":
+        doc_types_q = doc_types_q.filter(JournalEntry.data_month == month)
+    doc_types = doc_types_q.all()
     type_stats = [{"name": t or "미분류", "count": c} for t, c in doc_types if c > 0]
 
     return templates.TemplateResponse(request, "home.html", {
         "total": total, "high": high, "medium": medium, "low": low, "normal": normal,
         "project_stats": sorted(project_stats, key=lambda x: x["total"], reverse=True),
         "type_stats": sorted(type_stats, key=lambda x: x["count"], reverse=True),
+        "available_months": available_months,
+        "current_month": month or "all",
     })
 
 
@@ -273,10 +294,13 @@ async def create_journal(request: Request, db: Session = Depends(get_db)):
 def review_page(request: Request, risk: str = None, project: str = None,
                 doc_type: str = None, error_code: str = None,
                 vendor_type: str = None, search: str = None,
-                search_field: str = None,
+                search_field: str = None, month: str = None,
                 page: int = 1, db: Session = Depends(get_db)):
     per_page = 50
     query = db.query(JournalEntry).options(joinedload(JournalEntry.lines), joinedload(JournalEntry.project))
+
+    if month and month != "all":
+        query = query.filter(JournalEntry.data_month == month)
 
     if risk and risk != "all":
         query = query.filter(JournalEntry.ai_risk_level == risk)
@@ -342,29 +366,44 @@ def review_page(request: Request, risk: str = None, project: str = None,
         JournalEntry.id.desc()
     ).offset((page - 1) * per_page).limit(per_page).all()
 
-    total = db.query(JournalEntry).count()
-    high = db.query(JournalEntry).filter(JournalEntry.ai_risk_level == "High").count()
-    medium = db.query(JournalEntry).filter(JournalEntry.ai_risk_level == "Medium").count()
-    low = db.query(JournalEntry).filter(JournalEntry.ai_risk_level == "Low").count()
+    # 월 필터 적용된 기본 쿼리
+    def base_q():
+        q = db.query(JournalEntry)
+        if month and month != "all":
+            q = q.filter(JournalEntry.data_month == month)
+        return q
+
+    total = base_q().count()
+    high = base_q().filter(JournalEntry.ai_risk_level == "High").count()
+    medium = base_q().filter(JournalEntry.ai_risk_level == "Medium").count()
+    low = base_q().filter(JournalEntry.ai_risk_level == "Low").count()
     projects = db.query(Project).all()
-    doc_types = db.query(JournalEntry.doc_type).distinct().all()
+    doc_types_q = db.query(JournalEntry.doc_type).distinct()
+    if month and month != "all":
+        doc_types_q = doc_types_q.filter(JournalEntry.data_month == month)
+    doc_types = doc_types_q.all()
     total_pages = (total_filtered + per_page - 1) // per_page
+
+    # 사용 가능한 월 목록
+    month_rows = db.query(JournalEntry.data_month, func.count(JournalEntry.id)).filter(
+        JournalEntry.data_month.isnot(None)
+    ).group_by(JournalEntry.data_month).order_by(JournalEntry.data_month.desc()).all()
+    available_months = [{"month": m, "count": c} for m, c in month_rows if m]
 
     # 이상사유별 건수 집계 (rules.json + ERROR_CODES 통합)
     from ai_engine import ERROR_CODES
     from rule_engine import load_rules
     all_rule_defs = load_rules()
 
-    # ERROR_CODES + rules.json 통합
     error_names = {code: info["name"] for code, info in ERROR_CODES.items()}
     error_severity = {code: info["severity"].lower() for code, info in ERROR_CODES.items()}
     for r in all_rule_defs:
         error_names[r["id"]] = r["name"]
         error_severity[r["id"]] = r["severity"].lower()
 
-    # 건수 집계 (정확한 코드 매칭)
     def count_exact_code(code):
-        return db.query(JournalEntry).filter(
+        q = base_q()
+        return q.filter(
             (JournalEntry.ai_error_codes == code) |
             (JournalEntry.ai_error_codes.like(code + ',%')) |
             (JournalEntry.ai_error_codes.like('%,' + code)) |
@@ -390,6 +429,8 @@ def review_page(request: Request, risk: str = None, project: str = None,
         "current_vendor_type": vendor_type or "all",
         "current_search": search or "",
         "current_search_field": search_field or "all",
+        "current_month": month or "all",
+        "available_months": available_months,
         "current_page": page,
         "total_pages": total_pages,
         "total_filtered": total_filtered,
@@ -1270,6 +1311,94 @@ def reanalyze_progress():
         "result": reanalyze_status["result"],
         "rules_changed": reanalyze_status["rules_changed"],
     }
+
+
+# ──────────────────────────────────
+# 월별 데이터 관리
+# ──────────────────────────────────
+@app.get("/api/data-months", response_class=JSONResponse)
+def list_data_months(db: Session = Depends(get_db)):
+    """DB에 존재하는 데이터 월 목록 조회"""
+    rows = db.query(
+        JournalEntry.data_month,
+        func.count(JournalEntry.id),
+    ).filter(JournalEntry.data_month.isnot(None)).group_by(JournalEntry.data_month).order_by(JournalEntry.data_month.desc()).all()
+    months = [{"month": m, "count": c} for m, c in rows if m]
+    return {"months": months}
+
+
+upload_status = {"running": False, "progress": "", "done": False, "result": None}
+
+@app.post("/api/data-upload", response_class=JSONResponse)
+async def upload_monthly_data(file: UploadFile = File(...), request: Request = None):
+    """월별 전표 CSV 업로드 및 임포트"""
+    if upload_status["running"]:
+        return JSONResponse({"error": "이미 업로드가 진행 중입니다."}, status_code=409)
+
+    form = await request.form()
+    data_month = form.get("data_month", "").strip()
+    if not data_month or len(data_month) != 7:
+        return JSONResponse({"error": "데이터 월(YYYY-MM)을 지정해주세요."}, status_code=400)
+
+    os.makedirs("static/uploads/csv", exist_ok=True)
+    save_path = os.path.join("static", "uploads", "csv", f"{data_month}.csv")
+    content = await file.read()
+    with open(save_path, "wb") as f:
+        f.write(content)
+
+    upload_status.update({"running": True, "progress": "CSV 저장 완료, 임포트 시작...", "done": False, "result": None})
+
+    def run_upload():
+        try:
+            from import_csv import import_hoban_csv
+            upload_status["progress"] = "CSV 임포트 중..."
+            import_hoban_csv(save_path, data_month=data_month)
+
+            upload_status["progress"] = "룰 분석 중..."
+            db = next(get_db())
+            try:
+                run_ai_analysis(db)
+                db.close()
+            except Exception as e:
+                db.close()
+                raise e
+
+            db2 = next(get_db())
+            month_count = db2.query(JournalEntry).filter(JournalEntry.data_month == data_month).count()
+            total_count = db2.query(JournalEntry).count()
+            db2.close()
+
+            upload_status.update({
+                "running": False, "done": True,
+                "progress": "완료",
+                "result": {"success": True, "month": data_month, "month_count": month_count, "total_count": total_count}
+            })
+        except Exception as e:
+            upload_status.update({"running": False, "done": True, "progress": "오류", "result": {"error": str(e)}})
+
+    threading.Thread(target=run_upload, daemon=True).start()
+    return {"success": True, "message": f"{data_month} 데이터 업로드를 시작합니다."}
+
+
+@app.get("/api/data-upload/status", response_class=JSONResponse)
+def upload_progress():
+    return upload_status
+
+
+@app.delete("/api/data-month/{month}", response_class=JSONResponse)
+def delete_month_data(month: str, db: Session = Depends(get_db)):
+    """특정 월 데이터 삭제"""
+    journals = db.query(JournalEntry).filter(JournalEntry.data_month == month).all()
+    if not journals:
+        return JSONResponse({"error": f"{month} 데이터가 없습니다."}, status_code=404)
+
+    ids = [j.id for j in journals]
+    db.query(Evidence).filter(Evidence.journal_id.in_(ids)).delete(synchronize_session=False)
+    db.query(LinkedDocument).filter(LinkedDocument.journal_id.in_(ids)).delete(synchronize_session=False)
+    db.query(JournalLine).filter(JournalLine.journal_id.in_(ids)).delete(synchronize_session=False)
+    db.query(JournalEntry).filter(JournalEntry.id.in_(ids)).delete(synchronize_session=False)
+    db.commit()
+    return {"success": True, "deleted": len(ids), "month": month}
 
 
 if __name__ == "__main__":

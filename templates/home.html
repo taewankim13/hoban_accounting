@@ -5,6 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>호반건설 FDS - 전표 이상탐지</title>
     <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        .month-bar{display:flex;gap:8px;align-items:center;margin-bottom:16px;flex-wrap:wrap}
+        .month-btn{padding:7px 16px;border:1px solid var(--gray-300);border-radius:20px;background:white;font-size:13px;cursor:pointer;color:var(--gray-700);text-decoration:none;font-family:inherit;transition:all .15s}
+        .month-btn:hover{border-color:var(--hoban-orange)}
+        .month-btn.active{background:var(--hoban-orange);color:white;border-color:var(--hoban-orange)}
+        .upload-area{border:2px dashed var(--gray-300);border-radius:12px;padding:24px;text-align:center;margin-top:16px;transition:all .2s}
+        .upload-area:hover{border-color:var(--hoban-orange);background:#FFF7ED}
+        .upload-area.dragover{border-color:var(--hoban-orange);background:#FFF7ED}
+        .month-tag{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:16px;font-size:12px;background:var(--gray-100);color:var(--gray-700);border:1px solid var(--gray-200)}
+        .month-tag .del{cursor:pointer;color:var(--gray-400);font-weight:700;font-size:14px;line-height:1}
+        .month-tag .del:hover{color:var(--danger)}
+        .progress-bar{height:6px;background:var(--gray-200);border-radius:3px;overflow:hidden;margin-top:8px}
+        .progress-bar .fill{height:100%;background:var(--hoban-orange);transition:width .3s}
+    </style>
 </head>
 <body>
     <header class="navbar">
@@ -20,7 +34,17 @@
     <div class="container">
         <div class="page-header">
             <h1>전표 이상탐지 대시보드</h1>
-            <p>호반건설 2026년 3월 전표 AI 전수 분석 현황</p>
+            <p>호반건설 전표 AI 전수 분석 현황{% if current_month and current_month != 'all' %} — {{ current_month }}{% endif %}</p>
+        </div>
+
+        <!-- 월 선택 바 -->
+        <div class="month-bar">
+            <span style="font-size:13px;font-weight:600;color:var(--hoban-dark);white-space:nowrap">점검 월:</span>
+            <a href="/" class="month-btn {{ 'active' if current_month == 'all' }}">전체</a>
+            {% for m in available_months %}
+            <a href="/?month={{ m.month }}" class="month-btn {{ 'active' if current_month == m.month }}">{{ m.month }} <span style="font-size:11px;opacity:0.7">({{ m.count }}건)</span></a>
+            {% endfor %}
+            <button onclick="document.getElementById('uploadModal').classList.add('show')" class="month-btn" style="border-style:dashed;color:var(--hoban-orange);border-color:var(--hoban-orange)">+ 데이터 업로드</button>
         </div>
 
         <div class="stats-grid">
@@ -46,14 +70,14 @@
                             <td style="text-align:right">{{ ps.total }}건</td>
                             <td style="text-align:right">{% if ps.high > 0 %}<span style="color:var(--danger);font-weight:700">{{ ps.high }}건</span>{% else %}<span style="color:var(--gray-500)">0건</span>{% endif %}</td>
                             <td style="text-align:right;font-size:13px">{{ "{:,.0f}".format(ps.amount) }}원</td>
-                            <td><a href="/review?project={{ ps.code }}" class="btn btn-sm btn-outline">검토</a></td>
+                            <td><a href="/review?project={{ ps.code }}{% if current_month != 'all' %}&month={{ current_month }}{% endif %}" class="btn btn-sm btn-outline">검토</a></td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
 
-            <!-- 전표유형별 -->
+            <!-- 전표유형별 + 월별 데이터 관리 -->
             <div>
                 <div class="card">
                     <div class="card-header"><h2>전표유형별 현황</h2></div>
@@ -65,13 +89,31 @@
                     {% endfor %}
                 </div>
 
+                <!-- 월별 데이터 현황 카드 -->
+                <div class="card" style="margin-top:16px">
+                    <div class="card-header"><h2>월별 데이터 현황</h2></div>
+                    {% if available_months %}
+                    {% for m in available_months %}
+                    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--gray-100)">
+                        <div class="month-tag">{{ m.month }}</div>
+                        <div style="display:flex;align-items:center;gap:8px">
+                            <span style="font-size:13px;font-weight:600">{{ m.count }}건</span>
+                            <button onclick="deleteMonth('{{ m.month }}')" style="background:none;border:none;cursor:pointer;color:var(--gray-400);font-size:14px" title="삭제">&#x2715;</button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    {% else %}
+                    <div style="padding:20px 0;text-align:center;color:var(--gray-500);font-size:13px">업로드된 데이터가 없습니다</div>
+                    {% endif %}
+                </div>
+
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:16px;">
                     <a href="/create" class="card" style="text-decoration:none;color:inherit;padding:20px;text-align:center">
                         <div style="font-size:28px;margin-bottom:8px">+</div>
                         <div style="font-weight:600;font-size:15px">전표 생성</div>
                         <div style="color:var(--gray-500);font-size:12px;margin-top:4px">챗/영수증으로 입력</div>
                     </a>
-                    <a href="/review?risk=High" class="card" style="text-decoration:none;color:inherit;padding:20px;text-align:center;border-left:3px solid var(--danger)">
+                    <a href="/review?risk=High{% if current_month != 'all' %}&month={{ current_month }}{% endif %}" class="card" style="text-decoration:none;color:inherit;padding:20px;text-align:center;border-left:3px solid var(--danger)">
                         <div style="font-size:28px;color:var(--danger);margin-bottom:8px">!</div>
                         <div style="font-weight:600;font-size:15px">긴급 검토</div>
                         <div style="color:var(--danger);font-size:12px;margin-top:4px">{{ high }}건 고위험</div>
@@ -80,5 +122,129 @@
             </div>
         </div>
     </div>
+
+    <!-- 데이터 업로드 모달 -->
+    <div class="modal-overlay" id="uploadModal">
+        <div class="modal" style="max-width:520px">
+            <div class="modal-header">
+                <h3>월별 전표 데이터 업로드</h3>
+                <button class="modal-close" onclick="document.getElementById('uploadModal').classList.remove('show')">&times;</button>
+            </div>
+            <div class="modal-body" style="padding:24px">
+                <div style="margin-bottom:16px">
+                    <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px">데이터 월 선택</label>
+                    <input type="month" id="uploadMonth" style="padding:8px 12px;border:1px solid var(--gray-300);border-radius:8px;font-size:14px;width:100%;box-sizing:border-box" />
+                </div>
+                <div class="upload-area" id="uploadArea"
+                     ondragover="event.preventDefault();this.classList.add('dragover')"
+                     ondragleave="this.classList.remove('dragover')"
+                     ondrop="handleDrop(event)">
+                    <div style="font-size:32px;margin-bottom:8px">&#x1F4C4;</div>
+                    <div style="font-weight:600;font-size:14px;margin-bottom:4px">CSV 파일을 드래그하거나 클릭하여 선택</div>
+                    <div style="font-size:12px;color:var(--gray-500)">호반건설 ERP 전표 데이터 (.csv)</div>
+                    <input type="file" id="csvFile" accept=".csv" style="display:none" onchange="fileSelected(this)">
+                    <button onclick="document.getElementById('csvFile').click()" class="btn btn-outline btn-sm" style="margin-top:12px">파일 선택</button>
+                </div>
+                <div id="uploadFileName" style="margin-top:8px;font-size:13px;color:var(--hoban-orange);display:none"></div>
+                <div id="uploadProgress" style="display:none;margin-top:12px">
+                    <div style="font-size:13px;color:var(--gray-600)" id="uploadStatusText">업로드 중...</div>
+                    <div class="progress-bar"><div class="fill" id="uploadProgressBar" style="width:0%"></div></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline btn-sm" onclick="document.getElementById('uploadModal').classList.remove('show')">취소</button>
+                <button class="btn btn-primary btn-sm" id="uploadBtn" onclick="startUpload()" disabled>업로드 및 분석 시작</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    let selectedFile = null;
+
+    function fileSelected(input) {
+        if (input.files.length > 0) {
+            selectedFile = input.files[0];
+            document.getElementById('uploadFileName').textContent = selectedFile.name + ' (' + (selectedFile.size / 1024 / 1024).toFixed(1) + 'MB)';
+            document.getElementById('uploadFileName').style.display = 'block';
+            document.getElementById('uploadBtn').disabled = false;
+        }
+    }
+
+    function handleDrop(e) {
+        e.preventDefault();
+        document.getElementById('uploadArea').classList.remove('dragover');
+        if (e.dataTransfer.files.length > 0) {
+            const f = e.dataTransfer.files[0];
+            if (f.name.endsWith('.csv')) {
+                selectedFile = f;
+                document.getElementById('uploadFileName').textContent = f.name + ' (' + (f.size / 1024 / 1024).toFixed(1) + 'MB)';
+                document.getElementById('uploadFileName').style.display = 'block';
+                document.getElementById('uploadBtn').disabled = false;
+            } else {
+                alert('CSV 파일만 업로드 가능합니다.');
+            }
+        }
+    }
+
+    async function startUpload() {
+        const monthInput = document.getElementById('uploadMonth').value;
+        if (!monthInput) { alert('데이터 월을 선택해주세요.'); return; }
+        if (!selectedFile) { alert('CSV 파일을 선택해주세요.'); return; }
+
+        document.getElementById('uploadBtn').disabled = true;
+        document.getElementById('uploadProgress').style.display = 'block';
+        document.getElementById('uploadStatusText').textContent = '파일 업로드 중...';
+        document.getElementById('uploadProgressBar').style.width = '10%';
+
+        const fd = new FormData();
+        fd.append('file', selectedFile);
+        fd.append('data_month', monthInput);
+
+        try {
+            const res = await fetch('/api/data-upload', { method: 'POST', body: fd });
+            const data = await res.json();
+            if (!res.ok) { alert(data.error || '업로드 실패'); document.getElementById('uploadBtn').disabled = false; return; }
+
+            document.getElementById('uploadStatusText').textContent = 'CSV 임포트 및 룰 분석 중...';
+            document.getElementById('uploadProgressBar').style.width = '30%';
+
+            const poll = setInterval(async () => {
+                const sr = await fetch('/api/data-upload/status');
+                const st = await sr.json();
+                if (st.done) {
+                    clearInterval(poll);
+                    document.getElementById('uploadProgressBar').style.width = '100%';
+                    if (st.result && st.result.success) {
+                        document.getElementById('uploadStatusText').textContent =
+                            monthInput + ' 데이터 ' + st.result.month_count + '건 업로드 완료!';
+                        setTimeout(() => location.href = '/?month=' + monthInput, 1500);
+                    } else {
+                        document.getElementById('uploadStatusText').textContent = '오류: ' + (st.result?.error || '알 수 없는 오류');
+                        document.getElementById('uploadBtn').disabled = false;
+                    }
+                } else {
+                    document.getElementById('uploadStatusText').textContent = st.progress || '처리 중...';
+                    const pct = parseInt(document.getElementById('uploadProgressBar').style.width) || 30;
+                    if (pct < 90) document.getElementById('uploadProgressBar').style.width = (pct + 5) + '%';
+                }
+            }, 2000);
+        } catch (e) {
+            alert('업로드 오류: ' + e.message);
+            document.getElementById('uploadBtn').disabled = false;
+        }
+    }
+
+    async function deleteMonth(month) {
+        if (!confirm(month + ' 데이터를 삭제하시겠습니까?\n해당 월의 전표, 증빙, 연결문서가 모두 삭제됩니다.')) return;
+        const res = await fetch('/api/data-month/' + month, { method: 'DELETE' });
+        const data = await res.json();
+        if (data.success) {
+            alert(month + ' 데이터 ' + data.deleted + '건 삭제 완료');
+            location.reload();
+        } else {
+            alert(data.error || '삭제 실패');
+        }
+    }
+    </script>
 </body>
 </html>
