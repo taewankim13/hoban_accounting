@@ -66,6 +66,7 @@ def run():
         dup_key_map[key].append(j.doc_no)
     dup_map = {k: v for k, v in dup_key_map.items() if len(v) >= 2}
 
+    high = med = low = ok = 0
     for i, journal in enumerate(journals):
         journal._vendor_account_map = vendor_account_map
         journal._duplicate_map = dup_map
@@ -76,17 +77,16 @@ def run():
         journal.ai_reason = "\n".join(result["reasons"]) if result["reasons"] else None
         journal.ai_recommendation = "\n".join(result["recommendations"]) if result["recommendations"] else None
         journal.ai_analyzed_at = datetime.now()
+        if result["risk_level"] == "High": high += 1
+        elif result["risk_level"] == "Medium": med += 1
+        elif result["risk_level"] == "Low": low += 1
+        else: ok += 1
         if (i + 1) % 500 == 0:
             db.commit()
             print(f"[startup] 분석 진행: {i+1}/{len(journals)}")
 
     db.commit()
     db.close()
-
-    high = sum(1 for j in journals if j.ai_risk_level == "High")
-    med = sum(1 for j in journals if j.ai_risk_level == "Medium")
-    low = sum(1 for j in journals if j.ai_risk_level == "Low")
-    ok = sum(1 for j in journals if j.ai_risk_level == "정상")
     print(f"[startup] 분석 완료: {len(journals)}건 (High:{high} Medium:{med} Low:{low} 정상:{ok})")
 
 if __name__ == "__main__":
