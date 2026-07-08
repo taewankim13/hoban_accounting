@@ -12,18 +12,19 @@ def init_db():
 
 def run():
     count = init_db()
-    if count > 0:
-        print(f"[startup] DB에 이미 {count}건의 전표가 있습니다. 임포트 생략.")
-        return
 
     csv_path = next((p for p in ["hoban_data_5.csv", "hoban_data_4.csv"] if os.path.exists(p)), "hoban_data_5.csv")
     if not os.path.exists(csv_path):
         print(f"[startup] {csv_path} 파일이 없습니다. 임포트 생략.")
         return
 
-    print("[startup] DB가 비어있습니다. CSV 임포트를 시작합니다...")
     from import_csv import import_hoban_csv
-    import_hoban_csv(csv_path)
+    if count > 0:
+        print(f"[startup] DB에 {count}건 존재. CSV 데이터 갱신 (증빙 유지)...")
+        import_hoban_csv(csv_path, keep_attachments=True)
+    else:
+        print("[startup] DB가 비어있습니다. CSV 임포트를 시작합니다...")
+        import_hoban_csv(csv_path)
 
     print("[startup] 룰 엔진 분석을 시작합니다...")
     from rule_engine import load_rules, apply_rules_to_journal
