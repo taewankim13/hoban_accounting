@@ -42,6 +42,16 @@
         .stat-card{padding:4px 14px !important;min-height:auto !important;border-radius:6px !important;flex:0 0 auto !important}
         .stat-value{font-size:16px !important;line-height:1 !important;margin:0 !important}
         .stat-label{font-size:10px !important;margin-top:1px !important}
+        /* Left filter sidebar */
+        .review-layout{display:flex;gap:16px;align-items:flex-start}
+        .filter-sidebar{flex:0 0 160px;position:sticky;top:0;z-index:45;padding-top:6px}
+        .sidebar-section{margin-bottom:14px}
+        .sidebar-title{font-size:11px;font-weight:600;color:var(--gray-500);margin-bottom:6px;text-transform:uppercase}
+        .sidebar-btn{display:flex;align-items:center;justify-content:space-between;width:100%;padding:5px 10px;margin-bottom:2px;border:1px solid var(--gray-200);border-radius:6px;font-size:12px;color:var(--gray-700);background:white;text-decoration:none;cursor:pointer;font-family:inherit;box-sizing:border-box}
+        .sidebar-btn:hover{border-color:var(--hoban-orange);color:var(--hoban-orange)}
+        .sidebar-btn.active{background:var(--hoban-orange);color:white;border-color:var(--hoban-orange)}
+        .sidebar-btn.active .badge{background:rgba(255,255,255,0.3);color:white}
+        .review-content{flex:1;min-width:0}
         /* Sticky filter area */
         .sticky-filters{position:sticky;top:0;z-index:50;background:#F5F3F0;padding:6px 0 2px;border-bottom:1px solid var(--gray-200)}
     </style>
@@ -162,6 +172,40 @@
             </div>
         </div>
 
+        {% set sf = '&search_field=' + current_search_field if current_search_field and current_search_field != 'all' else '' %}
+        {% set sq = '&search=' + current_search + sf if current_search else '' %}
+        {% set sm = '&month=' + current_month if current_month and current_month != 'all' else '' %}
+
+        <div class="review-layout">
+        <!-- Left sidebar: filters -->
+        <div class="filter-sidebar">
+            <div class="sidebar-section">
+                <div class="sidebar-title">위험등급</div>
+                <a href="/review?project={{ current_project }}&doc_type={{ current_doc_type }}&error_code={{ current_error_code }}&vendor_type={{ current_vendor_type }}{{ sm }}{{ sq }}" class="sidebar-btn {{ 'active' if current_risk == 'all' }}">전체 <span class="badge">{{ total }}</span></a>
+                <a href="/review?risk=High&project={{ current_project }}&doc_type={{ current_doc_type }}&error_code={{ current_error_code }}&vendor_type={{ current_vendor_type }}{{ sm }}{{ sq }}" class="sidebar-btn {{ 'active' if current_risk == 'High' }}">고위험 <span class="badge high-bg">{{ high }}</span></a>
+                <a href="/review?risk=Medium&project={{ current_project }}&doc_type={{ current_doc_type }}&error_code={{ current_error_code }}&vendor_type={{ current_vendor_type }}{{ sm }}{{ sq }}" class="sidebar-btn {{ 'active' if current_risk == 'Medium' }}">주의 <span class="badge medium-bg">{{ medium }}</span></a>
+                <a href="/review?risk=Low&project={{ current_project }}&doc_type={{ current_doc_type }}&error_code={{ current_error_code }}&vendor_type={{ current_vendor_type }}{{ sm }}{{ sq }}" class="sidebar-btn {{ 'active' if current_risk == 'Low' }}">참고 <span class="badge low-bg">{{ low }}</span></a>
+                <a href="/review?risk=정상&project={{ current_project }}&doc_type={{ current_doc_type }}&error_code={{ current_error_code }}&vendor_type={{ current_vendor_type }}{{ sm }}{{ sq }}" class="sidebar-btn {{ 'active' if current_risk == '정상' }}">정상</a>
+            </div>
+            {% if error_stats %}
+            <div class="sidebar-section">
+                <div class="sidebar-title">이상사유</div>
+                <button onclick="clearErrorCodes()" class="sidebar-btn {{ 'active' if selected_error_codes|length == 0 }}">전체</button>
+                {% for code, info in error_stats.items() %}
+                <button onclick="toggleErrorCode('{{ code }}')" class="sidebar-btn {% if code in selected_error_codes %}active{% endif %}">
+                    {{ info.name }}
+                    <span class="badge {% if info.severity == 'High' %}high-bg{% elif info.severity == 'Medium' %}medium-bg{% else %}low-bg{% endif %}">{{ info.count }}</span>
+                </button>
+                {% endfor %}
+                {% if selected_error_codes|length >= 2 %}
+                <div style="font-size:11px;color:var(--hoban-orange);font-weight:600;margin-top:4px">AND · {{ selected_error_codes|length }}개 선택</div>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Right content -->
+        <div class="review-content">
         <div class="sticky-filters" id="stickyFilters">
         <!-- 검색창 -->
         <div style="margin-bottom:12px">
@@ -187,36 +231,6 @@
                 {% endif %}
             </form>
         </div>
-
-        <!-- 필터: 위험등급 -->
-        {% set sf = '&search_field=' + current_search_field if current_search_field and current_search_field != 'all' else '' %}
-        {% set sq = '&search=' + current_search + sf if current_search else '' %}
-        {% set sm = '&month=' + current_month if current_month and current_month != 'all' else '' %}
-        <div class="filter-bar">
-            <a href="/review?project={{ current_project }}&doc_type={{ current_doc_type }}&error_code={{ current_error_code }}&vendor_type={{ current_vendor_type }}{{ sm }}{{ sq }}" class="filter-btn {{ 'active' if current_risk == 'all' }}">전체 <span class="badge">{{ total }}</span></a>
-            <a href="/review?risk=High&project={{ current_project }}&doc_type={{ current_doc_type }}&error_code={{ current_error_code }}&vendor_type={{ current_vendor_type }}{{ sm }}{{ sq }}" class="filter-btn {{ 'active' if current_risk == 'High' }}">고위험 <span class="badge high-bg">{{ high }}</span></a>
-            <a href="/review?risk=Medium&project={{ current_project }}&doc_type={{ current_doc_type }}&error_code={{ current_error_code }}&vendor_type={{ current_vendor_type }}{{ sm }}{{ sq }}" class="filter-btn {{ 'active' if current_risk == 'Medium' }}">주의 <span class="badge medium-bg">{{ medium }}</span></a>
-            <a href="/review?risk=Low&project={{ current_project }}&doc_type={{ current_doc_type }}&error_code={{ current_error_code }}&vendor_type={{ current_vendor_type }}{{ sm }}{{ sq }}" class="filter-btn {{ 'active' if current_risk == 'Low' }}">참고 <span class="badge low-bg">{{ low }}</span></a>
-            <a href="/review?risk=정상&project={{ current_project }}&doc_type={{ current_doc_type }}&error_code={{ current_error_code }}&vendor_type={{ current_vendor_type }}{{ sm }}{{ sq }}" class="filter-btn {{ 'active' if current_risk == '정상' }}">정상</a>
-        </div>
-
-        <!-- 필터: 이상사유 (다중 선택 AND 조건) -->
-        {% if error_stats %}
-        <div class="filter-bar" style="margin-top:4px">
-            <span style="font-size:13px; color:var(--gray-500); padding:6px 0; margin-right:4px; white-space:nowrap;">이상사유:</span>
-            <button onclick="clearErrorCodes()" class="filter-btn {{ 'active' if selected_error_codes|length == 0 }}" style="font-size:12px;font-family:inherit">전체</button>
-            {% for code, info in error_stats.items() %}
-            <button onclick="toggleErrorCode('{{ code }}')"
-               class="filter-btn {% if code in selected_error_codes %}active{% endif %}" style="font-size:12px;font-family:inherit">
-                {{ info.name }}
-                <span class="badge {% if info.severity == 'High' %}high-bg{% elif info.severity == 'Medium' %}medium-bg{% else %}low-bg{% endif %}">{{ info.count }}</span>
-            </button>
-            {% endfor %}
-            {% if selected_error_codes|length >= 2 %}
-            <span style="font-size:11px; color:var(--hoban-orange); margin-left:4px; font-weight:600; white-space:nowrap">AND · {{ selected_error_codes|length }}개 선택</span>
-            {% endif %}
-        </div>
-        {% endif %}
 
         <!-- 필터: 월 + 프로젝트 + 전표유형 + 보기전환 -->
         <div style="display:flex; gap:16px; flex-wrap:wrap; margin-bottom:16px; margin-top:8px; align-items:center">
@@ -363,6 +377,8 @@
             {% endfor %}
         </div>
         {% endif %}
+        </div><!-- /review-content -->
+        </div><!-- /review-layout -->
     </div>
 
     <!-- 모달 -->
