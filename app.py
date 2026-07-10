@@ -15,6 +15,15 @@ from ai_engine import analyze_journal
 from receipt_parser import parse_receipt_image
 import json as _json
 
+
+def get_gemini_key(request: Request) -> str:
+    return request.headers.get("X-Gemini-API-Key", "")
+
+
+def get_anthropic_key(request: Request) -> str:
+    return request.headers.get("X-Anthropic-API-Key", "")
+
+
 def load_balance_sides():
     """account_balance_side.json 로드: {계정코드: '차변'|'대변'}"""
     try:
@@ -202,13 +211,14 @@ async def chat_create(request: Request):
     current_form = data.get("current_form", None)
 
     from llm_chat import process_chat, HAS_CLAUDE
-    result = process_chat(message, history, current_form)
-    result["llm_mode"] = "claude" if HAS_CLAUDE else "local"
+    api_key = get_anthropic_key(request)
+    result = process_chat(message, history, current_form, api_key=api_key)
+    result["llm_mode"] = "claude" if (api_key or HAS_CLAUDE) else "local"
     return result
 
 
 @app.post("/api/receipt", response_class=JSONResponse)
-async def upload_receipt(file: UploadFile = File(...)):
+async def upload_receipt(file: UploadFile = File(...), request: Request = None):
     ext = os.path.splitext(file.filename)[1] or ".jpg"
     saved_name = f"{uuid.uuid4().hex}{ext}"
     save_path = os.path.join("static", "uploads", saved_name)
@@ -217,7 +227,8 @@ async def upload_receipt(file: UploadFile = File(...)):
         f.write(content)
     print(f"[OCR] 영수증 업로드: {file.filename} → {save_path} ({len(content)} bytes)")
     try:
-        result = parse_receipt_image(save_path, file.filename)
+        gemini_key = get_gemini_key(request) if request else ""
+        result = parse_receipt_image(save_path, file.filename, api_key=gemini_key)
         result["image_url"] = f"/static/uploads/{saved_name}"
         print(f"[OCR] 결과: mode={result.get('ocr_mode')}, amount={result.get('amount')}, vendor={result.get('vendor')}")
         return result
@@ -597,7 +608,7 @@ def approve_journal(doc_no: str, db: Session = Depends(get_db)):
 
 
 @app.post("/api/ocr-reparse/{doc_no}", response_class=JSONResponse)
-async def ocr_reparse(doc_no: str, db: Session = Depends(get_db)):
+async def ocr_reparse(doc_no: str, request: Request, db: Session = Depends(get_db)):
     """첨부 이미지를 LLM Vision으로 재분석"""
     journal = db.query(JournalEntry).filter(JournalEntry.doc_no == doc_no).first()
     if not journal or not journal.receipt_image:
@@ -609,10 +620,11 @@ async def ocr_reparse(doc_no: str, db: Session = Depends(get_db)):
 
     try:
         from llm_vision import analyze_receipt_with_llm, HAS_LLM_VISION
-        if not HAS_LLM_VISION:
-            return {"success": False, "error": "ALPHA_API_KEY가 설정되지 않았습니다."}
+        gemini_key = get_gemini_key(request)
+        if not gemini_key and not HAS_LLM_VISION:
+            return {"success": False, "error": "NO_API_KEY"}
 
-        result = analyze_receipt_with_llm(image_path)
+        result = analyze_receipt_with_llm(image_path, api_key=gemini_key)
         if result.get("success"):
             journal.ocr_date = result.get("date")
             journal.ocr_vendor = result.get("vendor")
@@ -873,7 +885,8 @@ async def parse_nl_rule(request: Request):
     from rule_engine import parse_natural_language_rule
     data = await request.json()
     text = data.get("text", "")
-    result = parse_natural_language_rule(text)
+    gemini_key = get_gemini_key(request)
+    result = parse_natural_language_rule(text, api_key=gemini_key)
     if result:
         return {"success": True, "rule": result}
     return {"success": False, "message": "룰을 생성할 수 없습니다. 조건을 더 구체적으로 입력해주세요."}
@@ -913,7 +926,8 @@ async def parse_evidence_document_api(file: UploadFile = File(...),
         if evidence_type not in PARSEABLE_EVIDENCE_TYPES:
             return {"success": False, "error": f"파싱을 지원하지 않는 증빙 유형입니다: {evidence_type}"}
 
-        result = await asyncio.to_thread(parse_evidence_document, save_path, evidence_type)
+        gemini_key = get_gemini_key(request) if request else ""
+        result = await asyncio.to_thread(parse_evidence_document, save_path, evidence_type, api_key=gemini_key)
         return result
     except Exception as e:
         print(f"[증빙파싱API] 오류: {e}")
@@ -924,7 +938,7 @@ async def parse_evidence_document_api(file: UploadFile = File(...),
 
 
 @app.post("/api/evidence/parse-linked-doc", response_class=JSONResponse)
-async def parse_linked_doc_api(file: UploadFile = File(...)):
+async def parse_linked_doc_api(file: UploadFile = File(...), request: Request = None):
     """연결문서 이미지/PDF를 LLM으로 파싱"""
     ext = os.path.splitext(file.filename)[1].lower()
     parseable_exts = IMG_EXTS | {'.pdf'}
@@ -940,7 +954,8 @@ async def parse_linked_doc_api(file: UploadFile = File(...)):
     try:
         import asyncio
         from llm_vision import parse_linked_document
-        result = await asyncio.to_thread(parse_linked_document, save_path)
+        gemini_key = get_gemini_key(request) if request else ""
+        result = await asyncio.to_thread(parse_linked_document, save_path, api_key=gemini_key)
         return result
     except Exception as e:
         print(f"[연결문서파싱API] 오류: {e}")
@@ -988,7 +1003,8 @@ async def upload_evidence(doc_no: str, file: UploadFile = File(...),
                 import asyncio
                 from llm_vision import parse_evidence_document, PARSEABLE_EVIDENCE_TYPES
                 if ev_type in PARSEABLE_EVIDENCE_TYPES:
-                    parse_result = await asyncio.to_thread(parse_evidence_document, save_path, ev_type)
+                    g_key = get_gemini_key(request) if request else ""
+                    parse_result = await asyncio.to_thread(parse_evidence_document, save_path, ev_type, api_key=g_key)
                     if parse_result.get("success"):
                         parsed_data_str = _json.dumps(parse_result["fields"], ensure_ascii=False)
                     else:
@@ -1065,7 +1081,7 @@ def delete_evidence(evidence_id: int, db: Session = Depends(get_db)):
 
 
 @app.post("/api/evidence/{evidence_id}/reparse", response_class=JSONResponse)
-async def reparse_evidence(evidence_id: int, db: Session = Depends(get_db)):
+async def reparse_evidence(evidence_id: int, request: Request, db: Session = Depends(get_db)):
     """증빙자료 AI 재파싱"""
     evidence = db.query(Evidence).filter(Evidence.id == evidence_id).first()
     if not evidence:
@@ -1082,7 +1098,8 @@ async def reparse_evidence(evidence_id: int, db: Session = Depends(get_db)):
         if ev_type not in PARSEABLE_EVIDENCE_TYPES:
             return {"success": False, "error": f"파싱을 지원하지 않는 유형입니다: {ev_type}"}
 
-        result = await asyncio.to_thread(parse_evidence_document, file_path, ev_type)
+        gemini_key = get_gemini_key(request)
+        result = await asyncio.to_thread(parse_evidence_document, file_path, ev_type, api_key=gemini_key)
         if result.get("success") and result.get("fields"):
             evidence.parsed_data = _json.dumps(result["fields"], ensure_ascii=False)
             db.commit()
@@ -1132,7 +1149,8 @@ async def upload_linked_doc(doc_no: str, file: UploadFile = File(...),
     elif ext in IMG_EXTS or ext == '.pdf':
         try:
             from llm_vision import parse_linked_document
-            parse_result = parse_linked_document(save_path)
+            g_key = get_gemini_key(request) if request else ""
+            parse_result = parse_linked_document(save_path, api_key=g_key)
             if parse_result.get("success") and parse_result.get("fields"):
                 import json as _json2
                 parsed_data_str = _json2.dumps(parse_result["fields"], ensure_ascii=False)

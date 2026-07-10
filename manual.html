@@ -1,0 +1,1183 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>호반건설 전표 이상탐지 시스템 (FDS) — 사용자 매뉴얼</title>
+<style>
+:root {
+  --hb-orange: #EE7500;
+  --hb-orange-light: #FFF7ED;
+  --hb-dark: #575553;
+  --hb-dark-deep: #3D3B3A;
+  --text-primary: #2C2A28;
+  --text-secondary: #6E6C6A;
+  --text-caption: #9E9C9A;
+  --bg-page: #FAFAF8;
+  --bg-card: #FFFFFF;
+  --bg-code: #F5F3F0;
+  --bg-sidebar: #FFFFFF;
+  --border: #E8E6E3;
+  --border-light: #F0EEEB;
+  --risk-high: #E53935;
+  --risk-high-bg: #FFEBEE;
+  --risk-med: #FB8C00;
+  --risk-med-bg: #FFF3E0;
+  --risk-low: #0097A7;
+  --risk-low-bg: #E0F7FA;
+  --risk-ok: #43A047;
+  --risk-ok-bg: #E8F5E9;
+  --shadow-sm: 0 1px 3px rgba(87,85,83,0.06);
+  --shadow-md: 0 2px 8px rgba(87,85,83,0.08);
+}
+@media(prefers-color-scheme:dark){
+  :root {
+    --text-primary: #E8E6E3;
+    --text-secondary: #A8A6A3;
+    --text-caption: #7E7C7A;
+    --bg-page: #1A1918;
+    --bg-card: #252423;
+    --bg-code: #2E2D2C;
+    --bg-sidebar: #201F1E;
+    --border: #3A3938;
+    --border-light: #333231;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.2);
+    --shadow-md: 0 2px 8px rgba(0,0,0,0.3);
+  }
+}
+:root[data-theme="dark"] {
+  --text-primary: #E8E6E3;
+  --text-secondary: #A8A6A3;
+  --text-caption: #7E7C7A;
+  --bg-page: #1A1918;
+  --bg-card: #252423;
+  --bg-code: #2E2D2C;
+  --bg-sidebar: #201F1E;
+  --border: #3A3938;
+  --border-light: #333231;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.2);
+  --shadow-md: 0 2px 8px rgba(0,0,0,0.3);
+}
+:root[data-theme="light"] {
+  --text-primary: #2C2A28;
+  --text-secondary: #6E6C6A;
+  --text-caption: #9E9C9A;
+  --bg-page: #FAFAF8;
+  --bg-card: #FFFFFF;
+  --bg-code: #F5F3F0;
+  --bg-sidebar: #FFFFFF;
+  --border: #E8E6E3;
+  --border-light: #F0EEEB;
+  --shadow-sm: 0 1px 3px rgba(87,85,83,0.06);
+  --shadow-md: 0 2px 8px rgba(87,85,83,0.08);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Pretendard', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--bg-page);
+  color: var(--text-primary);
+  line-height: 1.7;
+  font-size: 15px;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---------- layout ---------- */
+.manual-layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* sidebar */
+.sidebar {
+  position: sticky;
+  top: 0;
+  flex: 0 0 260px;
+  height: 100vh;
+  overflow-y: auto;
+  background: var(--bg-sidebar);
+  border-right: 1px solid var(--border);
+  padding: 28px 0;
+  z-index: 100;
+}
+.sidebar-brand {
+  padding: 0 24px 20px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 16px;
+}
+.sidebar-brand .logo-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+.sidebar-brand .logo-text {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--hb-dark);
+  letter-spacing: -0.02em;
+}
+@media(prefers-color-scheme:dark){ .sidebar-brand .logo-text { color: var(--text-primary); } }
+:root[data-theme="dark"] .sidebar-brand .logo-text { color: var(--text-primary); }
+:root[data-theme="light"] .sidebar-brand .logo-text { color: var(--hb-dark); }
+
+.sidebar-brand .badge {
+  background: var(--hb-orange);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 4px;
+  letter-spacing: 0.05em;
+}
+.sidebar-brand .sub {
+  font-size: 12px;
+  color: var(--text-caption);
+  margin-top: 2px;
+}
+
+.nav-group { margin-bottom: 8px; }
+.nav-group-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-caption);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 8px 24px 4px;
+}
+.nav-link {
+  display: block;
+  padding: 6px 24px 6px 28px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  border-left: 2px solid transparent;
+  transition: all 0.15s;
+}
+.nav-link:hover {
+  color: var(--hb-orange);
+  background: var(--hb-orange-light);
+  border-left-color: var(--hb-orange);
+}
+.nav-link.sub {
+  padding-left: 40px;
+  font-size: 12px;
+  color: var(--text-caption);
+}
+.nav-link.sub:hover { color: var(--hb-orange); }
+
+/* main */
+.main-content {
+  flex: 1;
+  min-width: 0;
+  padding: 40px 56px 80px;
+  max-width: 900px;
+}
+
+/* ---------- typography ---------- */
+.page-title {
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+  margin-bottom: 8px;
+  line-height: 1.25;
+}
+.page-subtitle {
+  font-size: 15px;
+  color: var(--text-secondary);
+  margin-bottom: 40px;
+  line-height: 1.6;
+}
+
+.section { margin-bottom: 48px; }
+
+.section-id {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--hb-orange);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+h2 {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+  margin-bottom: 16px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--border);
+}
+h3 {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 28px 0 10px;
+  letter-spacing: -0.01em;
+}
+h4 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin: 20px 0 8px;
+}
+
+p { margin-bottom: 12px; max-width: 65ch; }
+p + p { margin-top: 0; }
+
+/* ---------- components ---------- */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px 24px;
+  margin-bottom: 16px;
+  box-shadow: var(--shadow-sm);
+}
+
+.callout {
+  border-radius: 8px;
+  padding: 14px 18px;
+  margin: 16px 0;
+  font-size: 13px;
+  line-height: 1.6;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+.callout-icon { flex-shrink: 0; font-size: 16px; margin-top: 1px; }
+.callout.tip {
+  background: var(--hb-orange-light);
+  border: 1px solid #FFE0B2;
+  color: #BF5F00;
+}
+@media(prefers-color-scheme:dark){
+  .callout.tip { background: rgba(238,117,0,0.1); border-color: rgba(238,117,0,0.2); color: #FFB74D; }
+}
+:root[data-theme="dark"] .callout.tip { background: rgba(238,117,0,0.1); border-color: rgba(238,117,0,0.2); color: #FFB74D; }
+:root[data-theme="light"] .callout.tip { background: var(--hb-orange-light); border-color: #FFE0B2; color: #BF5F00; }
+
+.callout.warn {
+  background: var(--risk-high-bg);
+  border: 1px solid #FFCDD2;
+  color: #B71C1C;
+}
+@media(prefers-color-scheme:dark){
+  .callout.warn { background: rgba(229,57,53,0.1); border-color: rgba(229,57,53,0.2); color: #EF9A9A; }
+}
+:root[data-theme="dark"] .callout.warn { background: rgba(229,57,53,0.1); border-color: rgba(229,57,53,0.2); color: #EF9A9A; }
+:root[data-theme="light"] .callout.warn { background: var(--risk-high-bg); border-color: #FFCDD2; color: #B71C1C; }
+
+.callout.info {
+  background: var(--risk-low-bg);
+  border: 1px solid #B2EBF2;
+  color: #006064;
+}
+@media(prefers-color-scheme:dark){
+  .callout.info { background: rgba(0,151,167,0.1); border-color: rgba(0,151,167,0.2); color: #80DEEA; }
+}
+:root[data-theme="dark"] .callout.info { background: rgba(0,151,167,0.1); border-color: rgba(0,151,167,0.2); color: #80DEEA; }
+:root[data-theme="light"] .callout.info { background: var(--risk-low-bg); border-color: #B2EBF2; color: #006064; }
+
+/* steps */
+.steps { counter-reset: step; margin: 16px 0; }
+.step {
+  counter-increment: step;
+  display: flex;
+  gap: 14px;
+  margin-bottom: 14px;
+  align-items: flex-start;
+}
+.step::before {
+  content: counter(step);
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  background: var(--hb-orange);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 2px;
+}
+.step-body { flex: 1; min-width: 0; }
+.step-title { font-weight: 600; font-size: 14px; margin-bottom: 2px; }
+.step-desc { font-size: 13px; color: var(--text-secondary); }
+
+/* tables */
+.tbl-wrap { overflow-x: auto; margin: 16px 0; border-radius: 8px; border: 1px solid var(--border); }
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+th {
+  background: var(--hb-dark);
+  color: #fff;
+  padding: 10px 14px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 12px;
+  white-space: nowrap;
+}
+@media(prefers-color-scheme:dark){ th { background: #3A3938; } }
+:root[data-theme="dark"] th { background: #3A3938; }
+:root[data-theme="light"] th { background: var(--hb-dark); }
+td {
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--border-light);
+  vertical-align: top;
+}
+tr:last-child td { border-bottom: none; }
+
+/* badges */
+.badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.badge-high { background: var(--risk-high-bg); color: var(--risk-high); }
+.badge-med { background: var(--risk-med-bg); color: var(--risk-med); }
+.badge-low { background: var(--risk-low-bg); color: var(--risk-low); }
+.badge-ok { background: var(--risk-ok-bg); color: var(--risk-ok); }
+.badge-orange { background: var(--hb-orange-light); color: var(--hb-orange); }
+
+/* kbd */
+kbd {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-size: 12px;
+  font-family: 'SF Mono', 'Consolas', monospace;
+  color: var(--text-secondary);
+}
+
+/* code */
+code {
+  background: var(--bg-code);
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 13px;
+  font-family: 'SF Mono', 'Consolas', monospace;
+  color: var(--hb-orange);
+}
+
+/* feature grid */
+.feat-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin: 16px 0;
+}
+.feat-item {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 16px;
+}
+.feat-item .feat-icon {
+  font-size: 20px;
+  margin-bottom: 6px;
+}
+.feat-item .feat-name {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 3px;
+}
+.feat-item .feat-desc {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+/* screen-nav pills */
+.screen-nav {
+  display: flex;
+  gap: 8px;
+  margin: 16px 0 24px;
+  flex-wrap: wrap;
+}
+.screen-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-decoration: none;
+  transition: all 0.15s;
+}
+.screen-pill:hover {
+  border-color: var(--hb-orange);
+  color: var(--hb-orange);
+  background: var(--hb-orange-light);
+}
+.screen-pill .pill-icon { font-size: 16px; }
+
+/* divider */
+.divider {
+  height: 1px;
+  background: var(--border);
+  margin: 40px 0;
+}
+
+/* list */
+ul, ol {
+  padding-left: 20px;
+  margin: 8px 0 16px;
+}
+li {
+  margin-bottom: 6px;
+  font-size: 14px;
+}
+li::marker { color: var(--text-caption); }
+
+/* scroll margin for anchors */
+[id] { scroll-margin-top: 20px; }
+
+/* print */
+@media print {
+  .sidebar { display: none; }
+  .main-content { padding: 20px; max-width: 100%; }
+  .page-title { font-size: 24px; }
+}
+
+/* responsive */
+@media (max-width: 900px) {
+  .sidebar { display: none; }
+  .main-content { padding: 24px 20px 60px; }
+  .feat-grid { grid-template-columns: 1fr; }
+}
+
+/* header bar */
+.header-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  background: var(--hb-dark);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+}
+@media(prefers-color-scheme:dark){ .header-bar { background: #2E2D2C; } }
+:root[data-theme="dark"] .header-bar { background: #2E2D2C; }
+:root[data-theme="light"] .header-bar { background: var(--hb-dark); }
+
+.header-bar .hb { color: var(--hb-orange); }
+
+/* version stamp */
+.version-stamp {
+  margin-top: 48px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--text-caption);
+}
+</style>
+</head>
+<body>
+<div class="manual-layout">
+
+<!-- ===== SIDEBAR ===== -->
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    <div class="logo-row">
+      <span class="logo-text">호반건설</span>
+      <span class="badge">FDS</span>
+    </div>
+    <div class="sub">사용자 매뉴얼 v1.0</div>
+  </div>
+
+  <nav>
+    <div class="nav-group">
+      <div class="nav-group-title">개요</div>
+      <a href="#overview" class="nav-link">시스템 소개</a>
+      <a href="#screens" class="nav-link">화면 구성</a>
+      <a href="#risk-criteria" class="nav-link">위험등급 분류 기준</a>
+    </div>
+    <div class="nav-group">
+      <div class="nav-group-title">화면별 매뉴얼</div>
+      <a href="#dashboard" class="nav-link">대시보드</a>
+      <a href="#dash-stats" class="nav-link sub">통계 현황</a>
+      <a href="#dash-project" class="nav-link sub">프로젝트별 현황</a>
+      <a href="#dash-upload" class="nav-link sub">데이터 업로드</a>
+      <a href="#create" class="nav-link">전표 생성</a>
+      <a href="#create-evidence" class="nav-link sub">증빙자료 업로드</a>
+      <a href="#create-chat" class="nav-link sub">AI 챗 어시스턴트</a>
+      <a href="#create-form" class="nav-link sub">전표 입력 폼</a>
+      <a href="#create-save" class="nav-link sub">전표 저장</a>
+      <a href="#review" class="nav-link">전표 검토</a>
+      <a href="#review-filter" class="nav-link sub">필터 및 검색</a>
+      <a href="#review-table" class="nav-link sub">테이블/카드 뷰</a>
+      <a href="#review-detail" class="nav-link sub">전표 상세</a>
+      <a href="#review-approve" class="nav-link sub">승인/반려</a>
+      <a href="#review-ocr" class="nav-link sub">OCR 점검</a>
+      <a href="#review-side" class="nav-link sub">차대변 불일치 검토</a>
+      <a href="#rules" class="nav-link">룰 관리</a>
+      <a href="#rules-ai" class="nav-link sub">AI 룰 빌더</a>
+      <a href="#rules-manual" class="nav-link sub">수동 룰 설정</a>
+      <a href="#rules-manage" class="nav-link sub">룰 편집/삭제</a>
+      <a href="#rules-reanalyze" class="nav-link sub">전체 재분석</a>
+    </div>
+    <div class="nav-group">
+      <div class="nav-group-title">AI 기능</div>
+      <a href="#ai-ocr" class="nav-link">Gemini Vision OCR</a>
+      <a href="#ai-chat" class="nav-link">대화형 전표 생성</a>
+      <a href="#ai-nlrule" class="nav-link">자연어 룰 생성</a>
+    </div>
+    <div class="nav-group">
+      <div class="nav-group-title">부록</div>
+      <a href="#shortcuts" class="nav-link">단축키</a>
+      <a href="#file-types" class="nav-link">지원 파일 형식</a>
+      <a href="#faq" class="nav-link">FAQ</a>
+    </div>
+  </nav>
+</aside>
+
+<!-- ===== MAIN ===== -->
+<main class="main-content">
+
+<!-- ──── 시스템 소개 ──── -->
+<h1 class="page-title" id="overview">호반건설 전표 이상탐지 시스템</h1>
+<p class="page-subtitle">
+  사내 구축형 LLM 기반 실시간 전표 이상탐지 및 지능형 감사 파이프라인(FDS)의 사용자 매뉴얼입니다.<br>
+  18개 탐지 룰 엔진과 Gemini Vision AI를 활용하여 전표의 이상 징후를 자동으로 분석하고 위험등급을 판정합니다.
+</p>
+
+<div class="screen-nav" id="screens">
+  <a href="#dashboard" class="screen-pill"><span class="pill-icon">&#x1F4CA;</span> 대시보드</a>
+  <a href="#create" class="screen-pill"><span class="pill-icon">&#x1F4DD;</span> 전표 생성</a>
+  <a href="#review" class="screen-pill"><span class="pill-icon">&#x1F50D;</span> 전표 검토</a>
+  <a href="#rules" class="screen-pill"><span class="pill-icon">&#x2699;</span> 룰 관리</a>
+</div>
+
+<!-- ──── 위험등급 분류 기준 ──── -->
+<div class="section" id="risk-criteria">
+  <span class="section-id">위험등급 체계</span>
+  <h2>위험등급 분류 기준</h2>
+  <p>각 전표는 등록된 이상탐지 룰에 의해 분석되며, 탐지된 룰별 위험 점수의 합산으로 최종 등급이 결정됩니다.</p>
+
+  <h3>등급 판정 기준</h3>
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr><th>등급</th><th>점수 기준</th><th>의미</th><th>조치</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><span class="badge badge-high">High</span></td><td>합계 &ge; 0.8</td><td>고위험 — 중대한 오류 또는 부정 가능성</td><td>즉시 확인 및 조치</td></tr>
+        <tr><td><span class="badge badge-med">Medium</span></td><td>0.3 &le; 합계 &lt; 0.8</td><td>주의 — 확인이 필요한 이상 징후</td><td>검토 후 판단</td></tr>
+        <tr><td><span class="badge badge-low">Low</span></td><td>합계 &lt; 0.3 (룰 1개+)</td><td>참고 — 경미한 이상 또는 관례적 패턴</td><td>모니터링</td></tr>
+        <tr><td><span class="badge badge-ok">정상</span></td><td>탐지 룰 0개</td><td>정상 — 이상 징후 없음</td><td>—</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>룰별 위험 점수</h3>
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr><th>등급</th><th>해당 룰</th><th>점수</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="badge badge-high">High</span></td>
+          <td>차대변 불일치(E001), 차대변 오류(E008), 중복 전표(E003), 계정 착오(E002), 고액 10억+(E004)</td>
+          <td>0.3 ~ 0.5</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-med">Medium</span></td>
+          <td>반복거래 이탈(E015), 역분개(E006), 해약/환불(E006-H), 고액 5억+(E004-M), 개인거래처 고액(E012), 증빙 누락(E007)</td>
+          <td>0.15 ~ 0.25</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-low">Low</span></td>
+          <td>주말 기표(E005), 월말 기표(E009), 단수 금액(E010), 근무시간 외(E011), 적요 미입력(E013), 다건 항목(E014)</td>
+          <td>0.05 ~ 0.1</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout tip">
+    <span class="callout-icon">&#x1F4A1;</span>
+    <div>
+      <strong>산출 예시:</strong>
+      "차대변 불일치(0.5)" + "중복 전표(0.4)" 동시 탐지 → 합계 0.9 → <span class="badge badge-high">High</span><br>
+      같은 필드의 상위/하위 룰은 더 엄격한 것만 적용됩니다. (예: 10억 초과 + 5억 초과 → 10억만 적용)
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ════════════════════════════════════════════ -->
+<!-- 대시보드 -->
+<!-- ════════════════════════════════════════════ -->
+<div class="section" id="dashboard">
+  <span class="section-id">화면 1</span>
+  <h2>대시보드</h2>
+  <p>시스템 전체 현황을 한눈에 파악할 수 있는 메인 화면입니다. 위험등급별 통계, 프로젝트별 현황, 월별 데이터 관리 기능을 제공합니다.</p>
+
+  <h3 id="dash-stats">통계 카드</h3>
+  <p>화면 상단에 5개의 통계 카드가 표시됩니다.</p>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>카드</th><th>표시 내용</th><th>색상</th></tr></thead>
+      <tbody>
+        <tr><td>전체</td><td>분석된 전체 전표 수</td><td>회색</td></tr>
+        <tr><td>고위험</td><td>High 등급 전표 수</td><td><span class="badge badge-high">빨강</span></td></tr>
+        <tr><td>주의</td><td>Medium 등급 전표 수</td><td><span class="badge badge-med">주황</span></td></tr>
+        <tr><td>참고</td><td>Low 등급 전표 수</td><td><span class="badge badge-low">청록</span></td></tr>
+        <tr><td>정상</td><td>이상 징후 없는 전표 수</td><td><span class="badge badge-ok">녹색</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>월 선택</h3>
+  <p>통계 카드 위에 월별 필터 버튼이 표시됩니다. 특정 월을 클릭하면 해당 월의 데이터만 필터링되어 통계와 프로젝트 현황이 갱신됩니다.</p>
+
+  <h3 id="dash-project">프로젝트별 현황</h3>
+  <p>프로젝트(현장)별 전표 건수, 고위험 건수, 총 금액을 테이블로 보여줍니다. 각 행의 <strong>검토</strong> 링크를 클릭하면 해당 프로젝트의 전표 검토 화면으로 이동합니다.</p>
+
+  <h3>전표유형 요약 / 월별 데이터 현황</h3>
+  <p>우측 사이드에는 전표유형별 건수 카드와 월별 데이터 적재 현황이 표시됩니다. 각 월의 <kbd>X</kbd> 버튼으로 해당 월 데이터를 삭제할 수 있습니다.</p>
+
+  <div class="callout warn">
+    <span class="callout-icon">&#x26A0;</span>
+    <div><strong>주의:</strong> 월별 데이터 삭제 시 해당 월의 전표, 분석 결과, 증빙자료가 모두 삭제됩니다. 삭제 전 확인 팝업이 표시됩니다.</div>
+  </div>
+
+  <h3 id="dash-upload">데이터 업로드</h3>
+  <p>월 선택 바 우측의 <strong>+ 데이터 업로드</strong> 버튼으로 ERP에서 추출한 CSV 파일을 업로드합니다.</p>
+  <div class="steps">
+    <div class="step">
+      <div class="step-body">
+        <div class="step-title">업로드 모달 열기</div>
+        <div class="step-desc"><strong>+ 데이터 업로드</strong> 버튼을 클릭합니다.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-body">
+        <div class="step-title">대상 월 선택</div>
+        <div class="step-desc">업로드할 데이터의 대상 월(YYYY-MM)을 선택합니다.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-body">
+        <div class="step-title">CSV 파일 업로드</div>
+        <div class="step-desc">드래그 앤 드롭 또는 파일 선택으로 CSV 파일을 업로드합니다. 업로드 후 자동으로 임포트 및 룰 분석이 시작됩니다.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-body">
+        <div class="step-title">진행 상황 확인</div>
+        <div class="step-desc">프로그레스 바로 임포트 및 분석 진행률을 확인합니다. 완료 시 자동 새로고침됩니다.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ════════════════════════════════════════════ -->
+<!-- 전표 생성 -->
+<!-- ════════════════════════════════════════════ -->
+<div class="section" id="create">
+  <span class="section-id">화면 2</span>
+  <h2>전표 생성</h2>
+  <p>수동 또는 AI 어시스턴트를 활용하여 새 전표를 생성합니다. 영수증/세금계산서 이미지를 업로드하면 AI가 자동으로 금액, 거래처, 일자를 추출하여 폼에 입력합니다.</p>
+
+  <h3 id="create-evidence">증빙자료 업로드</h3>
+  <p>화면 좌측 상단에 증빙자료 업로드 영역이 있습니다.</p>
+  <div class="steps">
+    <div class="step">
+      <div class="step-body">
+        <div class="step-title">증빙 유형 선택</div>
+        <div class="step-desc">드롭다운에서 증빙 유형(세금계산서, 영수증, 거래명세서, 계약서, 공과금 고지서, 견적서, 검수확인서, 기타)을 선택합니다.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-body">
+        <div class="step-title">파일 업로드</div>
+        <div class="step-desc">파일을 선택합니다. 이미지(JPG, PNG 등)나 PDF 파일은 AI가 자동 분석하여 금액, 거래처, 일자를 추출합니다.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-body">
+        <div class="step-title">AI 분석 결과 확인</div>
+        <div class="step-desc">추출된 항목이 테이블 형태로 표시됩니다. 세금계산서의 경우 공급가액, 세액, 거래처, 작성일자 등이 자동 추출됩니다.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout tip">
+    <span class="callout-icon">&#x1F4A1;</span>
+    <div><strong>팁:</strong> 세금계산서/영수증을 먼저 업로드하면 AI가 금액과 거래처를 자동으로 인식하여 아래 전표 폼에 반영합니다. 수동 입력의 수고를 줄일 수 있습니다.</div>
+  </div>
+
+  <h3 id="create-chat">AI 챗 어시스턴트</h3>
+  <p>화면 우측 상단의 대화창에서 자연어로 전표를 생성하거나 수정할 수 있습니다.</p>
+
+  <h4>사용 예시</h4>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>입력 예시</th><th>결과</th></tr></thead>
+      <tbody>
+        <tr><td><code>자재 500만원</code></td><td>자재비 500만원 전표 자동 생성 (부가세 포함 분개)</td></tr>
+        <tr><td><code>외주비 1000만원</code></td><td>외주비 1,000만원 전표 생성</td></tr>
+        <tr><td><code>부가세 분리해줘</code></td><td>기존 금액에서 부가세를 분리하여 부가세대급금 항목 추가</td></tr>
+        <tr><td><code>금액 300만원으로 변경</code></td><td>현재 입력된 전표의 금액 수정</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>우측 상단의 빠른 입력 버튼(<strong>자재 500만원</strong>, <strong>외주비 1000만원</strong>, <strong>부가세 분리</strong>)을 클릭하면 해당 내용이 자동 입력됩니다.</p>
+
+  <h3 id="create-form">전표 입력 폼</h3>
+  <p>화면 하단에 전표 헤더 정보와 항목(분개) 입력 테이블이 있습니다.</p>
+
+  <h4>헤더 정보</h4>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>필드</th><th>설명</th><th>필수</th></tr></thead>
+      <tbody>
+        <tr><td>회계연도</td><td>전표의 회계연도 (기본: 현재 연도)</td><td>O</td></tr>
+        <tr><td>전표일자</td><td>전표 기표일 (기본: 오늘)</td><td>O</td></tr>
+        <tr><td>전표유형</td><td>일반전표, 매입전표, 매출전표 등</td><td>O</td></tr>
+        <tr><td>구분 / 대분류</td><td>전표의 분류 카테고리</td><td>-</td></tr>
+        <tr><td>입력자</td><td>전표를 입력하는 사원 선택</td><td>O</td></tr>
+        <tr><td>프로젝트</td><td>현장/프로젝트 검색 (자동완성)</td><td>-</td></tr>
+        <tr><td>거래처</td><td>거래처 유형 선택 + 거래처 검색 (자동완성)</td><td>-</td></tr>
+        <tr><td>적요</td><td>전표의 거래 내용 설명</td><td>-</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h4>항목(분개) 입력</h4>
+  <p>각 행에 차변/대변, 계정과목, 금액을 입력합니다. 계정과목 입력 시 코드 또는 과목명으로 자동완성 검색이 지원됩니다.</p>
+  <ul>
+    <li><strong>항목 추가:</strong> <strong>+ 항목 추가</strong> 버튼으로 분개 행 추가</li>
+    <li><strong>항목 삭제:</strong> 각 행의 <strong>X</strong> 버튼으로 해당 행 삭제</li>
+    <li><strong>차대 합계:</strong> 하단에 차변/대변 합계가 실시간 계산되며, 일치 여부가 표시됩니다</li>
+  </ul>
+
+  <h3>연결문서 첨부</h3>
+  <p>전표 관련 연결문서(기안서, 계약서, 검수확인서, 품의서, 발주서, 시방서, 내역서, 기타)를 업로드합니다. 이미지/PDF 파일은 AI가 자동 분석합니다.</p>
+
+  <h3 id="create-save">전표 저장</h3>
+  <div class="steps">
+    <div class="step">
+      <div class="step-body">
+        <div class="step-title">차대변 일치 확인</div>
+        <div class="step-desc">차변 합계와 대변 합계가 일치해야 저장할 수 있습니다.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-body">
+        <div class="step-title">차대변 방향 검증</div>
+        <div class="step-desc">계정과목의 정상 차대변 방향과 입력 방향이 다를 경우 경고 팝업이 표시됩니다.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-body">
+        <div class="step-title">OCR 불일치 검증</div>
+        <div class="step-desc">증빙자료 OCR 추출값과 입력값이 다를 경우 불일치 경고가 표시됩니다.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-body">
+        <div class="step-title">저장 및 분석</div>
+        <div class="step-desc"><strong>전표 저장</strong> 버튼을 클릭하면 전표가 저장되고 즉시 18개 룰 엔진이 자동 분석을 수행합니다.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ════════════════════════════════════════════ -->
+<!-- 전표 검토 -->
+<!-- ════════════════════════════════════════════ -->
+<div class="section" id="review">
+  <span class="section-id">화면 3</span>
+  <h2>전표 검토</h2>
+  <p>AI가 분석한 전표 목록을 다양한 필터와 검색으로 조회하고, 각 전표의 상세 분석 결과를 확인하며 승인/반려 처리를 수행하는 핵심 화면입니다.</p>
+
+  <h3>화면 구성</h3>
+  <div class="feat-grid">
+    <div class="feat-item">
+      <div class="feat-name">좌측 사이드바</div>
+      <div class="feat-desc">위험등급 필터(전체/고위험/주의/참고/정상)와 이상사유(룰) 필터가 세로 배치되어 있습니다.</div>
+    </div>
+    <div class="feat-item">
+      <div class="feat-name">상단 스티키 영역</div>
+      <div class="feat-desc">검색바, 월/현장/전표유형/거래처유형 드롭다운 필터가 고정됩니다.</div>
+    </div>
+    <div class="feat-item">
+      <div class="feat-name">통계 카드</div>
+      <div class="feat-desc">고위험/주의/참고 건수가 컴팩트 카드로 표시됩니다.</div>
+    </div>
+    <div class="feat-item">
+      <div class="feat-name">전표 목록</div>
+      <div class="feat-desc">테이블 뷰 또는 카드 뷰로 전표를 조회합니다.</div>
+    </div>
+  </div>
+
+  <h3 id="review-filter">필터 및 검색</h3>
+
+  <h4>위험등급 필터 (좌측 사이드바)</h4>
+  <p>좌측 사이드바의 위험등급 버튼을 클릭하면 해당 등급의 전표만 필터링됩니다. 각 버튼에 건수 배지가 표시됩니다.</p>
+
+  <h4>이상사유 필터 (좌측 사이드바)</h4>
+  <p>이상사유 버튼은 <strong>다중 선택 AND 조건</strong>으로 동작합니다. 여러 룰을 동시에 선택하면 모든 선택된 룰에 해당하는 전표만 표시됩니다.</p>
+  <div class="callout info">
+    <span class="callout-icon">&#x2139;</span>
+    <div><strong>AND 조건:</strong> "차대변 불일치" + "고액" 두 개를 선택하면, 두 룰에 <em>모두</em> 해당하는 전표만 필터링됩니다.</div>
+  </div>
+
+  <h4>검색</h4>
+  <p>검색 대상 필드(전체, 전표번호, 일자, 전표유형, 적요, 입력자, 현장, 거래처, 계정과목)를 선택한 후 검색어를 입력합니다.</p>
+
+  <h4>드롭다운 필터</h4>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>필터</th><th>설명</th></tr></thead>
+      <tbody>
+        <tr><td>월</td><td>특정 월의 전표만 표시</td></tr>
+        <tr><td>현장</td><td>특정 프로젝트/현장의 전표만 표시</td></tr>
+        <tr><td>전표유형</td><td>일반전표, 매입전표 등 유형별 필터</td></tr>
+        <tr><td>거래처유형</td><td>법인(F), 개인(P), 부서(D), 사원(S), 기타(X), 은행(B)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3 id="review-table">테이블 뷰 / 카드 뷰</h3>
+  <p>우측 상단의 뷰 전환 버튼으로 <strong>테이블</strong>과 <strong>카드</strong> 보기를 전환합니다. 선택한 뷰는 브라우저에 저장되어 다음 접속 시에도 유지됩니다.</p>
+
+  <h4>테이블 뷰</h4>
+  <ul>
+    <li>컬럼 헤더를 클릭하면 <strong>오름차순 → 내림차순 → 기본순</strong>으로 정렬이 순환됩니다</li>
+    <li>컬럼: 위험등급, 전표번호, 일자, 유형, 적요, 입력자, 차변합계, 현장, 이상사유, 상태</li>
+    <li>행을 클릭하면 전표 상세 모달이 열립니다</li>
+  </ul>
+
+  <h4>카드 뷰</h4>
+  <p>3열 그리드로 전표 카드가 표시됩니다. 각 카드에 위험등급 배지, 적요, 금액, 이상사유 태그가 포함됩니다.</p>
+
+  <h3 id="review-detail">전표 상세 모달</h3>
+  <p>전표를 클릭하면 상세 정보 모달이 열립니다. 모달은 아래 섹션으로 구성됩니다.</p>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-body">
+        <div class="step-title">기본 정보</div>
+        <div class="step-desc">전표일자, 회계연도, 전표유형, 구분, 입력자, 현장, 사업부, 적요, 기안문서번호</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-body">
+        <div class="step-title">AI 분석 결과</div>
+        <div class="step-desc">위험등급 배지, 위험 점수(%), 탐지된 이상사유 코드 태그, 탐지 사유 상세, 권고 사항</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-body">
+        <div class="step-title">첨부 증빙</div>
+        <div class="step-desc">영수증/세금계산서 이미지 미리보기 (있을 경우)</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-body">
+        <div class="step-title">증빙자료 관리</div>
+        <div class="step-desc">증빙자료 목록 조회, 추가 업로드, AI 파싱 결과 확인, 삭제, AI 재분석</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-body">
+        <div class="step-title">연결문서 관리</div>
+        <div class="step-desc">연결문서 목록 조회, 추가 업로드, AI 파싱 결과 확인, 삭제</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-body">
+        <div class="step-title">전표 항목(분개)</div>
+        <div class="step-desc">차대변별 계정코드, 계정과목, 금액, 거래처 정보. 하단에 차대변 합계와 일치 여부 표시</div>
+      </div>
+    </div>
+  </div>
+
+  <h3 id="review-approve">승인 / 반려</h3>
+  <p>상태가 "제출"인 전표의 상세 모달 하단에 <strong>검토 승인</strong>과 <strong>반려</strong> 버튼이 표시됩니다.</p>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>버튼</th><th>동작</th><th>상태 변경</th></tr></thead>
+      <tbody>
+        <tr><td><strong>검토 승인</strong></td><td>전표를 정상으로 승인 처리</td><td>제출 → 검토완료</td></tr>
+        <tr><td><strong>반려</strong></td><td>전표를 반려하여 재입력 요청</td><td>제출 → 반려</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3 id="review-ocr">OCR 값 일치 점검</h3>
+  <p>상단의 <strong style="color:#EE7500">OCR 값 일치 점검</strong> 버튼을 클릭하면, 영수증/세금계산서를 보유한 전표들의 OCR 추출값과 전표 입력값을 비교하는 위저드가 시작됩니다.</p>
+  <div class="feat-grid">
+    <div class="feat-item">
+      <div class="feat-name">좌측: 증빙 이미지</div>
+      <div class="feat-desc">세금계산서/영수증 원본 이미지가 표시됩니다.</div>
+    </div>
+    <div class="feat-item">
+      <div class="feat-name">우측: 비교 테이블</div>
+      <div class="feat-desc">작성일자, 거래처, 금액에 대해 OCR 추출값과 전표 입력값을 비교합니다. 일치/불일치 아이콘이 표시됩니다.</div>
+    </div>
+  </div>
+  <p>불일치 항목이 있으면 빨간색 경고 박스가 표시되며, <strong>AI 재분석</strong> 버튼으로 이미지를 다시 분석할 수 있습니다.</p>
+
+  <h3 id="review-side">차/대변 불일치 검토</h3>
+  <p>상단의 <strong style="color:#E53935">차/대변 불일치 검토</strong> 버튼을 클릭하면, 계정과목의 정상 차대변 방향과 다르게 입력된 전표를 순차적으로 검토하는 위저드가 시작됩니다.</p>
+  <p>각 전표마다 불일치 항목의 계정코드, 정상방향(녹색), 입력방향(빨간색), 금액이 테이블로 표시됩니다.</p>
+
+  <div class="callout tip">
+    <span class="callout-icon">&#x1F4A1;</span>
+    <div><strong>참고:</strong> 역분개, 수정분개, 계정대체 등 정당한 사유로 반대 방향에 기표될 수 있습니다. 불일치가 곧 오류는 아닙니다.</div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ════════════════════════════════════════════ -->
+<!-- 룰 관리 -->
+<!-- ════════════════════════════════════════════ -->
+<div class="section" id="rules">
+  <span class="section-id">화면 4</span>
+  <h2>룰 관리</h2>
+  <p>이상탐지 룰을 추가, 수정, 삭제하고 전체 전표에 대한 재분석을 실행하는 관리 화면입니다. AI를 활용한 자연어 룰 생성도 지원됩니다.</p>
+
+  <h3 id="rules-ai">AI 룰 빌더</h3>
+  <p>화면 상단 좌측의 대화창에서 자연어로 룰을 설명하면 AI가 자동으로 구조화된 룰 조건을 생성합니다.</p>
+
+  <h4>자연어 룰 입력 예시</h4>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>자연어 입력</th><th>생성되는 룰</th></tr></thead>
+      <tbody>
+        <tr><td><code>금액 3억 이상</code></td><td>차변 합계 &ge; 300,000,000 인 전표 탐지</td></tr>
+        <tr><td><code>주말 기표</code></td><td>토요일/일요일에 기표된 전표 탐지</td></tr>
+        <tr><td><code>적요 키워드</code></td><td>특정 키워드가 적요에 포함된 전표 탐지</td></tr>
+        <tr><td><code>교육훈련비 + 연결문서 누락</code></td><td>교육훈련비 계정이면서 연결문서가 없는 전표 (복합 조건)</td></tr>
+        <tr><td><code>개인거래처 고액</code></td><td>개인(P) 유형 거래처의 일정 금액 이상 전표 탐지</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3 id="rules-manual">수동 룰 조건 설정</h3>
+  <p>화면 상단 우측의 룰 빌더 패널에서 직접 조건을 설정합니다.</p>
+
+  <h4>룰 설정 항목</h4>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>항목</th><th>설명</th></tr></thead>
+      <tbody>
+        <tr><td>룰 이름</td><td>룰의 표시 이름 (예: "고액 거래")</td></tr>
+        <tr><td>설명</td><td>룰의 목적과 배경 설명</td></tr>
+        <tr><td>조건</td><td>하나 이상의 조건 블록. 필드/연산자/값으로 구성</td></tr>
+        <tr><td>조건 논리</td><td><strong>AND</strong> (모든 조건 충족) 또는 <strong>OR</strong> (하나라도 충족)</td></tr>
+        <tr><td>심각도</td><td><span class="badge badge-high">High</span> / <span class="badge badge-med">Medium</span> / <span class="badge badge-low">Low</span></td></tr>
+        <tr><td>위험 점수</td><td>0 ~ 1 사이 실수 (등급 판정에 사용)</td></tr>
+        <tr><td>카테고리</td><td>금액 이상, 시점 이상, 구조 이상, 거래처 이상 등</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h4>사용 가능한 필드 그룹</h4>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>그룹</th><th>주요 필드</th></tr></thead>
+      <tbody>
+        <tr><td>전표 헤더</td><td>total_debit, total_credit, doc_type, category, description, created_by, doc_date 등</td></tr>
+        <tr><td>전표 항목</td><td>line_count, account_code, account_name, vendor_type, vendor_name 등</td></tr>
+        <tr><td>검색/포함</td><td>description_contains, account_name_contains, vendor_name_contains 등</td></tr>
+        <tr><td>계산/특수</td><td>debit_credit_diff, is_weekend, is_month_end, is_round_amount, is_odd_amount 등</td></tr>
+        <tr><td>복합 탐지</td><td>duplicate_key, vendor_account_mismatch, reversal_pattern 등</td></tr>
+        <tr><td>증빙자료</td><td>evidence_count, evidence_types, evidence_parsed_* 등</td></tr>
+        <tr><td>연결문서</td><td>linked_doc_count, linked_doc_types, linked_doc_parsed_* 등</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3 id="rules-manage">룰 편집 / 삭제 / 토글</h3>
+  <p>하단의 룰 목록에서 각 룰 카드의 기능:</p>
+  <ul>
+    <li><strong>토글 스위치:</strong> 룰의 활성/비활성 전환 (즉시 적용)</li>
+    <li><strong>수정 버튼:</strong> 룰 편집 모달 열기</li>
+    <li><strong>삭제 버튼:</strong> 확인 후 룰 삭제</li>
+    <li><strong>적중 건수:</strong> 해당 룰에 탐지된 전표 수 표시</li>
+  </ul>
+
+  <h3 id="rules-reanalyze">전체 재분석</h3>
+  <p>룰을 추가/수정/삭제한 후 <strong>전체 재분석</strong> 버튼을 클릭하면, 모든 전표에 대해 변경된 룰셋으로 재분석을 수행합니다.</p>
+  <div class="callout info">
+    <span class="callout-icon">&#x2139;</span>
+    <div><strong>안내:</strong> 전체 재분석은 백그라운드에서 실행됩니다. 프로그레스 바로 진행률을 확인할 수 있으며, 완료 시 결과 요약(High/Medium/Low/정상 건수)이 표시됩니다.</div>
+  </div>
+
+  <p>룰 저장 시 <strong>저장 + 재분석</strong> 버튼을 선택하면 저장과 동시에 전체 재분석이 시작됩니다.</p>
+</div>
+
+<div class="divider"></div>
+
+<!-- ════════════════════════════════════════════ -->
+<!-- AI 기능 -->
+<!-- ════════════════════════════════════════════ -->
+<div class="section" id="ai-ocr">
+  <span class="section-id">AI 기능</span>
+  <h2>Gemini Vision OCR</h2>
+  <p>PwC Workspace의 Gemini 3.1 Pro Vision API를 활용하여 영수증, 세금계산서, 계약서, 공과금 고지서 등의 이미지에서 정보를 자동 추출합니다.</p>
+
+  <h3>지원 문서 유형별 추출 항목</h3>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>문서 유형</th><th>추출 항목</th></tr></thead>
+      <tbody>
+        <tr><td>세금계산서 / 영수증</td><td>공급가액, 세액, 합계금액, 거래처(공급자), 작성일자, 품목, 문서 종류</td></tr>
+        <tr><td>계약서</td><td>계약명, 계약당사자, 계약금액, 계약기간, 주요 조건</td></tr>
+        <tr><td>공과금 고지서</td><td>공과금 종류, 청구금액, 납부기한, 사용기간, 고지기관</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout warn">
+    <span class="callout-icon">&#x26A0;</span>
+    <div><strong>네트워크 요구사항:</strong> Gemini Vision API는 사내 네트워크에서만 접근 가능합니다. 외부 네트워크에서는 OCR 기능이 동작하지 않습니다.</div>
+  </div>
+</div>
+
+<div class="section" id="ai-chat">
+  <h2>대화형 전표 생성 어시스턴트</h2>
+  <p>전표 생성 화면의 AI 챗에서 자연어로 전표를 입력할 수 있습니다. "자재 500만원", "외주비 천만원 부가세 별도" 등의 일상적인 표현을 인식하여 계정과목, 차대변, 금액을 자동 설정합니다.</p>
+
+  <h3>주요 기능</h3>
+  <ul>
+    <li><strong>금액 인식:</strong> "500만원", "1,000,000원", "1억" 등 다양한 금액 표현 지원</li>
+    <li><strong>계정 매핑:</strong> "자재", "외주비", "인건비" 등 일상 용어를 계정과목으로 자동 매핑</li>
+    <li><strong>부가세 처리:</strong> "부가세 포함/별도/분리" 표현 인식, 부가세대급금 자동 분리</li>
+    <li><strong>금액 수정:</strong> "금액 300만원으로 변경", "세액만 수정" 등 수정 요청 처리</li>
+    <li><strong>다건 입력:</strong> 여러 항목을 한 번에 입력 가능</li>
+  </ul>
+</div>
+
+<div class="section" id="ai-nlrule">
+  <h2>자연어 룰 생성</h2>
+  <p>룰 관리 화면에서 자연어 설명을 구조화된 탐지 룰로 자동 변환합니다. Gemini LLM이 우선 사용되며, API 접근이 불가할 경우 로컬 패턴 매칭 엔진이 대체합니다.</p>
+
+  <h3>지원 표현 패턴</h3>
+  <ul>
+    <li><strong>금액 조건:</strong> "N억 이상", "N만원 초과", "금액이 큰"</li>
+    <li><strong>시점 조건:</strong> "주말", "월말", "공휴일", "근무시간 외"</li>
+    <li><strong>텍스트 조건:</strong> "적요에 OO 포함", "거래처가 OO"</li>
+    <li><strong>구조 조건:</strong> "차대변 불일치", "중복", "역분개"</li>
+    <li><strong>복합 조건:</strong> "A이면서 B인" (AND), "A이거나 B인" (OR)</li>
+  </ul>
+</div>
+
+<div class="divider"></div>
+
+<!-- ════════════════════════════════════════════ -->
+<!-- 부록 -->
+<!-- ════════════════════════════════════════════ -->
+<div class="section" id="shortcuts">
+  <span class="section-id">부록</span>
+  <h2>단축키</h2>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>단축키</th><th>동작</th><th>사용 가능 화면</th></tr></thead>
+      <tbody>
+        <tr><td><kbd>Esc</kbd></td><td>열린 모달 닫기</td><td>전체</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="section" id="file-types">
+  <h2>지원 파일 형식</h2>
+
+  <h3>증빙자료 / 연결문서 업로드</h3>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>분류</th><th>확장자</th><th>AI 분석</th></tr></thead>
+      <tbody>
+        <tr><td>이미지</td><td>.jpg, .jpeg, .png, .gif, .bmp, .tiff</td><td>O (Gemini Vision OCR)</td></tr>
+        <tr><td>PDF</td><td>.pdf</td><td>O (Gemini Vision OCR)</td></tr>
+        <tr><td>문서</td><td>.doc, .docx, .hwp, .hwpx, .txt</td><td>-</td></tr>
+        <tr><td>스프레드시트</td><td>.xls, .xlsx, .csv</td><td>-</td></tr>
+        <tr><td>프레젠테이션</td><td>.ppt, .pptx</td><td>-</td></tr>
+        <tr><td>압축</td><td>.zip</td><td>-</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>데이터 업로드</h3>
+  <p>ERP 전표 데이터는 <strong>.csv</strong> 형식만 지원됩니다. 호반건설 ERP 추출 형식(hoban_data 형식)이 자동 인식됩니다.</p>
+</div>
+
+<div class="section" id="faq">
+  <h2>자주 묻는 질문 (FAQ)</h2>
+
+  <div class="card">
+    <h4>Q. OCR 분석이 동작하지 않아요.</h4>
+    <p style="margin-bottom:0">A. Gemini Vision API는 사내 네트워크에서만 접근 가능합니다. VPN 연결 상태를 확인해 주세요. 외부 네트워크에서는 OCR 없이 파일 업로드만 가능합니다.</p>
+  </div>
+
+  <div class="card">
+    <h4>Q. 위험등급이 실제와 다르게 판정됩니다.</h4>
+    <p style="margin-bottom:0">A. 룰 관리 화면에서 해당 룰의 점수와 조건을 확인해 주세요. 룰 수정 후 <strong>전체 재분석</strong>을 실행하면 모든 전표에 변경된 기준이 적용됩니다.</p>
+  </div>
+
+  <div class="card">
+    <h4>Q. 전표를 승인/반려한 후 다시 변경할 수 있나요?</h4>
+    <p style="margin-bottom:0">A. 현재 버전에서는 승인/반려 처리된 전표의 상태를 직접 되돌리는 기능은 제공되지 않습니다. 관리자에게 문의해 주세요.</p>
+  </div>
+
+  <div class="card">
+    <h4>Q. 이상사유 필터에서 여러 개를 선택하면 어떻게 되나요?</h4>
+    <p style="margin-bottom:0">A. AND 조건으로 동작합니다. 선택한 모든 이상사유 코드가 포함된 전표만 필터링됩니다. 선택 해제는 각 버튼을 다시 클릭하거나 <strong>전체</strong> 버튼을 눌러주세요.</p>
+  </div>
+
+  <div class="card">
+    <h4>Q. 월별 데이터를 삭제하면 증빙자료도 삭제되나요?</h4>
+    <p style="margin-bottom:0">A. 네, 해당 월의 전표, 분석 결과, 첨부된 증빙자료와 연결문서가 모두 삭제됩니다. 삭제 전 반드시 확인하세요.</p>
+  </div>
+
+  <div class="card">
+    <h4>Q. AI 챗이 응답하지 않습니다.</h4>
+    <p style="margin-bottom:0">A. API 키가 설정되지 않은 경우 로컬 패턴 매칭 모드로 동작합니다. 복잡한 요청은 처리되지 않을 수 있으며, 이 경우 수동으로 전표를 입력해 주세요.</p>
+  </div>
+</div>
+
+<!-- version -->
+<div class="version-stamp">
+  호반건설 전표 이상탐지 시스템 (FDS) 사용자 매뉴얼 v1.0<br>
+  최종 업데이트: 2026년 7월 10일
+</div>
+
+</main>
+</div>
+</body>
+</html>

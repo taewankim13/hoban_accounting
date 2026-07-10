@@ -846,7 +846,7 @@ NL_PATTERNS = [
 ]
 
 
-def parse_with_llm(text: str) -> dict | None:
+def parse_with_llm(text: str, api_key=None) -> dict | None:
     """Gemini API로 자연어를 룰 JSON으로 변환한다."""
     import os
     env_path = os.path.join(os.path.dirname(__file__), ".env")
@@ -858,7 +858,7 @@ def parse_with_llm(text: str) -> dict | None:
                     k, v = line.split("=", 1)
                     os.environ.setdefault(k.strip(), v.strip())
 
-    api_key = os.environ.get("ALPHA_API_KEY", "")
+    api_key = api_key or os.environ.get("ALPHA_API_KEY", "")
     if not api_key:
         return None
 
@@ -1130,12 +1130,12 @@ def _parse_single_part(text: str) -> dict | None:
     return None
 
 
-def parse_natural_language_rule(text: str) -> dict | None:
+def parse_natural_language_rule(text: str, api_key=None) -> dict | None:
     """자연어 설명을 파싱하여 룰 JSON 구조를 생성한다. LLM 우선, 로컬 폴백."""
     text = text.strip()
 
     # 1순위: LLM (Gemini)
-    llm_result = parse_with_llm(text)
+    llm_result = parse_with_llm(text, api_key=api_key)
     if llm_result:
         return llm_result
 

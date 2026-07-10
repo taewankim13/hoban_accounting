@@ -20,14 +20,14 @@ def try_tesseract_ocr(image_path: str) -> str | None:
         return None
 
 
-def parse_receipt_image(image_path: str, filename: str = "") -> dict:
+def parse_receipt_image(image_path: str, filename: str = "", api_key: str = "") -> dict:
     """영수증/세금계산서 이미지를 분석하여 전표 정보를 추출한다."""
 
     # 1. LLM Vision API 우선 (Gemini)
     try:
         from llm_vision import analyze_receipt_with_llm, map_to_account, HAS_LLM_VISION
-        if HAS_LLM_VISION:
-            llm_result = analyze_receipt_with_llm(image_path)
+        if api_key or HAS_LLM_VISION:
+            llm_result = analyze_receipt_with_llm(image_path, api_key=api_key)
             if llm_result.get("success"):
                 acct = map_to_account(llm_result)
                 return {
