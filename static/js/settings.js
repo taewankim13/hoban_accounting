@@ -1,8 +1,7 @@
 /* ══════════════════════════════════════════════════════════════
    HOBAN FDS - API 키 설정 모듈 (settings.js)
-   - Gemini Vision API (OCR/자연어 룰) 및 Anthropic Claude API (챗) 키를
-     localStorage에 저장/관리하고, LLM 관련 API 호출 시 자동으로
-     헤더를 주입한다.
+   - Gemini API 키를 localStorage에 저장/관리하고,
+     LLM 관련 API 호출 시 자동으로 헤더를 주입한다.
    - 완전히 독립적인 모듈: 템플릿에 별도 HTML을 추가할 필요 없이
      이 스크립트를 로드하기만 하면 설정 모달/버튼이 자동으로 구성된다.
    ══════════════════════════════════════════════════════════════ */
@@ -18,15 +17,12 @@
     var STORAGE_KEYS = {
         geminiKey: 'fds_gemini_api_key',
         geminiModel: 'fds_gemini_model',
-        geminiUrl: 'fds_gemini_api_url',
-        anthropicKey: 'fds_anthropic_api_key',
-        anthropicModel: 'fds_anthropic_model'
+        geminiUrl: 'fds_gemini_api_url'
     };
 
     var DEFAULTS = {
         geminiModel: 'Gemini_3.1_Pro',
-        geminiUrl: 'https://workspace.kr.pwc.com/api/workspace/coding_agent/v1/chat/completions',
-        anthropicModel: 'claude-sonnet-4-20250514'
+        geminiUrl: 'https://workspace.kr.pwc.com/api/workspace/coding_agent/v1/chat/completions'
     };
 
     function getStored(key, fallback) {
@@ -63,12 +59,6 @@
             headers['X-Gemini-API-URL'] = getStored(STORAGE_KEYS.geminiUrl, DEFAULTS.geminiUrl);
         }
 
-        var anthropicKey = getStored(STORAGE_KEYS.anthropicKey, '');
-        if (anthropicKey) {
-            headers['X-Anthropic-API-Key'] = anthropicKey;
-            headers['X-Anthropic-Model'] = getStored(STORAGE_KEYS.anthropicModel, DEFAULTS.anthropicModel);
-        }
-
         return headers;
     }
     window.getLLMHeaders = getLLMHeaders;
@@ -80,7 +70,7 @@
 
     // 각 규칙: path 판별 함수 + 필요한 provider('gemini' | 'anthropic')
     var LLM_ROUTES = [
-        { test: function (p, m) { return m === 'POST' && p === '/api/chat'; }, provider: 'anthropic' },
+        { test: function (p, m) { return m === 'POST' && p === '/api/chat'; }, provider: 'gemini' },
         { test: function (p, m) { return m === 'POST' && p === '/api/receipt'; }, provider: 'gemini' },
         { test: function (p, m) { return m === 'POST' && p.indexOf('/api/ocr-reparse/') === 0; }, provider: 'gemini' },
         { test: function (p, m) { return m === 'POST' && p === '/api/evidence/parse-document'; }, provider: 'gemini' },
@@ -117,9 +107,7 @@
     }
 
     function providerHeaderSubset(provider, allHeaders) {
-        var keys = provider === 'gemini'
-            ? ['X-Gemini-API-Key', 'X-Gemini-Model', 'X-Gemini-API-URL']
-            : ['X-Anthropic-API-Key', 'X-Anthropic-Model'];
+        var keys = ['X-Gemini-API-Key', 'X-Gemini-Model', 'X-Gemini-API-URL'];
         var out = {};
         keys.forEach(function (k) {
             if (allHeaders[k]) out[k] = allHeaders[k];
@@ -264,8 +252,8 @@
             + '    </div>'
             + '    <div class="fds-modal-body">'
             + '      <section class="fds-settings-section">'
-            + '        <div class="fds-section-title"><span class="fds-key-indicator" id="fds-indicator-gemini">&#10003;</span>Gemini Vision API (OCR/룰)</div>'
-            + '        <p class="fds-section-desc">영수증·세금계산서 이미지 OCR 분석 및 자연어 룰 생성 기능에 사용됩니다.</p>'
+            + '        <div class="fds-section-title"><span class="fds-key-indicator" id="fds-indicator-gemini">&#10003;</span>Gemini API</div>'
+            + '        <p class="fds-section-desc">OCR 분석, 자연어 룰 생성, 대화형 챗 어시스턴트 등 모든 AI 기능에 사용됩니다.</p>'
             + '        <div class="fds-field">'
             + '          <label for="fds-input-gemini-key">API Key</label>'
             + '          <div class="fds-input-group">'
@@ -280,21 +268,6 @@
             + '        <div class="fds-field">'
             + '          <label for="fds-input-gemini-url">API URL</label>'
             + '          <input type="text" id="fds-input-gemini-url" class="fds-input" placeholder="' + DEFAULTS.geminiUrl + '">'
-            + '        </div>'
-            + '      </section>'
-            + '      <section class="fds-settings-section">'
-            + '        <div class="fds-section-title"><span class="fds-key-indicator" id="fds-indicator-anthropic">&#10003;</span>Anthropic Claude API (챗)</div>'
-            + '        <p class="fds-section-desc">전표 생성·수정을 돕는 대화형 챗 어시스턴트 기능에 사용됩니다.</p>'
-            + '        <div class="fds-field">'
-            + '          <label for="fds-input-anthropic-key">API Key</label>'
-            + '          <div class="fds-input-group">'
-            + '            <input type="password" id="fds-input-anthropic-key" class="fds-input" placeholder="Anthropic API Key" autocomplete="off">'
-            + '            <button type="button" class="fds-eye-toggle" data-target="fds-input-anthropic-key" aria-label="표시/숨김">' + EYE_ICON + '</button>'
-            + '          </div>'
-            + '        </div>'
-            + '        <div class="fds-field">'
-            + '          <label for="fds-input-anthropic-model">Model</label>'
-            + '          <input type="text" id="fds-input-anthropic-model" class="fds-input" placeholder="' + DEFAULTS.anthropicModel + '">'
             + '        </div>'
             + '      </section>'
             + '    </div>'
@@ -398,16 +371,10 @@
        ──────────────────────────────────────────── */
     function updateIndicators() {
         var geminiActive = !!getStored(STORAGE_KEYS.geminiKey, '');
-        var anthropicActive = !!getStored(STORAGE_KEYS.anthropicKey, '');
         var gEl = document.getElementById('fds-indicator-gemini');
-        var aEl = document.getElementById('fds-indicator-anthropic');
         if (gEl) {
             gEl.classList.toggle('fds-active', geminiActive);
-            gEl.title = geminiActive ? 'Gemini 키 저장됨' : 'Gemini 키 미설정';
-        }
-        if (aEl) {
-            aEl.classList.toggle('fds-active', anthropicActive);
-            aEl.title = anthropicActive ? 'Anthropic 키 저장됨' : 'Anthropic 키 미설정';
+            gEl.title = geminiActive ? 'API 키 저장됨' : 'API 키 미설정';
         }
     }
 
@@ -439,19 +406,12 @@
         var geminiKeyInput = document.getElementById('fds-input-gemini-key');
         var geminiModelInput = document.getElementById('fds-input-gemini-model');
         var geminiUrlInput = document.getElementById('fds-input-gemini-url');
-        var anthropicKeyInput = document.getElementById('fds-input-anthropic-key');
-        var anthropicModelInput = document.getElementById('fds-input-anthropic-model');
 
         if (geminiKeyInput) geminiKeyInput.value = getStored(STORAGE_KEYS.geminiKey, '');
         if (geminiModelInput) geminiModelInput.value = getStored(STORAGE_KEYS.geminiModel, DEFAULTS.geminiModel);
         if (geminiUrlInput) geminiUrlInput.value = getStored(STORAGE_KEYS.geminiUrl, DEFAULTS.geminiUrl);
-        if (anthropicKeyInput) anthropicKeyInput.value = getStored(STORAGE_KEYS.anthropicKey, '');
-        if (anthropicModelInput) anthropicModelInput.value = getStored(STORAGE_KEYS.anthropicModel, DEFAULTS.anthropicModel);
 
-        // 입력 필드를 항상 마스킹된 상태로 리셋
-        [geminiKeyInput, anthropicKeyInput].forEach(function (el) {
-            if (el) el.type = 'password';
-        });
+        if (geminiKeyInput) geminiKeyInput.type = 'password';
         document.querySelectorAll('#fds-settings-overlay .fds-eye-toggle').forEach(function (btn) {
             btn.innerHTML = EYE_ICON;
         });
@@ -473,27 +433,21 @@
         var geminiKey = ((document.getElementById('fds-input-gemini-key') || {}).value || '').trim();
         var geminiModel = ((document.getElementById('fds-input-gemini-model') || {}).value || '').trim();
         var geminiUrl = ((document.getElementById('fds-input-gemini-url') || {}).value || '').trim();
-        var anthropicKey = ((document.getElementById('fds-input-anthropic-key') || {}).value || '').trim();
-        var anthropicModel = ((document.getElementById('fds-input-anthropic-model') || {}).value || '').trim();
 
         setStored(STORAGE_KEYS.geminiKey, geminiKey);
         setStored(STORAGE_KEYS.geminiModel, geminiModel || DEFAULTS.geminiModel);
         setStored(STORAGE_KEYS.geminiUrl, geminiUrl || DEFAULTS.geminiUrl);
-        setStored(STORAGE_KEYS.anthropicKey, anthropicKey);
-        setStored(STORAGE_KEYS.anthropicModel, anthropicModel || DEFAULTS.anthropicModel);
 
         updateIndicators();
         showToast('설정이 저장되었습니다.');
     }
 
     /* ────────────────────────────────────────────
-       9. 포커스 팝업: requireGeminiKey() / requireAnthropicKey()
+       9. 포커스 팝업: requireGeminiKey()
        ──────────────────────────────────────────── */
     function requireKey(provider) {
         return new Promise(function (resolve, reject) {
-            var isGemini = provider === 'gemini';
-            var storageKey = isGemini ? STORAGE_KEYS.geminiKey : STORAGE_KEYS.anthropicKey;
-            var existing = getStored(storageKey, '');
+            var existing = getStored(STORAGE_KEYS.geminiKey, '');
             if (existing) {
                 resolve(existing);
                 return;
@@ -502,13 +456,11 @@
         });
     }
     window.requireGeminiKey = function () { return requireKey('gemini'); };
-    window.requireAnthropicKey = function () { return requireKey('anthropic'); };
 
     function openKeyPopup(provider, resolve, reject) {
         injectStyles();
         injectModals();
 
-        var isGemini = provider === 'gemini';
         var overlay = document.getElementById('fds-key-popup-overlay');
         var desc = document.getElementById('fds-key-popup-desc');
         var label = document.getElementById('fds-key-popup-label');
@@ -523,12 +475,10 @@
             return;
         }
 
-        desc.textContent = isGemini
-            ? 'OCR(영수증/세금계산서 인식) 및 자연어 룰 생성을 위해 Gemini API Key가 필요합니다.'
-            : '챗 어시스턴트 기능을 사용하려면 Anthropic API Key가 필요합니다.';
-        label.textContent = isGemini ? 'Gemini API Key' : 'Anthropic API Key';
+        desc.textContent = 'AI 기능(OCR, 챗 어시스턴트, 자연어 룰 생성)을 사용하려면 Gemini API Key가 필요합니다.';
+        label.textContent = 'Gemini API Key';
         input.value = '';
-        input.placeholder = isGemini ? 'Gemini API Key' : 'Anthropic API Key';
+        input.placeholder = 'Gemini API Key';
         input.type = 'password';
         if (eyeBtn) eyeBtn.innerHTML = EYE_ICON;
 
@@ -549,8 +499,7 @@
                 input.focus();
                 return;
             }
-            var storageKey = isGemini ? STORAGE_KEYS.geminiKey : STORAGE_KEYS.anthropicKey;
-            setStored(storageKey, val);
+            setStored(STORAGE_KEYS.geminiKey, val);
             updateIndicators();
             settled = true;
             cleanup();
@@ -561,7 +510,7 @@
             if (settled) return;
             settled = true;
             cleanup();
-            reject(new Error(isGemini ? 'Gemini API 키 입력이 취소되었습니다.' : 'Anthropic API 키 입력이 취소되었습니다.'));
+            reject(new Error('API 키 입력이 취소되었습니다.'));
         }
 
         function onKeydown(e) {

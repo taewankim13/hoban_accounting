@@ -574,7 +574,7 @@
             const res = await fetch('/api/chat', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ message:msg, history:chatHistory.slice(-10), current_form:getCurrentForm() }) });
             const d = await res.json();
             const badge = document.getElementById('llmBadge');
-            if(d.llm_mode==='claude'){badge.textContent='Claude AI';badge.style.background='#E8F5E9';badge.style.color='#43A047';}
+            if(d.llm_mode==='gemini'){badge.textContent='Gemini AI';badge.style.background='#E8F5E9';badge.style.color='#43A047';}
             if (d.lines && d.lines.length > 0) {
                 let h = `<strong>${d.message||'전표 반영 완료'}</strong><br>`;
                 if(d.guide) h += `<div class="guide-box" style="margin-top:4px;font-size:11px">${d.guide}</div>`;

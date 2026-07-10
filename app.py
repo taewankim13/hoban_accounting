@@ -20,10 +20,6 @@ def get_gemini_key(request: Request) -> str:
     return request.headers.get("X-Gemini-API-Key", "")
 
 
-def get_anthropic_key(request: Request) -> str:
-    return request.headers.get("X-Anthropic-API-Key", "")
-
-
 def load_balance_sides():
     """account_balance_side.json 로드: {계정코드: '차변'|'대변'}"""
     try:
@@ -204,16 +200,16 @@ def create_page(request: Request, db: Session = Depends(get_db)):
 
 @app.post("/api/chat", response_class=JSONResponse)
 async def chat_create(request: Request):
-    """대화형 전표 어시스턴트 (Claude API 또는 로컬 파서)"""
+    """대화형 전표 어시스턴트 (Gemini API 또는 로컬 파서)"""
     data = await request.json()
     message = data.get("message", "")
     history = data.get("history", [])
     current_form = data.get("current_form", None)
 
-    from llm_chat import process_chat, HAS_CLAUDE
-    api_key = get_anthropic_key(request)
+    from llm_chat import process_chat, HAS_LLM
+    api_key = get_gemini_key(request)
     result = process_chat(message, history, current_form, api_key=api_key)
-    result["llm_mode"] = "claude" if (api_key or HAS_CLAUDE) else "local"
+    result["llm_mode"] = "gemini" if (api_key or HAS_LLM) else "local"
     return result
 
 
