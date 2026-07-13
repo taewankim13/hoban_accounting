@@ -1,0 +1,1305 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>호반건설 전표 이상탐지 시스템(FDS) — 설계서 및 기능 보고서</title>
+  <style>
+    @page {
+      margin: 2cm;
+    }
+
+    :root {
+      --brand: #EE7500;
+      --brand-light: #FFF7ED;
+      --brand-dark: #C96200;
+      --ink: #2C2A28;
+      --ink-soft: #575553;
+      --ink-muted: #89898A;
+      --surface: #FFFFFF;
+      --surface-tint: #FAF9F7;
+      --surface-alt: #F5F3F0;
+      --border: #E5E3E0;
+      --border-strong: #D5D3D0;
+      --green: #2E7D32;
+      --green-bg: #E8F5E9;
+      --blue: #1565C0;
+      --blue-bg: #E3F2FD;
+      --red: #C62828;
+      --red-bg: #FFEBEE;
+      --yellow: #F57F17;
+      --yellow-bg: #FFF8E1;
+      --radius: 6px;
+    }
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      font-size: 15px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      font-family: 'Pretendard', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      color: var(--ink);
+      background: var(--surface-alt);
+      line-height: 1.72;
+      padding: 0;
+    }
+
+    /* ── Cover ── */
+    .cover {
+      background: linear-gradient(135deg, #3D3B3A 0%, #2C2A28 100%);
+      color: #fff;
+      padding: 80px 48px 64px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cover::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 320px;
+      height: 100%;
+      background: linear-gradient(180deg, var(--brand) 0%, var(--brand-dark) 100%);
+      clip-path: polygon(30% 0, 100% 0, 100% 100%, 0% 100%);
+    }
+
+    .cover-inner {
+      position: relative;
+      z-index: 1;
+      max-width: 860px;
+    }
+
+    .cover-badge {
+      display: inline-block;
+      background: var(--brand);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 4px 14px;
+      border-radius: 3px;
+      margin-bottom: 20px;
+    }
+
+    .cover h1 {
+      font-size: 2.4rem;
+      font-weight: 800;
+      line-height: 1.22;
+      letter-spacing: -0.02em;
+      margin-bottom: 12px;
+      text-wrap: balance;
+    }
+
+    .cover .subtitle {
+      font-size: 1.15rem;
+      color: rgba(255, 255, 255, 0.72);
+      font-weight: 400;
+      margin-bottom: 32px;
+    }
+
+    .cover-meta {
+      display: flex;
+      gap: 32px;
+      font-size: 0.82rem;
+      color: rgba(255, 255, 255, 0.55);
+    }
+
+    .cover-meta strong {
+      color: rgba(255, 255, 255, 0.82);
+      font-weight: 600;
+    }
+
+    /* ── Document body ── */
+    .doc {
+      max-width: 920px;
+      margin: 0 auto;
+      background: var(--surface);
+      border-radius: 0 0 8px 8px;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+      padding: 56px 56px 64px;
+    }
+
+    @media (max-width: 720px) {
+      .doc {
+        padding: 32px 20px 40px;
+      }
+    }
+
+    /* ── Typography ── */
+    h2 {
+      font-size: 1.55rem;
+      font-weight: 800;
+      color: var(--ink);
+      margin: 48px 0 8px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid var(--brand);
+      letter-spacing: -0.01em;
+    }
+
+    h2 .num {
+      color: var(--brand);
+      margin-right: 6px;
+    }
+
+    h3 {
+      font-size: 1.12rem;
+      font-weight: 700;
+      color: var(--ink);
+      margin: 32px 0 8px;
+    }
+
+    h4 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--ink-soft);
+      margin: 20px 0 6px;
+      letter-spacing: 0.01em;
+    }
+
+    p,
+    li {
+      color: var(--ink-soft);
+    }
+
+    p {
+      margin: 6px 0 14px;
+    }
+
+    ul,
+    ol {
+      padding-left: 22px;
+      margin: 6px 0 16px;
+    }
+
+    li {
+      margin-bottom: 5px;
+    }
+
+    strong {
+      color: var(--ink);
+      font-weight: 600;
+    }
+
+    code {
+      font-family: 'Consolas', 'Fira Code', 'Monaco', monospace;
+      font-size: 0.88em;
+      background: var(--surface-alt);
+      padding: 1px 6px;
+      border-radius: 3px;
+      color: var(--brand-dark);
+    }
+
+    /* ── TOC ── */
+    .toc {
+      background: var(--surface-tint);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px 28px;
+      margin-bottom: 36px;
+    }
+
+    .toc h3 {
+      margin-top: 0;
+      font-size: 0.92rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--ink-muted);
+    }
+
+    .toc ol {
+      counter-reset: toc;
+      list-style: none;
+      padding: 0;
+      margin: 12px 0 0;
+    }
+
+    .toc li {
+      counter-increment: toc;
+      margin-bottom: 6px;
+    }
+
+    .toc li::before {
+      content: counter(toc) '.';
+      color: var(--brand);
+      font-weight: 700;
+      margin-right: 8px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .toc a {
+      color: var(--ink);
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .toc a:hover {
+      color: var(--brand);
+    }
+
+    /* ── Tables ── */
+    .table-wrap {
+      overflow-x: auto;
+      margin: 12px 0 20px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+      font-variant-numeric: tabular-nums;
+    }
+
+    thead th {
+      background: var(--surface-alt);
+      font-weight: 700;
+      text-align: left;
+      padding: 10px 14px;
+      border-bottom: 2px solid var(--border-strong);
+      white-space: nowrap;
+      color: var(--ink);
+      font-size: 0.82rem;
+      letter-spacing: 0.02em;
+    }
+
+    tbody td {
+      padding: 9px 14px;
+      border-bottom: 1px solid var(--border);
+      color: var(--ink-soft);
+      vertical-align: top;
+    }
+
+    tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    tbody tr:hover {
+      background: var(--surface-tint);
+    }
+
+    /* ── Cards / callouts ── */
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 14px;
+      margin: 14px 0 20px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+      transition: border-color 0.15s;
+    }
+
+    .card:hover {
+      border-color: var(--brand);
+    }
+
+    .card .label {
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      color: var(--ink-muted);
+      margin-bottom: 4px;
+    }
+
+    .card .value {
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: var(--ink);
+    }
+
+    .card .desc {
+      font-size: 0.82rem;
+      color: var(--ink-muted);
+      margin-top: 4px;
+    }
+
+    .callout {
+      border-left: 4px solid var(--brand);
+      background: var(--brand-light);
+      padding: 16px 20px;
+      border-radius: 0 var(--radius) var(--radius) 0;
+      margin: 14px 0 20px;
+      font-size: 0.92rem;
+    }
+
+    .callout.blue {
+      border-left-color: var(--blue);
+      background: var(--blue-bg);
+    }
+
+    .callout.green {
+      border-left-color: var(--green);
+      background: var(--green-bg);
+    }
+
+    /* ── Badges ── */
+    .badge {
+      display: inline-block;
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 3px;
+      letter-spacing: 0.02em;
+      vertical-align: middle;
+    }
+
+    .badge.high {
+      background: var(--red-bg);
+      color: var(--red);
+    }
+
+    .badge.medium {
+      background: var(--yellow-bg);
+      color: var(--yellow);
+    }
+
+    .badge.low {
+      background: var(--blue-bg);
+      color: var(--blue);
+    }
+
+    /* ── Architecture diagram ── */
+    .arch {
+      margin: 20px 0 24px;
+    }
+
+    .arch-row {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .arch-box {
+      border: 2px solid var(--border-strong);
+      border-radius: var(--radius);
+      padding: 14px 18px;
+      text-align: center;
+      font-size: 0.82rem;
+      font-weight: 600;
+      min-width: 130px;
+      background: var(--surface);
+    }
+
+    .arch-box.brand {
+      border-color: var(--brand);
+      background: var(--brand-light);
+      color: var(--brand-dark);
+    }
+
+    .arch-box.blue {
+      border-color: var(--blue);
+      background: var(--blue-bg);
+      color: var(--blue);
+    }
+
+    .arch-box.green {
+      border-color: var(--green);
+      background: var(--green-bg);
+      color: var(--green);
+    }
+
+    .arch-box.dark {
+      border-color: var(--ink-soft);
+      background: var(--ink);
+      color: #fff;
+    }
+
+    .arch-box small {
+      display: block;
+      font-weight: 400;
+      font-size: 0.72rem;
+      margin-top: 2px;
+      color: inherit;
+      opacity: 0.7;
+    }
+
+    .arch-arrow {
+      text-align: center;
+      font-size: 1.2rem;
+      color: var(--ink-muted);
+      margin: 4px 0;
+    }
+
+    /* ── Flow list ── */
+    .flow {
+      counter-reset: flow;
+      list-style: none;
+      padding: 0;
+      margin: 14px 0 20px;
+    }
+
+    .flow li {
+      counter-increment: flow;
+      position: relative;
+      padding: 12px 16px 12px 52px;
+      margin-bottom: 8px;
+      background: var(--surface-tint);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      font-size: 0.9rem;
+    }
+
+    .flow li::before {
+      content: counter(flow);
+      position: absolute;
+      left: 14px;
+      top: 11px;
+      width: 26px;
+      height: 26px;
+      background: var(--brand);
+      color: #fff;
+      border-radius: 50%;
+      font-size: 0.78rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* ── Feature highlight ── */
+    .feat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+      margin: 16px 0 24px;
+    }
+
+    .feat {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 22px 22px 18px;
+      background: var(--surface);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .feat::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 3px;
+      background: var(--brand);
+    }
+
+    .feat .icon {
+      font-size: 1.5rem;
+      margin-bottom: 8px;
+    }
+
+    .feat h4 {
+      margin-top: 0;
+      color: var(--ink);
+      font-size: 1rem;
+    }
+
+    .feat p {
+      font-size: 0.85rem;
+      margin-bottom: 0;
+    }
+
+    /* ── Footer ── */
+    .doc-footer {
+      margin-top: 48px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+      font-size: 0.78rem;
+      color: var(--ink-muted);
+      text-align: center;
+    }
+
+    /* ── Print ── */
+    @media print {
+      body {
+        background: #fff;
+      }
+
+      .cover {
+        break-after: page;
+      }
+
+      .doc {
+        box-shadow: none;
+        padding: 24px;
+      }
+
+      h2 {
+        break-after: avoid;
+      }
+
+      .table-wrap,
+      .card-grid,
+      .feat-grid {
+        break-inside: avoid;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ═══════════ COVER ═══════════ -->
+  <div class="cover">
+    <div class="cover-inner">
+      <div class="cover-badge">Technical Report</div>
+      <h1>전표 이상탐지 AI 파이프라인<br>설계서 및 기능 보고서</h1>
+      <p class="subtitle">Hoban FDS — 사내 구축형 LLM 기반 실시간 전표 이상탐지 및 지능형 감사 시스템</p>
+      <div class="cover-meta">
+        <div><strong>작성일</strong>&ensp;2026-07-13</div>
+        <div><strong>버전</strong>&ensp;v1.0</div>
+        <div><strong>작성</strong>&ensp;PwC컨설팅 AI Factory</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ DOCUMENT ═══════════ -->
+  <div class="doc">
+
+    <!-- TOC -->
+    <nav class="toc">
+      <h3>목차</h3>
+      <ol>
+        <li><a href="#s1">시스템 개요</a></li>
+        <li><a href="#s2">시스템 아키텍처</a></li>
+        <li><a href="#s3">화면 구성 및 주요 기능</a></li>
+        <li><a href="#s4">AI/LLM 기반 지능형 기능</a></li>
+        <li><a href="#s5">이상탐지 룰 엔진</a></li>
+        <li><a href="#s6">데이터 모델 및 API 설계</a></li>
+        <li><a href="#s7">개선된 특장점</a></li>
+        <li><a href="#s8">배포 및 운영 환경</a></li>
+      </ol>
+    </nav>
+
+    <!-- ───── 1. 시스템 개요 ───── -->
+    <h2 id="s1"><span class="num">1.</span>시스템 개요</h2>
+    <p>본 시스템은 <strong>호반건설 ERP 전표 데이터</strong>를 대상으로, 사내 구축형 LLM(PwC Workspace Gemini 3.1 Pro)과 규칙 기반 엔진을 결합하여
+      <strong>이상 전표를 자동 탐지</strong>하고, 영수증·세금계산서 이미지를 AI로 분석하여 <strong>전표 생성부터 검토까지 전 과정을 자동화</strong>하는 지능형 감사 플랫폼입니다.
+    </p>
+
+    <div class="card-grid">
+      <div class="card">
+        <div class="label">탐지 룰</div>
+        <div class="value">21개</div>
+        <div class="desc">7개 카테고리, 35+ 필드 지원</div>
+      </div>
+      <div class="card">
+        <div class="label">API 엔드포인트</div>
+        <div class="value">37개</div>
+        <div class="desc">CRUD, AI 분석, 검색, 데이터 관리</div>
+      </div>
+      <div class="card">
+        <div class="label">화면</div>
+        <div class="value">4개</div>
+        <div class="desc">대시보드, 전표 생성, 검토, 룰 관리</div>
+      </div>
+      <div class="card">
+        <div class="label">AI 기능</div>
+        <div class="value">5가지</div>
+        <div class="desc">OCR, 챗, 자연어 룰, 증빙 분석, 계정 매핑</div>
+      </div>
+    </div>
+
+    <!-- ───── 2. 아키텍처 ───── -->
+    <h2 id="s2"><span class="num">2.</span>시스템 아키텍처</h2>
+
+    <h3>2.1 기술 스택</h3>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>계층</th>
+            <th>기술</th>
+            <th>비고</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Backend</strong></td>
+            <td>Python 3.11 + FastAPI 0.115</td>
+            <td>비동기 API 서버 (Uvicorn)</td>
+          </tr>
+          <tr>
+            <td><strong>ORM / DB</strong></td>
+            <td>SQLAlchemy 2.0 + SQLite</td>
+            <td>aiosqlite 비동기 지원</td>
+          </tr>
+          <tr>
+            <td><strong>Template</strong></td>
+            <td>Jinja2 3.1</td>
+            <td>SSR 기반 4개 페이지</td>
+          </tr>
+          <tr>
+            <td><strong>Frontend</strong></td>
+            <td>Vanilla JS + CSS Custom Properties</td>
+            <td>프레임워크 없이 경량 구현</td>
+          </tr>
+          <tr>
+            <td><strong>AI / LLM</strong></td>
+            <td>PwC Workspace Gemini 3.1 Pro</td>
+            <td>OpenAI-compatible Chat Completions API</td>
+          </tr>
+          <tr>
+            <td><strong>Image</strong></td>
+            <td>Pillow + PyMuPDF</td>
+            <td>이미지 리사이즈, PDF→PNG 변환</td>
+          </tr>
+          <tr>
+            <td><strong>배포</strong></td>
+            <td>Docker + Railway</td>
+            <td>자동 배포 (Git push → Build → Deploy)</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>2.2 아키텍처 구성도</h3>
+    <div class="arch">
+      <div class="arch-row">
+        <div class="arch-box dark">사용자 브라우저<small>API Key 관리 (localStorage)</small></div>
+      </div>
+      <div class="arch-arrow">&#9660;</div>
+      <div class="arch-row">
+        <div class="arch-box brand">FastAPI 서버<small>app.py — 37개 라우트</small></div>
+      </div>
+      <div class="arch-arrow">&#9660;</div>
+      <div class="arch-row">
+        <div class="arch-box blue">룰 엔진<small>rule_engine.py<br>21개 룰 · 35+ 필드</small></div>
+        <div class="arch-box blue">AI 엔진<small>ai_engine.py<br>위험도 판정</small></div>
+        <div class="arch-box green">LLM Vision<small>llm_vision.py<br>OCR · 증빙 분석</small></div>
+        <div class="arch-box green">챗 어시스턴트<small>llm_chat.py<br>전표 생성/수정</small></div>
+      </div>
+      <div class="arch-arrow">&#9660;</div>
+      <div class="arch-row">
+        <div class="arch-box">SQLite DB<small>6개 테이블</small></div>
+        <div class="arch-box green">PwC Gemini API<small>workspace.kr.pwc.com</small></div>
+      </div>
+    </div>
+
+    <h3>2.3 핵심 모듈 구성</h3>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>모듈</th>
+            <th>라인</th>
+            <th>역할</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>app.py</code></td>
+            <td>1,421</td>
+            <td>FastAPI 메인 서버, 전체 API 라우트, AI 분석 오케스트레이션</td>
+          </tr>
+          <tr>
+            <td><code>rule_engine.py</code></td>
+            <td>1,245</td>
+            <td>룰 평가 엔진 (35+ 필드 타입), 룰 CRUD, 자연어 룰 파싱</td>
+          </tr>
+          <tr>
+            <td><code>llm_vision.py</code></td>
+            <td>556</td>
+            <td>Gemini Vision API 연동, OCR, 증빙/연결문서 파싱, 계정 매핑</td>
+          </tr>
+          <tr>
+            <td><code>import_csv.py</code></td>
+            <td>438</td>
+            <td>CSV 임포트 (v1/v2 자동 감지), 인덱스 기반 계정 매핑</td>
+          </tr>
+          <tr>
+            <td><code>ai_engine.py</code></td>
+            <td>410</td>
+            <td>분석 엔진, 챗 입력 파서, 건설업 10개 거래 패턴</td>
+          </tr>
+          <tr>
+            <td><code>llm_chat.py</code></td>
+            <td>312</td>
+            <td>대화형 전표 어시스턴트 (Gemini API + 로컬 폴백)</td>
+          </tr>
+          <tr>
+            <td><code>models.py</code></td>
+            <td>178</td>
+            <td>SQLAlchemy ORM 모델 (6개 테이블 정의)</td>
+          </tr>
+          <tr>
+            <td><code>settings.js</code></td>
+            <td>563</td>
+            <td>API 키 관리 모듈, fetch 헤더 자동 주입</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ───── 3. 화면 구성 ───── -->
+    <h2 id="s3"><span class="num">3.</span>화면 구성 및 주요 기능</h2>
+
+    <h3>3.1 대시보드 (<code>/</code>)</h3>
+    <p>전체 이상탐지 현황을 한눈에 파악하는 통합 현황 화면입니다.</p>
+    <ul>
+      <li><strong>위험등급 요약</strong> — 전체/고위험/주의/경고/정상 건수 및 비율을 카드형 지표로 표시</li>
+      <li><strong>프로젝트별 현황</strong> — 각 프로젝트의 전표 건수, 총 금액, 위험 비율을 테이블로 제공</li>
+      <li><strong>전표 유형 분포</strong> — 일반전표, 대체전표, 역분개전표 등 유형별 분포 표시</li>
+      <li><strong>월별 데이터 관리</strong> — 월 선택 필터, CSV 데이터 업로드, 월별 데이터 삭제 기능</li>
+    </ul>
+
+    <h3>3.2 전표 생성 (<code>/create</code>)</h3>
+    <p>AI 보조를 통한 신규 전표 생성 화면입니다.</p>
+    <ul>
+      <li><strong>영수증/세금계산서 이미지 업로드</strong> — LLM Vision OCR로 금액, 거래처, 일자, 부가세를 자동 추출하여 전표 폼에 반영</li>
+      <li><strong>AI 챗 어시스턴트</strong> — 자연어로 전표 생성/수정 요청 (예: "자재 구매 500만원", "금액을 1,155만원으로 수정해줘")</li>
+      <li><strong>계정과목 검색</strong> — 1,418개 계정과목 실시간 검색, 차대변 방향 자동 검증</li>
+      <li><strong>거래처 검색</strong> — 코드/이름/유형별 거래처 조회</li>
+      <li><strong>전표 라인 관리</strong> — 차변/대변 항목 추가·삭제, 차대변 합계 자동 계산 및 균형 검증</li>
+      <li><strong>자동 분석</strong> — 전표 저장 시 21개 룰 자동 적용, 위험등급 즉시 판정</li>
+    </ul>
+
+    <h3>3.3 전표 검토 (<code>/review</code>)</h3>
+    <p>탐지된 이상 전표를 검토하고 승인/반려 처리하는 핵심 업무 화면입니다.</p>
+    <ul>
+      <li><strong>좌측 사이드바 필터</strong> — 위험등급(고위험/주의/경고) 및 이상사유 코드별 필터링</li>
+      <li><strong>카드뷰/테이블뷰 전환</strong> — 전표 목록을 카드형 또는 테이블형으로 전환하여 조회</li>
+      <li><strong>전표 상세 모달</strong> — 전표 헤더, 라인 항목, 증빙 파일, 연결문서, AI 분석 결과를 탭으로 구분하여 표시</li>
+      <li><strong>증빙 관리</strong> — 증빙 파일 업로드·삭제, LLM 기반 계약서/공과금 고지서 자동 파싱</li>
+      <li><strong>연결문서 관리</strong> — 기안서/품의서/검수확인서 업로드·삭제, LLM 자동 파싱</li>
+      <li><strong>OCR 재분석</strong> — 영수증 이미지 OCR 결과 재실행, 전표 금액과 비교 검증</li>
+      <li><strong>승인/반려</strong> — 검토 완료 처리 및 반려(사유 입력) 기능</li>
+      <li><strong>검색/정렬</strong> — 전표번호, 적요, 거래처명 키워드 검색, 금액순·위험도순 등 정렬</li>
+      <li><strong>페이지네이션</strong> — 대량 데이터 처리를 위한 페이지 단위 조회 (기본 30건)</li>
+    </ul>
+
+    <h3>3.4 룰 관리 (<code>/rules</code>)</h3>
+    <p>이상탐지 룰을 관리하고, 자연어로 새로운 룰을 생성할 수 있는 관리 화면입니다.</p>
+    <ul>
+      <li><strong>룰 카드 목록</strong> — 각 룰의 명칭, 조건, 심각도를 색상 코딩된 카드로 표시</li>
+      <li><strong>룰 활성화/비활성화</strong> — 개별 룰을 토글하여 분석 적용 여부 제어</li>
+      <li><strong>룰 편집/삭제</strong> — 기존 룰의 조건, 심각도, 설명 등을 수정</li>
+      <li><strong>자연어 룰 생성</strong> — 챗 인터페이스에서 자연어(예: "금액이 5억 초과이면 고위험 경고")로 룰을 자동 생성</li>
+      <li><strong>수동 룰 추가</strong> — 필드, 연산자, 값, 심각도를 직접 지정하여 룰 생성</li>
+      <li><strong>전체 재분석</strong> — 현재 룰 세트로 모든 전표를 일괄 재분석, 진행률 표시</li>
+    </ul>
+
+    <!-- ───── 4. AI/LLM 기능 ───── -->
+    <h2 id="s4"><span class="num">4.</span>AI/LLM 기반 지능형 기능</h2>
+
+    <div class="callout">
+      모든 AI 기능은 <strong>PwC Workspace Gemini 3.1 Pro API</strong> 하나로 통합되어 있으며, API 키는 사용자 브라우저의 localStorage에 저장되어 서버에
+      보관하지 않는 보안 구조입니다.
+    </div>
+
+    <div class="feat-grid">
+      <div class="feat">
+        <div class="icon">&#128247;</div>
+        <h4>영수증/세금계산서 OCR</h4>
+        <p>Gemini Vision API로 이미지에서 일자, 거래처, 사업자번호, 공급가액, 부가세, 합계금액, 품목을 추출합니다. 이미지 자동 리사이즈(1.5MB 이하, 2000px 이하), PDF
+          1페이지 자동 변환을 지원합니다.</p>
+      </div>
+      <div class="feat">
+        <div class="icon">&#128172;</div>
+        <h4>대화형 전표 어시스턴트</h4>
+        <p>자연어로 전표를 생성/수정합니다. "자재 구매 500만원", "부가세 분리해줘", "금액을 1,155만원으로 수정" 등의 대화형 명령을 이해하고 계정과목, 차대변 라인을 자동 생성합니다. API
+          키 없이도 로컬 파서로 기본 기능을 제공합니다.</p>
+      </div>
+      <div class="feat">
+        <div class="icon">&#128220;</div>
+        <h4>증빙문서 자동 분석</h4>
+        <p>계약서에서 계약기간, 계약금액, 계약대상 등을 추출하고, 공과금 고지서에서 당월요금, 기본월, 납기일을 추출합니다. 도급기성 문서의 금회기성액도 자동 인식합니다.</p>
+      </div>
+      <div class="feat">
+        <div class="icon">&#128218;</div>
+        <h4>자연어 룰 생성</h4>
+        <p>"거래처가 개인이고 금액이 1천만원 이상이면 고위험"과 같은 자연어를 35+ 필드 타입의 구조화된 룰 JSON으로 자동 변환합니다. AND/OR 복합 조건도 지원합니다.</p>
+      </div>
+      <div class="feat">
+        <div class="icon">&#128176;</div>
+        <h4>계정과목 자동 매핑</h4>
+        <p>OCR 추출 결과의 품목 키워드(철근, 주유, 택시, 렌탈 등)를 기반으로 적합한 차변/대변 계정과목을 자동 제안합니다. 1,418개 계정과목 마스터를 참조합니다.</p>
+      </div>
+      <div class="feat">
+        <div class="icon">&#128274;</div>
+        <h4>API 키 관리</h4>
+        <p>설정 모달에서 Gemini API Key를 입력하면 브라우저 localStorage에 안전하게 저장됩니다. window.fetch를 오버라이드하여 LLM 호출 시 자동으로 인증 헤더를 주입합니다.
+          키 미입력 시 팝업으로 즉시 입력을 요청합니다.</p>
+      </div>
+    </div>
+
+    <h3>4.1 AI 처리 흐름</h3>
+    <ol class="flow">
+      <li><strong>이미지 업로드</strong> — 사용자가 영수증/세금계산서 이미지를 드래그앤드롭 또는 파일 선택으로 업로드</li>
+      <li><strong>전처리</strong> — Pillow로 이미지 리사이즈 (1.5MB/2000px 이하), PDF는 PyMuPDF로 첫 페이지 PNG 변환</li>
+      <li><strong>LLM Vision 호출</strong> — Base64 인코딩 후 Gemini Vision API에 구조화된 프롬프트와 함께 전송</li>
+      <li><strong>JSON 파싱</strong> — LLM 응답에서 금액, 거래처, 일자, 부가세 등 구조화 데이터 추출</li>
+      <li><strong>계정 매핑</strong> — 품목 키워드 기반으로 차변/대변 계정과목 자동 제안</li>
+      <li><strong>폼 반영</strong> — 추출된 데이터를 전표 생성 폼에 자동 입력, 사용자 확인 후 저장</li>
+    </ol>
+
+    <!-- ───── 5. 룰 엔진 ───── -->
+    <h2 id="s5"><span class="num">5.</span>이상탐지 룰 엔진</h2>
+
+    <h3>5.1 룰 목록 (21개)</h3>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>룰 명칭</th>
+            <th>카테고리</th>
+            <th>심각도</th>
+            <th>탐지 대상</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>E001</td>
+            <td>차대변 불일치</td>
+            <td>정합성</td>
+            <td><span class="badge high">High</span></td>
+            <td>차변 합계 ≠ 대변 합계</td>
+          </tr>
+          <tr>
+            <td>E002</td>
+            <td>계정과목 착오 의심</td>
+            <td>계정</td>
+            <td><span class="badge high">High</span></td>
+            <td>동일 거래처의 과거 패턴과 상이한 계정 사용</td>
+          </tr>
+          <tr>
+            <td>E003</td>
+            <td>중복 전표 등록 오류</td>
+            <td>중복</td>
+            <td><span class="badge high">High</span></td>
+            <td>동일 일자·금액·거래처 전표 중복</td>
+          </tr>
+          <tr>
+            <td>E004</td>
+            <td>고액 전표 (10억 초과)</td>
+            <td>금액</td>
+            <td><span class="badge high">High</span></td>
+            <td>단일 라인 금액 10억원 초과</td>
+          </tr>
+          <tr>
+            <td>E005</td>
+            <td>주말/공휴일 기표</td>
+            <td>시점</td>
+            <td><span class="badge low">Low</span></td>
+            <td>토·일요일에 기표된 전표</td>
+          </tr>
+          <tr>
+            <td>E006-H</td>
+            <td>해약/환불 전표</td>
+            <td>유형</td>
+            <td><span class="badge medium">Medium</span></td>
+            <td>적요에 해약·환불·취소 키워드 포함</td>
+          </tr>
+          <tr>
+            <td>E009</td>
+            <td>월말 대량 기표</td>
+            <td>시점</td>
+            <td><span class="badge low">Low</span></td>
+            <td>매월 25일 이후 기표</td>
+          </tr>
+          <tr>
+            <td>E013</td>
+            <td>적요 미입력</td>
+            <td>정합성</td>
+            <td><span class="badge low">Low</span></td>
+            <td>적요란이 비어있는 전표</td>
+          </tr>
+          <tr>
+            <td>E014</td>
+            <td>다건 항목 전표</td>
+            <td>정합성</td>
+            <td><span class="badge low">Low</span></td>
+            <td>라인 항목이 10개 이상</td>
+          </tr>
+          <tr>
+            <td>E015</td>
+            <td>반복거래 계정과목 이탈</td>
+            <td>계정</td>
+            <td><span class="badge medium">Medium</span></td>
+            <td>동일 거래처의 계정과목 패턴 이탈</td>
+          </tr>
+          <tr>
+            <td>E016</td>
+            <td>수익/비용 차대변 오류</td>
+            <td>계정</td>
+            <td><span class="badge high">High</span></td>
+            <td>수익 계정 차변 기표 또는 비용 계정 대변 기표</td>
+          </tr>
+          <tr>
+            <td>E017</td>
+            <td>전표-계약서 연관성</td>
+            <td>증빙</td>
+            <td><span class="badge medium">Medium</span></td>
+            <td>증빙 계약서의 내용과 전표 적요 불일치</td>
+          </tr>
+          <tr>
+            <td>E018</td>
+            <td>회계일자-증빙 계약기간</td>
+            <td>증빙</td>
+            <td><span class="badge medium">Medium</span></td>
+            <td>전표 일자가 증빙 계약기간 범위 밖</td>
+          </tr>
+          <tr>
+            <td>E019</td>
+            <td>임차료-증빙 월세액 일치</td>
+            <td>증빙</td>
+            <td><span class="badge medium">Medium</span></td>
+            <td>임차료 전표 금액과 증빙 월세액 불일치</td>
+          </tr>
+          <tr>
+            <td>C005</td>
+            <td>교육훈련비 연결문서 누락</td>
+            <td>증빙</td>
+            <td><span class="badge medium">Medium</span></td>
+            <td>교육훈련비 전표에 기안서/품의서 미첨부</td>
+          </tr>
+          <tr>
+            <td>C006</td>
+            <td>수도광열비-고지서 당월요금</td>
+            <td>계정</td>
+            <td><span class="badge medium">Medium</span></td>
+            <td>수도광열비와 고지서 당월요금 차이</td>
+          </tr>
+          <tr>
+            <td>C007</td>
+            <td>도급기성 금회기성 금액 비교</td>
+            <td>내용</td>
+            <td><span class="badge medium">Medium</span></td>
+            <td>도급기성 전표 금액과 연결문서 금회기성액 불일치</td>
+          </tr>
+          <tr>
+            <td>C008</td>
+            <td>차변금액 합계 0원 전표</td>
+            <td>금액</td>
+            <td><span class="badge high">High</span></td>
+            <td>차변 합계가 0원인 전표</td>
+          </tr>
+          <tr>
+            <td>C009</td>
+            <td>전표-증빙 부가세액 불일치</td>
+            <td>증빙</td>
+            <td><span class="badge medium">Medium</span></td>
+            <td>전표의 부가세 금액과 증빙 부가세 차이</td>
+          </tr>
+          <tr>
+            <td>C010</td>
+            <td>전표-증빙 월세액 비교</td>
+            <td>증빙</td>
+            <td><span class="badge medium">Medium</span></td>
+            <td>전표 월세 금액과 증빙 월세 항목 불일치</td>
+          </tr>
+          <tr>
+            <td>C011</td>
+            <td>전표-증빙 보증금 비교</td>
+            <td>증빙</td>
+            <td><span class="badge medium">Medium</span></td>
+            <td>보증금 전표와 증빙의 보증금액 불일치 (3개 조건 AND)</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>5.2 룰 엔진 구조</h3>
+    <ul>
+      <li><strong>단일 조건 룰</strong> — 하나의 필드-연산자-값 조합으로 평가 (예: <code>max_line_amount &gt; 1000000000</code>)</li>
+      <li><strong>복합 조건 룰</strong> — 다중 조건을 AND/OR 로직으로 결합 (예: C011은 3개 조건 AND)</li>
+      <li><strong>위험 점수 계산</strong> — 각 룰의 가중치(score)를 합산, 0~1.0 범위로 정규화</li>
+      <li><strong>위험등급 자동 판정</strong> — High(≥0.8) / Medium(≥0.3) / Low(&lt;0.3) 자동 분류</li>
+      <li><strong>지원 필드 35+</strong> — 금액, 일자, 계정, 거래처, 적요, 증빙 필드, 연결문서 필드 등 광범위한 조건 지원</li>
+    </ul>
+
+    <!-- ───── 6. 데이터 모델 ───── -->
+    <h2 id="s6"><span class="num">6.</span>데이터 모델 및 API 설계</h2>
+
+    <h3>6.1 데이터베이스 테이블 (6개)</h3>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>테이블</th>
+            <th>주요 컬럼</th>
+            <th>설명</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>journal_entries</strong></td>
+            <td>doc_no, doc_date, total_debit, total_credit, ai_risk_level, ai_risk_score, ai_error_codes 등 42개</td>
+            <td>전표 헤더 (프로젝트, 부서, OCR, AI 분석 결과 포함)</td>
+          </tr>
+          <tr>
+            <td><strong>journal_lines</strong></td>
+            <td>line_no, side, account_code, account_name, debit_amount, credit_amount, vendor_code, vendor_name</td>
+            <td>전표 라인 항목 (차변/대변)</td>
+          </tr>
+          <tr>
+            <td><strong>evidences</strong></td>
+            <td>evidence_type, file_name, file_path, parsed_data (JSON)</td>
+            <td>증빙 파일 (계약서, 고지서 등)</td>
+          </tr>
+          <tr>
+            <td><strong>linked_documents</strong></td>
+            <td>doc_type, file_name, file_path, parsed_data (JSON)</td>
+            <td>연결문서 (기안서, 품의서, 검수확인서)</td>
+          </tr>
+          <tr>
+            <td><strong>projects</strong></td>
+            <td>code, name, location, contract_amount, status</td>
+            <td>프로젝트/현장 정보</td>
+          </tr>
+          <tr>
+            <td><strong>saved_rules</strong></td>
+            <td>rule_id, rule_json (JSON)</td>
+            <td>이상탐지 룰 저장소</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>6.2 API 엔드포인트 요약</h3>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>카테고리</th>
+            <th>엔드포인트 수</th>
+            <th>주요 기능</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>페이지 라우트</strong></td>
+            <td>4</td>
+            <td>대시보드, 전표 생성, 전표 검토, 룰 관리</td>
+          </tr>
+          <tr>
+            <td><strong>전표 CRUD/분석</strong></td>
+            <td>7</td>
+            <td>전표 생성, 상세 조회, 재분석, 승인/반려, OCR 재파싱, 차대변 검증</td>
+          </tr>
+          <tr>
+            <td><strong>AI/LLM</strong></td>
+            <td>2</td>
+            <td>챗 어시스턴트, 영수증 OCR 업로드</td>
+          </tr>
+          <tr>
+            <td><strong>검색/조회</strong></td>
+            <td>6</td>
+            <td>계정과목, 거래처, 프로젝트 검색, 차대변 오류 목록, OCR 검증</td>
+          </tr>
+          <tr>
+            <td><strong>룰 관리</strong></td>
+            <td>7</td>
+            <td>룰 CRUD, 자연어 파싱, 전체 재분석, 진행 상태</td>
+          </tr>
+          <tr>
+            <td><strong>증빙/연결문서</strong></td>
+            <td>9</td>
+            <td>업로드, 조회, 삭제, LLM 재파싱</td>
+          </tr>
+          <tr>
+            <td><strong>데이터 관리</strong></td>
+            <td>4</td>
+            <td>월별 데이터 조회, CSV 업로드, 업로드 상태, 월별 삭제</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ───── 7. 특장점 ───── -->
+    <h2 id="s7"><span class="num">7.</span>개선된 특장점</h2>
+
+    <div class="feat-grid">
+      <div class="feat">
+        <div class="icon">&#127968;</div>
+        <h4>사내 구축형 AI</h4>
+        <p>PwC Workspace 내 Gemini API를 활용하여 <strong>외부 클라우드에 데이터가 유출되지 않는</strong> 폐쇄망 운영이 가능합니다. API 키는 서버에 저장하지 않고 사용자
+          브라우저에서 관리합니다.</p>
+      </div>
+      <div class="feat">
+        <div class="icon">&#9889;</div>
+        <h4>통합 AI 키 관리</h4>
+        <p>OCR, 챗 어시스턴트, 자연어 룰 생성, 증빙 분석까지 <strong>Gemini API Key 하나로 모든 AI 기능을 통합</strong> 사용합니다. window.fetch 오버라이드로
+          기존 코드 수정 없이 자동 헤더 주입합니다.</p>
+      </div>
+      <div class="feat">
+        <div class="icon">&#128202;</div>
+        <h4>건설업 특화 룰</h4>
+        <p>도급기성 금회기성액, 임차료-월세액 일치, 교육훈련비 연결문서 누락 등 <strong>건설업 회계 실무에 특화된</strong> 21개 이상탐지 룰을 기본 제공합니다.</p>
+      </div>
+      <div class="feat">
+        <div class="icon">&#128196;</div>
+        <h4>증빙 연계 분석</h4>
+        <p>전표 데이터만이 아닌 <strong>첨부 증빙(계약서, 고지서)과 연결문서(기안서, 품의서)까지 AI로 분석</strong>하여 전표-증빙 간 금액·기간 불일치를 자동 탐지합니다.</p>
+      </div>
+      <div class="feat">
+        <div class="icon">&#128221;</div>
+        <h4>자연어 룰 생성</h4>
+        <p>감사인이 코딩 없이 <strong>자연어로 새로운 탐지 룰을 생성</strong>할 수 있어 현장 감사 상황에 즉시 대응 가능합니다. AND/OR 복합 조건도 자연어로 표현 가능합니다.</p>
+      </div>
+      <div class="feat">
+        <div class="icon">&#128260;</div>
+        <h4>Graceful Degradation</h4>
+        <p>API 키가 없어도 <strong>로컬 파서로 기본 기능을 제공</strong>합니다. 챗 어시스턴트의 금액 수정, 부가세 분리, 계정 변경, 10개 건설업 거래 패턴 파싱이 오프라인에서도
+          동작합니다.</p>
+      </div>
+      <div class="feat">
+        <div class="icon">&#128230;</div>
+        <h4>ERP 데이터 자동 임포트</h4>
+        <p>호반건설 ERP CSV 파일을 <strong>v1/v2 형식 자동 감지</strong>하여 임포트합니다. 중복 컬럼 처리, 인덱스 기반 계정코드 매핑, 프로젝트 자동 생성으로 수작업을
+          최소화합니다.</p>
+      </div>
+      <div class="feat">
+        <div class="icon">&#128640;</div>
+        <h4>원클릭 배포</h4>
+        <p>Docker 컨테이너 + Railway를 통해 <strong>Git push만으로 자동 빌드 및 배포</strong>됩니다. 컨테이너 시작 시 DB 초기화, 데이터 임포트, 룰 분석이 자동
+          실행됩니다.</p>
+      </div>
+    </div>
+
+    <h3>7.1 기존 대비 개선 사항</h3>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>항목</th>
+            <th>기존 방식</th>
+            <th>개선 방식</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>이상탐지</strong></td>
+            <td>수동 샘플링 검토, Excel 기반 분석</td>
+            <td>21개 룰 자동 적용, 전수 검사, 위험등급 자동 판정</td>
+          </tr>
+          <tr>
+            <td><strong>영수증 처리</strong></td>
+            <td>수동 육안 확인, 수기 입력</td>
+            <td>LLM Vision OCR 자동 추출, 전표 폼 자동 반영</td>
+          </tr>
+          <tr>
+            <td><strong>증빙 검증</strong></td>
+            <td>증빙 파일 별도 확인, 수동 대조</td>
+            <td>AI 자동 파싱, 전표-증빙 금액/기간 불일치 자동 탐지</td>
+          </tr>
+          <tr>
+            <td><strong>전표 생성</strong></td>
+            <td>ERP에서 수동 입력, 계정과목 수기 검색</td>
+            <td>자연어 명령으로 AI 자동 생성, 차대변 자동 검증</td>
+          </tr>
+          <tr>
+            <td><strong>룰 관리</strong></td>
+            <td>개발자가 코드 수정 후 배포</td>
+            <td>감사인이 자연어로 즉시 룰 추가, 실시간 재분석</td>
+          </tr>
+          <tr>
+            <td><strong>API 키 관리</strong></td>
+            <td>서버 환경변수에 고정 저장</td>
+            <td>사용자별 브라우저 로컬 관리, 서버 비저장</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ───── 8. 배포 ───── -->
+    <h2 id="s8"><span class="num">8.</span>배포 및 운영 환경</h2>
+
+    <h3>8.1 배포 구성</h3>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>항목</th>
+            <th>내용</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>컨테이너</strong></td>
+            <td>Python 3.11-slim 기반 Docker 이미지</td>
+          </tr>
+          <tr>
+            <td><strong>호스팅</strong></td>
+            <td>Railway (자동 빌드·배포, Git 연동)</td>
+          </tr>
+          <tr>
+            <td><strong>실행</strong></td>
+            <td>Uvicorn ASGI 서버 (기본 포트 8001)</td>
+          </tr>
+          <tr>
+            <td><strong>데이터베이스</strong></td>
+            <td>SQLite (컨테이너 내 fds.db)</td>
+          </tr>
+          <tr>
+            <td><strong>시작 프로세스</strong></td>
+            <td>startup.py → DB 초기화 → CSV 임포트(증빙 유지) → 룰 분석 → Uvicorn</td>
+          </tr>
+          <tr>
+            <td><strong>의존성</strong></td>
+            <td>9개 패키지 (fastapi, uvicorn, jinja2, python-multipart, sqlalchemy, aiosqlite, requests, Pillow, PyMuPDF)
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>8.2 데이터 파일</h3>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>파일</th>
+            <th>설명</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>hoban_data_5.csv</code></td>
+            <td>호반건설 ERP 전표 데이터 (v2 형식)</td>
+          </tr>
+          <tr>
+            <td><code>account_master.json</code></td>
+            <td>계정과목 마스터 (1,418개 코드-이름 매핑)</td>
+          </tr>
+          <tr>
+            <td><code>account_balance_side.json</code></td>
+            <td>계정별 차대변 방향 (689개)</td>
+          </tr>
+          <tr>
+            <td><code>default_rules.json</code></td>
+            <td>기본 이상탐지 룰 (21개)</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Footer -->
+    <div class="doc-footer">
+      HOBAN FDS v1.0 &mdash; 본 문서는 호반건설 전표 이상탐지 AI 파이프라인의 설계 및 기능을 기술합니다.
+    </div>
+
+  </div>
+</body>
+
+</html>
