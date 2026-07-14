@@ -79,7 +79,9 @@
         // /api/evidence/*/reparse, /api/evidence/{id} (POST only) 포함
         { test: function (p, m) { return m === 'POST' && p.indexOf('/api/evidence/') === 0; }, provider: 'gemini' },
         // /api/linked-doc/{docNo} (POST only)
-        { test: function (p, m) { return m === 'POST' && p.indexOf('/api/linked-doc/') === 0; }, provider: 'gemini' }
+        { test: function (p, m) { return m === 'POST' && p.indexOf('/api/linked-doc/') === 0; }, provider: 'gemini' },
+        // /api/journal/*/ai-suggestion (AI 검토 제안)
+        { test: function (p, m) { return m === 'POST' && p.indexOf('/api/journal/') === 0 && p.indexOf('/ai-suggestion') > 0; }, provider: 'gemini' }
     ];
 
     function resolveMethod(input, init) {

@@ -782,17 +782,10 @@
         }
         if(j.ai_reason){h+='<div style="margin-top:8px">';j.ai_reason.split('\n').forEach(r=>{if(r.trim())h+=`<div class="reason-item">${r}</div>`;});h+='</div>';}
         h+=`<div class="recommendation" id="ai-suggestion-area">`;
-        h+=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">`;
         h+=`<strong>AI 검토 제안</strong>`;
+        h+=`<div id="ai-suggestion-content" style="margin-top:6px">`;
         if(j.ai_error_codes && j.ai_error_codes.length>0){
-            h+=`<button type="button" class="btn-ai-suggest" onclick="generateAISuggestion('${j.doc_no}')" id="btn-ai-suggest">AI 검토 제안 생성</button>`;
-        }
-        h+=`</div>`;
-        h+=`<div id="ai-suggestion-content">`;
-        if(j.ai_recommendation){
-            h+=renderMarkdown(j.ai_recommendation);
-        } else if(j.ai_error_codes && j.ai_error_codes.length>0){
-            h+=`<span style="color:var(--gray-400);font-size:13px">버튼을 클릭하면 AI가 각 위반 항목에 대한 구체적인 검토 방법을 제안합니다.</span>`;
+            h+=`<div class="ai-suggest-loading"><div class="spinner"></div>AI가 검토 제안을 생성하고 있습니다...</div>`;
         } else {
             h+=`<span style="color:var(--gray-400);font-size:13px">위반 사항 없음</span>`;
         }
@@ -973,6 +966,10 @@
             `<button class="btn btn-danger" onclick="actionJournal('${j.doc_no}','reject')">반려</button><button class="btn btn-success" onclick="actionJournal('${j.doc_no}','approve')">검토 승인</button>`:
             `<span style="color:var(--gray-500)">처리 완료 (${j.status})</span>`;
         document.getElementById('detailModal').classList.add('show');
+
+        if (j.ai_error_codes && j.ai_error_codes.length > 0) {
+            generateAISuggestion(j.doc_no);
+        }
     }
 
     function showUploadOverlay(msg, sub) {
@@ -1150,12 +1147,9 @@
     }
 
     async function generateAISuggestion(docNo) {
-        const btn = document.getElementById('btn-ai-suggest');
         const content = document.getElementById('ai-suggestion-content');
-        if (!btn || !content) return;
+        if (!content) return;
 
-        btn.disabled = true;
-        btn.textContent = '생성 중...';
         content.innerHTML = '<div class="ai-suggest-loading"><div class="spinner"></div>AI가 검토 제안을 생성하고 있습니다...</div>';
 
         try {
@@ -1166,17 +1160,11 @@
             const d = await res.json();
             if (d.success && d.suggestion) {
                 content.innerHTML = renderMarkdown(d.suggestion);
-                btn.textContent = '재생성';
-                btn.disabled = false;
             } else {
-                content.innerHTML = '<span style="color:var(--danger)">검토 제안 생성에 실패했습니다. API 키를 확인해주세요.</span>';
-                btn.textContent = 'AI 검토 제안 생성';
-                btn.disabled = false;
+                content.innerHTML = '<span style="color:var(--gray-400);font-size:13px">검토 제안을 생성할 수 없습니다.</span>';
             }
         } catch (e) {
-            content.innerHTML = '<span style="color:var(--danger)">오류가 발생했습니다: ' + e.message + '</span>';
-            btn.textContent = 'AI 검토 제안 생성';
-            btn.disabled = false;
+            content.innerHTML = '<span style="color:var(--gray-400);font-size:13px">검토 제안 생성 중 오류가 발생했습니다.</span>';
         }
     }
     </script>
