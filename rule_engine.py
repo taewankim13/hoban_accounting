@@ -1242,3 +1242,74 @@ def sync_to_skill_md(rules: list[dict]):
 
     with open(SKILL_PATH, "w", encoding="utf-8") as f:
         f.write(new_content)
+
+
+# ──────────────────────────────────────
+# LLM 기반 AI 검토 제안 생성
+# ──────────────────────────────────────
+
+def generate_ai_review_suggestion(journal_info: dict, api_key: str = None) -> str:
+    """룰 위반 전표에 대해 LLM이 구체적인 검토 제안을 생성한다."""
+    import requests as _requests
+
+    env_path = os.path.join(os.path.dirname(__file__), ".env")
+    if os.path.exists(env_path):
+        with open(env_path, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith("#") and "=" in line:
+                    k, v = line.split("=", 1)
+                    os.environ.setdefault(k.strip(), v.strip())
+
+    key = api_key or os.environ.get("ALPHA_API_KEY", "")
+    if not key:
+        return ""
+
+    API_URL = "https://workspace.kr.pwc.com/api/workspace/coding_agent/v1/chat/completions"
+
+    prompt = f"""당신은 호반건설의 내부감사 전문가입니다. 아래 전표에서 이상탐지 룰에 의해 위반이 감지되었습니다.
+각 위반 항목에 대해 구체적인 검토 방법과 수정 절차를 한국어로 안내해주세요.
+
+## 전표 정보
+- 전표번호: {journal_info.get('doc_no', '')}
+- 전표일자: {journal_info.get('doc_date', '')}
+- 적요: {journal_info.get('description', '')}
+- 전표유형: {journal_info.get('doc_type', '')}
+- 차변합계: {journal_info.get('total_debit', 0):,}원
+- 대변합계: {journal_info.get('total_credit', 0):,}원
+- 위험등급: {journal_info.get('risk_level', '')}
+
+## 전표 라인 항목
+{journal_info.get('lines_text', '')}
+
+## 감지된 위반 사항
+{journal_info.get('reasons', '')}
+
+## 요청
+각 위반 항목별로 아래 형식으로 답변해주세요:
+1. **점검 포인트**: 어떤 부분을 확인해야 하는지
+2. **수정 방법**: 오류인 경우 어떻게 수정하면 되는지
+3. **검토 절차**: 담당자가 밟아야 할 구체적인 확인 단계
+
+간결하고 실무적으로 작성하세요. 마크다운 형식으로 응답하세요."""
+
+    try:
+        resp = _requests.post(
+            API_URL,
+            headers={
+                "Authorization": f"Bearer {key}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "model": "Gemini_3.1_Pro",
+                "messages": [{"role": "user", "content": prompt}],
+                "max_tokens": 2048,
+            },
+            timeout=60,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        return data["choices"][0]["message"]["content"].strip()
+    except Exception as e:
+        print(f"[AI검토제안] LLM 호출 오류: {e}")
+        return ""

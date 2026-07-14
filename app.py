@@ -594,6 +594,46 @@ def reanalyze_single_journal(doc_no: str, db: Session = Depends(get_db)):
     }
 
 
+@app.post("/api/journal/{doc_no}/ai-suggestion", response_class=JSONResponse)
+async def ai_review_suggestion(doc_no: str, request: Request, db: Session = Depends(get_db)):
+    """LLM 기반 AI 검토 제안 생성"""
+    journal = db.query(JournalEntry).options(
+        joinedload(JournalEntry.lines),
+    ).filter(JournalEntry.doc_no == doc_no).first()
+    if not journal:
+        return JSONResponse({"success": False, "error": "전표를 찾을 수 없습니다."}, status_code=404)
+    if not journal.ai_error_codes:
+        return {"success": True, "suggestion": "이 전표는 이상탐지 룰에 위반되지 않았습니다."}
+
+    lines_text = ""
+    for line in journal.lines:
+        side = line.side or ("차변" if line.debit_amount else "대변")
+        amt = line.debit_amount or line.credit_amount or 0
+        lines_text += f"- {side} | {line.account_code} {line.account_name} | {amt:,}원 | 거래처: {line.vendor_name or '-'}\n"
+
+    journal_info = {
+        "doc_no": journal.doc_no,
+        "doc_date": str(journal.doc_date) if journal.doc_date else "",
+        "description": journal.description or "",
+        "doc_type": journal.doc_type or "",
+        "total_debit": journal.total_debit or 0,
+        "total_credit": journal.total_credit or 0,
+        "risk_level": journal.ai_risk_level or "",
+        "lines_text": lines_text,
+        "reasons": journal.ai_reason or "",
+    }
+
+    api_key = get_gemini_key(request)
+    from rule_engine import generate_ai_review_suggestion
+    suggestion = generate_ai_review_suggestion(journal_info, api_key=api_key)
+
+    if suggestion:
+        journal.ai_recommendation = suggestion
+        db.commit()
+
+    return {"success": True, "suggestion": suggestion or "검토 제안을 생성할 수 없습니다. API 키를 확인해주세요."}
+
+
 @app.post("/api/journal/{doc_no}/approve", response_class=JSONResponse)
 def approve_journal(doc_no: str, db: Session = Depends(get_db)):
     journal = db.query(JournalEntry).filter(JournalEntry.doc_no == doc_no).first()
