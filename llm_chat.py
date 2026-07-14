@@ -85,14 +85,14 @@ def chat_with_gemini(messages: list, current_form: dict = None, api_key=None) ->
             json={
                 "model": MODEL,
                 "messages": api_messages,
-                "max_tokens": 2048,
+                "max_tokens": 16384,
             },
-            timeout=60,
+            timeout=120,
         )
         resp.raise_for_status()
         data = resp.json()
 
-        text = data["choices"][0]["message"]["content"].strip()
+        text = (data.get("choices", [{}])[0].get("message", {}).get("content", "") or "").strip()
 
         json_match = re.search(r'```json\s*(.*?)\s*```', text, re.DOTALL)
         if json_match:

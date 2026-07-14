@@ -1303,13 +1303,14 @@ def generate_ai_review_suggestion(journal_info: dict, api_key: str = None) -> st
             json={
                 "model": "Gemini_3.1_Pro",
                 "messages": [{"role": "user", "content": prompt}],
-                "max_tokens": 2048,
+                "max_tokens": 16384,
             },
-            timeout=60,
+            timeout=120,
         )
         resp.raise_for_status()
         data = resp.json()
-        return data["choices"][0]["message"]["content"].strip()
+        content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+        return content.strip() if content else ""
     except Exception as e:
         print(f"[AI검토제안] LLM 호출 오류: {e}")
         return ""
