@@ -784,7 +784,10 @@
         h+=`<div class="recommendation" id="ai-suggestion-area">`;
         h+=`<strong>AI 검토 제안</strong>`;
         h+=`<div id="ai-suggestion-content" style="margin-top:6px">`;
-        if(j.ai_error_codes && j.ai_error_codes.length>0){
+        var hasLLMSuggestion = j.ai_recommendation && j.ai_recommendation.trim() && j.ai_recommendation.indexOf('해당 전표를 검토하세요') === -1 && j.ai_recommendation.length > 200;
+        if(hasLLMSuggestion){
+            h+=renderMarkdown(j.ai_recommendation);
+        } else if(j.ai_error_codes && j.ai_error_codes.length>0){
             h+=`<div class="ai-suggest-loading"><div class="spinner"></div>AI가 검토 제안을 생성하고 있습니다...</div>`;
         } else {
             h+=`<span style="color:var(--gray-400);font-size:13px">위반 사항 없음</span>`;
@@ -967,7 +970,8 @@
             `<span style="color:var(--gray-500)">처리 완료 (${j.status})</span>`;
         document.getElementById('detailModal').classList.add('show');
 
-        if (j.ai_error_codes && j.ai_error_codes.length > 0) {
+        var hasLLM = j.ai_recommendation && j.ai_recommendation.trim() && j.ai_recommendation.indexOf('해당 전표를 검토하세요') === -1 && j.ai_recommendation.length > 200;
+        if (j.ai_error_codes && j.ai_error_codes.length > 0 && !hasLLM) {
             generateAISuggestion(j.doc_no);
         }
     }

@@ -1,0 +1,1308 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>호반건설 FDS - 사용자 가이드</title>
+<style>
+@font-face {
+  font-family: 'Pretendard';
+  src: local('Pretendard'), local('Apple SD Gothic Neo'), local('Malgun Gothic');
+}
+:root {
+  --orange: #EE7500;
+  --orange-light: #FFF3E6;
+  --orange-dark: #CC6300;
+  --dark: #575553;
+  --gray: #89898A;
+  --bg: #F5F3F0;
+  --white: #FFFFFF;
+  --high: #E53935;
+  --medium: #FB8C00;
+  --low: #0097A7;
+  --normal: #43A047;
+  --shadow: 0 2px 12px rgba(0,0,0,0.08);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.12);
+  --radius: 16px;
+  --radius-sm: 10px;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+  background: var(--bg);
+  color: var(--dark);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+/* ───── Top Bar ───── */
+.top-bar {
+  position: sticky; top:0; z-index:100;
+  background: var(--white);
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 32px; height: 56px;
+}
+.top-bar-brand {
+  display: flex; align-items: center; gap: 10px;
+  font-weight: 800; font-size: 18px; color: var(--dark);
+}
+.top-bar-brand .badge {
+  background: var(--orange); color: #fff;
+  font-size: 11px; font-weight: 700;
+  padding: 2px 8px; border-radius: 6px;
+}
+.top-bar-nav { display: flex; gap: 4px; }
+.top-bar-nav a {
+  text-decoration: none; color: var(--gray);
+  font-size: 14px; font-weight: 600;
+  padding: 6px 14px; border-radius: 20px;
+  transition: all .2s;
+  cursor: pointer;
+}
+.top-bar-nav a:hover { color: var(--orange); background: var(--orange-light); }
+.top-bar-nav a.active { color: var(--orange); background: var(--orange-light); }
+
+/* ───── Hero ───── */
+.hero {
+  text-align: center;
+  padding: 64px 24px 48px;
+  background: linear-gradient(135deg, var(--white) 0%, var(--orange-light) 100%);
+  border-bottom: 1px solid rgba(238,117,0,0.1);
+}
+.hero h1 {
+  font-size: 36px; font-weight: 800; color: var(--dark);
+  margin-bottom: 12px; letter-spacing: -0.5px;
+}
+.hero h1 em { font-style: normal; color: var(--orange); }
+.hero p { font-size: 16px; color: var(--gray); max-width: 540px; margin: 0 auto 32px; }
+.hero-flow {
+  display: flex; align-items: center; justify-content: center;
+  gap: 0; flex-wrap: wrap; max-width: 800px; margin: 0 auto;
+}
+.hero-flow-step {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 16px 20px; cursor: pointer; transition: transform .2s;
+}
+.hero-flow-step:hover { transform: translateY(-4px); }
+.hero-flow-icon {
+  width: 56px; height: 56px; border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24px; margin-bottom: 8px;
+  box-shadow: var(--shadow);
+}
+.hero-flow-icon.s1 { background: linear-gradient(135deg, #FFF3E6, #FFE0B2); }
+.hero-flow-icon.s2 { background: linear-gradient(135deg, #E8F5E9, #C8E6C9); }
+.hero-flow-icon.s3 { background: linear-gradient(135deg, #E3F2FD, #BBDEFB); }
+.hero-flow-icon.s4 { background: linear-gradient(135deg, #FFF3E6, #FFCC80); }
+.hero-flow-label { font-size: 13px; font-weight: 700; color: var(--dark); }
+.hero-flow-arrow { font-size: 20px; color: var(--gray); margin: 0 4px; padding-bottom: 24px; }
+
+/* ───── Main ───── */
+.main { max-width: 1200px; margin: 0 auto; padding: 0 24px 80px; }
+
+/* ───── Section Nav ───── */
+.section-tabs {
+  display: flex; gap: 6px;
+  padding: 24px 0 32px;
+  position: sticky; top: 56px; z-index: 50;
+  background: var(--bg);
+}
+.section-tab {
+  padding: 10px 20px; border-radius: 24px;
+  font-size: 14px; font-weight: 700;
+  border: 2px solid transparent;
+  background: var(--white); color: var(--gray);
+  cursor: pointer; transition: all .2s;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+}
+.section-tab:hover { border-color: var(--orange); color: var(--orange); }
+.section-tab.active {
+  background: var(--orange); color: #fff;
+  border-color: var(--orange);
+  box-shadow: 0 4px 12px rgba(238,117,0,0.3);
+}
+
+/* ───── Screen Section ───── */
+.screen-section { display: none; animation: fadeUp .4s ease; }
+.screen-section.active { display: block; }
+@keyframes fadeUp {
+  from { opacity:0; transform: translateY(16px); }
+  to { opacity:1; transform: translateY(0); }
+}
+.screen-header {
+  display: flex; align-items: center; gap: 16px;
+  margin-bottom: 24px;
+}
+.screen-number {
+  width: 48px; height: 48px; border-radius: 14px;
+  background: var(--orange); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; font-weight: 800; flex-shrink: 0;
+}
+.screen-header h2 { font-size: 26px; font-weight: 800; color: var(--dark); }
+.screen-header p { font-size: 14px; color: var(--gray); margin-top: 2px; }
+
+/* ───── Mockup Container ───── */
+.mockup-wrapper {
+  position: relative;
+  background: var(--white);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  margin-bottom: 32px;
+}
+.mockup-toolbar {
+  display: flex; align-items: center; gap: 6px;
+  padding: 10px 16px;
+  background: #F8F8F8;
+  border-bottom: 1px solid #eee;
+}
+.mockup-dot { width: 10px; height: 10px; border-radius: 50%; }
+.mockup-dot.r { background: #FF5F57; }
+.mockup-dot.y { background: #FEBC2E; }
+.mockup-dot.g { background: #28C840; }
+.mockup-url {
+  flex:1; text-align: center; font-size: 12px; color: var(--gray);
+  background: #fff; border-radius: 6px; padding: 4px 12px;
+  margin-left: 8px;
+}
+.mockup-body { position: relative; padding: 0; min-height: 420px; }
+
+/* ───── Hotspots ───── */
+.hotspot {
+  position: absolute;
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: var(--orange);
+  color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 800;
+  cursor: pointer;
+  z-index: 10;
+  box-shadow: 0 2px 8px rgba(238,117,0,0.4);
+  transition: transform .2s;
+  animation: hotpulse 2s infinite;
+}
+.hotspot:hover { transform: scale(1.2); }
+.hotspot.visited { background: var(--gray); animation: none; }
+@keyframes hotpulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(238,117,0,0.5); }
+  50% { box-shadow: 0 0 0 10px rgba(238,117,0,0); }
+}
+
+/* ───── Guide Popup ───── */
+.guide-overlay {
+  display: none;
+  position: fixed; top:0; left:0; right:0; bottom:0;
+  background: rgba(0,0,0,0.35);
+  backdrop-filter: blur(2px);
+  z-index: 200;
+}
+.guide-overlay.active { display: flex; align-items: center; justify-content: center; }
+.guide-popup {
+  background: var(--white);
+  border-radius: 20px;
+  padding: 32px;
+  max-width: 520px; width: 90%;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+  animation: popIn .3s ease;
+  position: relative;
+}
+@keyframes popIn {
+  from { opacity:0; transform: scale(0.9) translateY(16px); }
+  to { opacity:1; transform: scale(1) translateY(0); }
+}
+.guide-popup-step {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px; border-radius: 10px;
+  background: var(--orange); color: #fff;
+  font-size: 16px; font-weight: 800;
+  margin-bottom: 12px;
+}
+.guide-popup h3 {
+  font-size: 18px; font-weight: 800; color: var(--dark);
+  margin-bottom: 8px;
+}
+.guide-popup p {
+  font-size: 14px; color: #666; margin-bottom: 16px;
+}
+.guide-popup .tip {
+  background: var(--orange-light);
+  border-left: 3px solid var(--orange);
+  padding: 10px 14px;
+  border-radius: 0 8px 8px 0;
+  font-size: 13px; color: var(--orange-dark);
+  margin-bottom: 16px;
+}
+.guide-popup-nav {
+  display: flex; gap: 8px; justify-content: flex-end;
+}
+.guide-btn {
+  padding: 8px 20px; border-radius: 20px;
+  font-size: 13px; font-weight: 700;
+  border: none; cursor: pointer; transition: all .2s;
+}
+.guide-btn.secondary { background: #f0f0f0; color: var(--gray); }
+.guide-btn.secondary:hover { background: #e0e0e0; }
+.guide-btn.primary { background: var(--orange); color: #fff; }
+.guide-btn.primary:hover { background: var(--orange-dark); }
+.guide-btn.close-btn {
+  position: absolute; top: 12px; right: 12px;
+  width: 28px; height: 28px; border-radius: 50%;
+  background: #f0f0f0; color: var(--gray);
+  font-size: 16px; display: flex; align-items: center; justify-content: center;
+  padding: 0;
+}
+
+/* ───── Feature List ───── */
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  margin-bottom: 32px;
+}
+.feature-card {
+  background: var(--white);
+  border-radius: var(--radius-sm);
+  padding: 20px;
+  box-shadow: var(--shadow);
+  border-left: 4px solid var(--orange);
+  transition: transform .2s;
+}
+.feature-card:hover { transform: translateY(-2px); }
+.feature-card h4 {
+  font-size: 15px; font-weight: 700; color: var(--dark);
+  margin-bottom: 6px; display: flex; align-items: center; gap: 8px;
+}
+.feature-card p { font-size: 13px; color: var(--gray); }
+.feature-icon {
+  width: 28px; height: 28px; border-radius: 8px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 14px; flex-shrink: 0;
+}
+.feature-icon.orange { background: var(--orange-light); }
+.feature-icon.blue { background: #E3F2FD; }
+.feature-icon.green { background: #E8F5E9; }
+.feature-icon.red { background: #FFEBEE; }
+
+/* ───── Button Reference Table ───── */
+.btn-table {
+  width: 100%; border-collapse: separate; border-spacing: 0;
+  background: var(--white); border-radius: var(--radius-sm);
+  overflow: hidden; box-shadow: var(--shadow);
+  margin-bottom: 32px;
+}
+.btn-table thead th {
+  background: #F8F8F8;
+  padding: 12px 16px;
+  font-size: 12px; font-weight: 700; color: var(--gray);
+  text-align: left; text-transform: uppercase; letter-spacing: 0.5px;
+  border-bottom: 1px solid #eee;
+}
+.btn-table tbody td {
+  padding: 12px 16px;
+  font-size: 13px; color: var(--dark);
+  border-bottom: 1px solid #f5f5f5;
+  vertical-align: top;
+}
+.btn-table tbody tr:last-child td { border-bottom: none; }
+.btn-table tbody tr:hover { background: #FAFAF8; }
+.btn-tag {
+  display: inline-block;
+  padding: 3px 10px; border-radius: 6px;
+  font-size: 12px; font-weight: 700;
+  background: var(--orange-light); color: var(--orange);
+  white-space: nowrap;
+}
+
+/* ───── Interactive Tour Button ───── */
+.tour-btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 12px 24px; border-radius: 24px;
+  background: var(--orange); color: #fff;
+  font-size: 14px; font-weight: 700;
+  border: none; cursor: pointer;
+  box-shadow: 0 4px 16px rgba(238,117,0,0.3);
+  transition: all .2s;
+  margin-bottom: 24px;
+}
+.tour-btn:hover { background: var(--orange-dark); transform: translateY(-1px); }
+.tour-btn svg { width: 18px; height: 18px; }
+
+/* ───── Flow Diagram ───── */
+.flow-section {
+  background: var(--white);
+  border-radius: var(--radius);
+  padding: 32px;
+  box-shadow: var(--shadow);
+  margin-bottom: 32px;
+}
+.flow-section h3 {
+  font-size: 18px; font-weight: 800; color: var(--dark);
+  margin-bottom: 20px;
+}
+.flow-diagram {
+  display: flex; flex-direction: column; gap: 0;
+}
+.flow-row {
+  display: flex; align-items: stretch; gap: 0;
+}
+.flow-node {
+  flex: 1; padding: 14px 16px;
+  border-radius: 12px; text-align: center;
+  font-size: 13px; font-weight: 600;
+  position: relative;
+  margin: 4px;
+}
+.flow-node.action { background: var(--orange-light); color: var(--orange-dark); border: 1px solid rgba(238,117,0,0.2); }
+.flow-node.system { background: #E3F2FD; color: #1565C0; border: 1px solid rgba(21,101,192,0.15); }
+.flow-node.result { background: #E8F5E9; color: #2E7D32; border: 1px solid rgba(46,125,50,0.15); }
+.flow-node.decision { background: #FFF3E0; color: #E65100; border: 1px solid rgba(230,81,0,0.15); }
+.flow-connector {
+  display: flex; align-items: center; justify-content: center;
+  color: var(--gray); font-size: 18px;
+  padding: 4px 0;
+}
+
+/* ───── Mockup UI Elements ───── */
+.mock-nav {
+  display: flex; align-items: center;
+  padding: 0 20px; height: 48px;
+  background: #fff; border-bottom: 1px solid #eee;
+}
+.mock-nav-brand { font-weight: 800; font-size: 14px; color: var(--dark); margin-right: 8px; }
+.mock-nav-badge {
+  background: var(--orange); color: #fff;
+  font-size: 9px; font-weight: 700;
+  padding: 1px 6px; border-radius: 4px; margin-right: 20px;
+}
+.mock-nav-link {
+  font-size: 12px; color: var(--gray); padding: 4px 10px;
+  font-weight: 600;
+}
+.mock-nav-link.active { color: var(--orange); border-bottom: 2px solid var(--orange); }
+
+.mock-content { padding: 16px 20px; background: var(--bg); min-height: 360px; position: relative; }
+
+.mock-stat-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 12px; }
+.mock-stat {
+  background: #fff; border-radius: 10px; padding: 10px 12px;
+  text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+.mock-stat-val { font-size: 20px; font-weight: 800; }
+.mock-stat-label { font-size: 10px; color: var(--gray); }
+
+.mock-table {
+  width: 100%; background: #fff; border-radius: 10px;
+  overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  font-size: 11px;
+}
+.mock-table th {
+  background: #F8F8F8; padding: 8px 10px;
+  text-align: left; font-weight: 700; color: var(--gray);
+  font-size: 10px; border-bottom: 1px solid #eee;
+}
+.mock-table td { padding: 8px 10px; border-bottom: 1px solid #f5f5f5; color: var(--dark); }
+
+.mock-badge {
+  display: inline-block; padding: 2px 8px;
+  border-radius: 4px; font-size: 10px; font-weight: 700;
+}
+.mock-badge.high { background: #FFEBEE; color: var(--high); }
+.mock-badge.medium { background: #FFF3E0; color: var(--medium); }
+.mock-badge.low { background: #E0F7FA; color: var(--low); }
+.mock-badge.normal { background: #E8F5E9; color: var(--normal); }
+
+.mock-btn {
+  display: inline-block; padding: 4px 12px;
+  border-radius: 6px; font-size: 10px; font-weight: 700;
+  cursor: default;
+}
+.mock-btn.orange { background: var(--orange); color: #fff; }
+.mock-btn.outline { background: transparent; border: 1px solid var(--orange); color: var(--orange); }
+.mock-btn.gray { background: #f0f0f0; color: var(--gray); }
+
+.mock-card {
+  background: #fff; border-radius: 10px; padding: 12px 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05); margin-bottom: 8px;
+}
+
+.mock-sidebar {
+  position: absolute; left: 0; top: 0; bottom: 0; width: 160px;
+  background: #fff; border-right: 1px solid #eee; padding: 12px;
+  font-size: 11px;
+}
+.mock-sidebar-label { font-size: 10px; font-weight: 700; color: var(--gray); margin-bottom: 6px; text-transform: uppercase; }
+.mock-sidebar-btn {
+  display: block; width: 100%; text-align: left;
+  padding: 6px 10px; border-radius: 6px;
+  font-size: 11px; font-weight: 600; color: var(--dark);
+  margin-bottom: 2px; background: transparent; border: none;
+}
+.mock-sidebar-btn.active { background: var(--orange-light); color: var(--orange); }
+
+.mock-pills { display: flex; gap: 4px; margin-bottom: 12px; flex-wrap: wrap; }
+.mock-pill {
+  padding: 4px 12px; border-radius: 14px;
+  font-size: 10px; font-weight: 700;
+  background: #fff; color: var(--dark);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+.mock-pill.active { background: var(--orange); color: #fff; }
+.mock-pill.dashed { border: 1px dashed var(--orange); color: var(--orange); background: transparent; }
+
+.mock-chat {
+  background: #fff; border-radius: 10px; padding: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  height: 140px; display: flex; flex-direction: column; justify-content: flex-end;
+}
+.mock-chat-msg {
+  padding: 6px 10px; border-radius: 8px;
+  font-size: 10px; margin-bottom: 4px; max-width: 80%;
+}
+.mock-chat-msg.user { background: var(--orange-light); color: var(--orange-dark); align-self: flex-end; margin-left: auto; }
+.mock-chat-msg.ai { background: #f0f0f0; color: var(--dark); }
+.mock-chat-input {
+  display: flex; gap: 4px; margin-top: 6px;
+}
+.mock-chat-input input {
+  flex:1; border: 1px solid #ddd; border-radius: 6px; padding: 4px 8px; font-size: 10px;
+}
+.mock-chat-input .send { background: var(--orange); color: #fff; border: none; border-radius: 6px; padding: 4px 10px; font-size: 10px; font-weight: 700; }
+
+.mock-form-row { display: flex; gap: 8px; margin-bottom: 8px; }
+.mock-field {
+  flex: 1; background: #fff; border: 1px solid #eee;
+  border-radius: 6px; padding: 6px 10px; font-size: 10px;
+}
+.mock-field-label { font-size: 9px; color: var(--gray); font-weight: 600; }
+.mock-field-val { font-size: 11px; color: var(--dark); font-weight: 600; }
+
+/* ───── Walkthrough Progress ───── */
+.tour-progress {
+  display: flex; gap: 4px; margin-bottom: 16px;
+}
+.tour-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #ddd; transition: background .3s;
+}
+.tour-dot.done { background: var(--orange); }
+.tour-dot.current { background: var(--orange); box-shadow: 0 0 0 3px var(--orange-light); }
+
+/* ───── Responsive ───── */
+@media (max-width: 768px) {
+  .hero h1 { font-size: 26px; }
+  .hero-flow { flex-direction: column; }
+  .hero-flow-arrow { transform: rotate(90deg); padding: 0; margin: 4px 0; }
+  .section-tabs { flex-wrap: wrap; }
+  .mock-stat-grid { grid-template-columns: repeat(3, 1fr); }
+  .feature-grid { grid-template-columns: 1fr; }
+  .btn-table { font-size: 12px; }
+  .btn-table thead th, .btn-table tbody td { padding: 8px 10px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════ TOP BAR ═══════ -->
+<div class="top-bar">
+  <div class="top-bar-brand">
+    호반건설 <span class="badge">FDS</span> 사용자 가이드
+  </div>
+  <div class="top-bar-nav">
+    <a onclick="scrollToTop()" class="active">가이드 홈</a>
+    <a onclick="switchTab(0)">대시보드</a>
+    <a onclick="switchTab(1)">전표 생성</a>
+    <a onclick="switchTab(2)">전표 검토</a>
+    <a onclick="switchTab(3)">룰 관리</a>
+  </div>
+</div>
+
+<!-- ═══════ HERO ═══════ -->
+<div class="hero">
+  <h1>전표 이상탐지 시스템 <em>사용자 가이드</em></h1>
+  <p>호반건설 FDS의 4개 핵심 화면별 기능과 사용 방법을 인터랙티브 가이드로 안내합니다.</p>
+  <div class="hero-flow">
+    <div class="hero-flow-step" onclick="switchTab(0)">
+      <div class="hero-flow-icon s1">📊</div>
+      <div class="hero-flow-label">대시보드</div>
+    </div>
+    <div class="hero-flow-arrow">→</div>
+    <div class="hero-flow-step" onclick="switchTab(1)">
+      <div class="hero-flow-icon s2">📝</div>
+      <div class="hero-flow-label">전표 생성</div>
+    </div>
+    <div class="hero-flow-arrow">→</div>
+    <div class="hero-flow-step" onclick="switchTab(2)">
+      <div class="hero-flow-icon s3">🔍</div>
+      <div class="hero-flow-label">전표 검토</div>
+    </div>
+    <div class="hero-flow-arrow">→</div>
+    <div class="hero-flow-step" onclick="switchTab(3)">
+      <div class="hero-flow-icon s4">⚙️</div>
+      <div class="hero-flow-label">룰 관리</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ MAIN ═══════ -->
+<div class="main">
+
+  <!-- Tab Buttons -->
+  <div class="section-tabs" id="sectionTabs">
+    <div class="section-tab active" onclick="switchTab(0)">📊 대시보드</div>
+    <div class="section-tab" onclick="switchTab(1)">📝 전표 생성</div>
+    <div class="section-tab" onclick="switchTab(2)">🔍 전표 검토</div>
+    <div class="section-tab" onclick="switchTab(3)">⚙️ 룰 관리</div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- SCREEN 1: DASHBOARD -->
+  <!-- ═══════════════════════════════════════════ -->
+  <div class="screen-section active" id="screen0">
+    <div class="screen-header">
+      <div class="screen-number">1</div>
+      <div>
+        <h2>대시보드</h2>
+        <p>전표 이상탐지 현황을 한눈에 파악하는 메인 화면</p>
+      </div>
+    </div>
+
+    <!-- Tour Button -->
+    <button class="tour-btn" onclick="startTour(0)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+      화면 가이드 시작
+    </button>
+
+    <!-- Mockup -->
+    <div class="mockup-wrapper">
+      <div class="mockup-toolbar">
+        <div class="mockup-dot r"></div>
+        <div class="mockup-dot y"></div>
+        <div class="mockup-dot g"></div>
+        <div class="mockup-url">localhost:8001/</div>
+      </div>
+      <div class="mockup-body">
+        <div class="mock-nav">
+          <span class="mock-nav-brand">호반건설</span>
+          <span class="mock-nav-badge">FDS</span>
+          <span class="mock-nav-link active">대시보드</span>
+          <span class="mock-nav-link">전표 검토</span>
+          <span class="mock-nav-link">룰 관리</span>
+          <span class="mock-nav-link">전표 생성</span>
+        </div>
+        <div class="mock-content">
+          <!-- Month pills -->
+          <div class="mock-pills">
+            <div class="mock-pill">전체</div>
+            <div class="mock-pill active">2026-03</div>
+            <div class="mock-pill">2026-04</div>
+            <div class="mock-pill">2026-05</div>
+            <div class="mock-pill dashed">+ 데이터 업로드</div>
+          </div>
+
+          <!-- Stats -->
+          <div class="mock-stat-grid">
+            <div class="mock-stat"><div class="mock-stat-val" style="color:var(--dark)">1,247</div><div class="mock-stat-label">전체 전표</div></div>
+            <div class="mock-stat"><div class="mock-stat-val" style="color:var(--high)">23</div><div class="mock-stat-label">고위험 High</div></div>
+            <div class="mock-stat"><div class="mock-stat-val" style="color:var(--medium)">156</div><div class="mock-stat-label">주의 Medium</div></div>
+            <div class="mock-stat"><div class="mock-stat-val" style="color:var(--low)">89</div><div class="mock-stat-label">참고 Low</div></div>
+            <div class="mock-stat"><div class="mock-stat-val" style="color:var(--normal)">979</div><div class="mock-stat-label">정상</div></div>
+          </div>
+
+          <!-- Table -->
+          <div style="display:grid; grid-template-columns: 1fr 200px; gap:12px;">
+            <div>
+              <table class="mock-table">
+                <thead><tr><th>현장명</th><th>전표수</th><th>고위험</th><th>금액</th><th></th></tr></thead>
+                <tbody>
+                  <tr><td>호반써밋 판교</td><td>234</td><td><span class="mock-badge high">5</span></td><td>12.4억</td><td><span class="mock-btn outline">검토</span></td></tr>
+                  <tr><td>호반베르디움 송도</td><td>189</td><td><span class="mock-badge high">3</span></td><td>8.7억</td><td><span class="mock-btn outline">검토</span></td></tr>
+                  <tr><td>호반리젠시빌 대전</td><td>156</td><td><span class="mock-badge medium">0</span></td><td>6.2억</td><td><span class="mock-btn outline">검토</span></td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div>
+              <div class="mock-card">
+                <div style="font-size:11px; font-weight:700; margin-bottom:8px; color:var(--gray)">전표유형별</div>
+                <div style="font-size:11px; margin-bottom:4px">대체전표 <b>456</b></div>
+                <div style="font-size:11px; margin-bottom:4px">법인카드 <b>312</b></div>
+                <div style="font-size:11px; margin-bottom:4px">일반전표 <b>289</b></div>
+              </div>
+              <div class="mock-card" style="margin-top:8px">
+                <div style="font-size:11px; font-weight:700; margin-bottom:8px; color:var(--gray)">빠른 접근</div>
+                <div class="mock-btn orange" style="display:block; text-align:center; margin-bottom:4px">전표 생성</div>
+                <div class="mock-btn orange" style="display:block; text-align:center; background:var(--high)">긴급 검토 (23)</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Hotspots -->
+          <div class="hotspot" style="top:60px; left:330px;" onclick="showGuide(0,0)" title="월별 필터">1</div>
+          <div class="hotspot" style="top:60px; right:50px;" onclick="showGuide(0,1)" title="데이터 업로드">2</div>
+          <div class="hotspot" style="top:108px; left:50px;" onclick="showGuide(0,2)" title="위험등급 통계">3</div>
+          <div class="hotspot" style="top:202px; left:50px;" onclick="showGuide(0,3)" title="현장별 요약">4</div>
+          <div class="hotspot" style="top:260px; right:42px;" onclick="showGuide(0,4)" title="검토 바로가기">5</div>
+          <div class="hotspot" style="bottom:20px; right:42px;" onclick="showGuide(0,5)" title="빠른 접근">6</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Feature Cards -->
+    <div class="feature-grid">
+      <div class="feature-card"><h4><span class="feature-icon orange">📅</span> 월별 필터</h4><p>상단 월 버튼을 클릭하면 해당 월 데이터만 필터링됩니다. '전체'로 전체 기간 조회가 가능합니다.</p></div>
+      <div class="feature-card"><h4><span class="feature-icon blue">📤</span> CSV 데이터 업로드</h4><p>ERP에서 추출한 CSV 파일을 드래그&드롭으로 업로드합니다. 업로드 즉시 18개 탐지 룰이 자동 분석됩니다.</p></div>
+      <div class="feature-card"><h4><span class="feature-icon red">🚨</span> 위험등급 통계</h4><p>High/Medium/Low/정상 4단계로 분류된 전표 수를 실시간으로 보여줍니다.</p></div>
+      <div class="feature-card"><h4><span class="feature-icon green">🏗️</span> 프로젝트별 현황</h4><p>상위 15개 현장의 전표 현황과 고위험 건수를 표시합니다. '검토' 버튼으로 해당 현장 전표를 바로 확인합니다.</p></div>
+    </div>
+
+    <!-- Button Reference -->
+    <table class="btn-table">
+      <thead><tr><th>버튼</th><th>위치</th><th>기능 설명</th></tr></thead>
+      <tbody>
+        <tr><td><span class="btn-tag">월 버튼</span></td><td>상단 월별 필터 영역</td><td>선택한 월의 데이터만 표시합니다. 여러 월 데이터가 있을 때 사용합니다.</td></tr>
+        <tr><td><span class="btn-tag">+ 데이터 업로드</span></td><td>월별 필터 우측</td><td>CSV 파일 업로드 모달을 엽니다. 월을 선택하고 파일을 첨부합니다.</td></tr>
+        <tr><td><span class="btn-tag">검토</span></td><td>현장별 테이블 행</td><td>해당 현장의 전표 목록을 전표 검토 화면에서 필터링하여 보여줍니다.</td></tr>
+        <tr><td><span class="btn-tag">전표 생성</span></td><td>우측 하단 빠른 접근</td><td>전표 생성 화면으로 이동합니다.</td></tr>
+        <tr><td><span class="btn-tag">긴급 검토</span></td><td>우측 하단 빠른 접근</td><td>고위험(High) 전표만 필터링한 검토 화면으로 이동합니다.</td></tr>
+        <tr><td><span class="btn-tag">X (삭제)</span></td><td>월별 데이터 관리</td><td>해당 월의 전체 데이터를 삭제합니다. 삭제 전 확인을 요청합니다.</td></tr>
+      </tbody>
+    </table>
+
+    <!-- User Flow -->
+    <div class="flow-section">
+      <h3>사용자 플로우</h3>
+      <div class="flow-diagram">
+        <div class="flow-row">
+          <div class="flow-node action">① CSV 데이터 업로드</div>
+        </div>
+        <div class="flow-connector">↓</div>
+        <div class="flow-row">
+          <div class="flow-node system">시스템이 18개 룰 자동 분석</div>
+        </div>
+        <div class="flow-connector">↓</div>
+        <div class="flow-row">
+          <div class="flow-node result">② 대시보드에서 현황 확인</div>
+        </div>
+        <div class="flow-connector">↓</div>
+        <div class="flow-row">
+          <div class="flow-node decision">고위험 전표 발견?</div>
+        </div>
+        <div class="flow-connector">↓</div>
+        <div class="flow-row">
+          <div class="flow-node action">③ '검토' 또는 '긴급 검토' 클릭</div>
+        </div>
+        <div class="flow-connector">↓</div>
+        <div class="flow-row">
+          <div class="flow-node result">전표 검토 화면으로 이동</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- SCREEN 2: CREATE -->
+  <!-- ═══════════════════════════════════════════ -->
+  <div class="screen-section" id="screen1">
+    <div class="screen-header">
+      <div class="screen-number">2</div>
+      <div>
+        <h2>전표 생성</h2>
+        <p>AI 어시스턴트와 OCR로 전표를 빠르게 생성하는 화면</p>
+      </div>
+    </div>
+
+    <button class="tour-btn" onclick="startTour(1)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+      화면 가이드 시작
+    </button>
+
+    <!-- Mockup -->
+    <div class="mockup-wrapper">
+      <div class="mockup-toolbar">
+        <div class="mockup-dot r"></div><div class="mockup-dot y"></div><div class="mockup-dot g"></div>
+        <div class="mockup-url">localhost:8001/create</div>
+      </div>
+      <div class="mockup-body">
+        <div class="mock-nav">
+          <span class="mock-nav-brand">호반건설</span><span class="mock-nav-badge">FDS</span>
+          <span class="mock-nav-link">대시보드</span><span class="mock-nav-link">전표 검토</span>
+          <span class="mock-nav-link">룰 관리</span><span class="mock-nav-link active">전표 생성</span>
+        </div>
+        <div class="mock-content">
+          <!-- Top Row: Evidence + Chat -->
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:12px;">
+            <div class="mock-card">
+              <div style="font-size:11px; font-weight:700; margin-bottom:8px;">증빙자료 업로드</div>
+              <div style="border:2px dashed #ddd; border-radius:8px; padding:16px; text-align:center; font-size:10px; color:var(--gray);">
+                파일을 드래그하거나 클릭하여 업로드<br>
+                <span class="mock-btn orange" style="margin-top:8px; display:inline-block;">+ 파일 선택</span>
+              </div>
+              <div style="font-size:9px; color:var(--gray); margin-top:6px;">세금계산서, 영수증, 거래명세서 등</div>
+            </div>
+            <div class="mock-card">
+              <div style="font-size:11px; font-weight:700; margin-bottom:4px;">AI 챗 어시스턴트 <span class="mock-badge" style="background:#E8F5E9; color:#2E7D32; font-size:9px;">Gemini AI</span></div>
+              <div class="mock-chat">
+                <div class="mock-chat-msg ai">안녕하세요! 전표 생성을 도와드립니다.</div>
+                <div class="mock-chat-msg user">자재 구매 500만원 전표 만들어줘</div>
+                <div class="mock-chat-msg ai">자재 구매 500만원 전표를 생성했습니다.</div>
+                <div class="mock-chat-input">
+                  <input placeholder="메시지를 입력하세요..." readonly>
+                  <div class="send">전송</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Form -->
+          <div class="mock-card">
+            <div style="font-size:11px; font-weight:700; margin-bottom:8px;">전표 입력</div>
+            <div class="mock-form-row">
+              <div class="mock-field"><div class="mock-field-label">회계연도</div><div class="mock-field-val">2026</div></div>
+              <div class="mock-field"><div class="mock-field-label">전표일자</div><div class="mock-field-val">2026-07-15</div></div>
+              <div class="mock-field"><div class="mock-field-label">전표유형</div><div class="mock-field-val">일반전표</div></div>
+              <div class="mock-field"><div class="mock-field-label">프로젝트</div><div class="mock-field-val">호반써밋 판교</div></div>
+            </div>
+            <table class="mock-table" style="margin-top:8px;">
+              <thead><tr><th>No</th><th>차/대</th><th>계정과목</th><th>차변</th><th>대변</th><th>적요</th></tr></thead>
+              <tbody>
+                <tr><td>1</td><td>차변</td><td>원재료비</td><td>5,000,000</td><td></td><td>자재 구매</td></tr>
+                <tr><td>2</td><td>대변</td><td>미지급금</td><td></td><td>5,000,000</td><td>자재 구매</td></tr>
+              </tbody>
+            </table>
+            <div style="text-align:right; margin-top:8px;">
+              <span class="mock-btn gray">초기화</span>
+              <span class="mock-btn orange">전표 저장</span>
+            </div>
+          </div>
+
+          <!-- Hotspots -->
+          <div class="hotspot" style="top:80px; left:60px;" onclick="showGuide(1,0)">1</div>
+          <div class="hotspot" style="top:80px; right:60px;" onclick="showGuide(1,1)">2</div>
+          <div class="hotspot" style="top:195px; right:160px;" onclick="showGuide(1,2)">3</div>
+          <div class="hotspot" style="top:260px; left:60px;" onclick="showGuide(1,3)">4</div>
+          <div class="hotspot" style="bottom:20px; right:50px;" onclick="showGuide(1,4)">5</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="feature-grid">
+      <div class="feature-card"><h4><span class="feature-icon orange">📸</span> AI OCR 분석</h4><p>영수증/세금계산서 이미지를 업로드하면 Gemini AI가 금액, 거래처, 날짜, 부가세를 자동 인식합니다.</p></div>
+      <div class="feature-card"><h4><span class="feature-icon blue">💬</span> 대화형 생성</h4><p>"자재 500만원" 같은 자연어로 AI에게 전표 생성을 요청할 수 있습니다.</p></div>
+      <div class="feature-card"><h4><span class="feature-icon green">✅</span> 자동 검증</h4><p>저장 시 차대변 일치, OCR 값 매칭, 계정과목 방향을 자동 검증합니다.</p></div>
+      <div class="feature-card"><h4><span class="feature-icon red">📎</span> 연결문서</h4><p>기안서, 계약서 등 관련 문서를 첨부할 수 있습니다. PDF/이미지는 AI가 자동 분석합니다.</p></div>
+    </div>
+
+    <table class="btn-table">
+      <thead><tr><th>버튼</th><th>위치</th><th>기능 설명</th></tr></thead>
+      <tbody>
+        <tr><td><span class="btn-tag">+ 파일 선택</span></td><td>증빙자료 영역</td><td>영수증/세금계산서 이미지를 업로드합니다. 업로드 즉시 AI OCR 분석이 시작됩니다.</td></tr>
+        <tr><td><span class="btn-tag">전송</span></td><td>AI 챗 입력창</td><td>자연어 메시지를 AI에게 전송합니다. AI가 전표 양식을 자동 채워줍니다.</td></tr>
+        <tr><td><span class="btn-tag">+ 항목 추가</span></td><td>라인 항목 테이블</td><td>차변/대변 라인 항목을 추가합니다.</td></tr>
+        <tr><td><span class="btn-tag">초기화</span></td><td>전표 양식 하단</td><td>입력된 전표 양식 전체를 초기 상태로 되돌립니다.</td></tr>
+        <tr><td><span class="btn-tag">전표 저장</span></td><td>전표 양식 하단</td><td>전표를 검증 후 저장합니다. OCR 불일치나 차대변 방향 의심 시 확인 팝업이 표시됩니다.</td></tr>
+      </tbody>
+    </table>
+
+    <div class="flow-section">
+      <h3>사용자 플로우</h3>
+      <div class="flow-diagram">
+        <div class="flow-row">
+          <div class="flow-node action">① 증빙자료 이미지 업로드</div>
+          <div class="flow-node action">또는 AI 챗으로 요청</div>
+        </div>
+        <div class="flow-connector">↓</div>
+        <div class="flow-row">
+          <div class="flow-node system">AI가 OCR 분석 / 전표 자동 생성</div>
+        </div>
+        <div class="flow-connector">↓</div>
+        <div class="flow-row">
+          <div class="flow-node action">② 프로젝트, 거래처, 계정 선택/확인</div>
+        </div>
+        <div class="flow-connector">↓</div>
+        <div class="flow-row">
+          <div class="flow-node action">③ 연결문서 첨부 (선택)</div>
+        </div>
+        <div class="flow-connector">↓</div>
+        <div class="flow-row">
+          <div class="flow-node action">④ '전표 저장' 클릭</div>
+        </div>
+        <div class="flow-connector">↓</div>
+        <div class="flow-row">
+          <div class="flow-node decision">OCR/차대변 검증 통과?</div>
+        </div>
+        <div class="flow-connector">↓</div>
+        <div class="flow-row">
+          <div class="flow-node result">저장 완료 + AI 이상탐지 분석 결과 표시</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- SCREEN 3: REVIEW -->
+  <!-- ═══════════════════════════════════════════ -->
+  <div class="screen-section" id="screen2">
+    <div class="screen-header">
+      <div class="screen-number">3</div>
+      <div>
+        <h2>전표 검토</h2>
+        <p>이상 전표를 필터링하고 상세 검토하는 핵심 화면</p>
+      </div>
+    </div>
+
+    <button class="tour-btn" onclick="startTour(2)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+      화면 가이드 시작
+    </button>
+
+    <!-- Mockup -->
+    <div class="mockup-wrapper">
+      <div class="mockup-toolbar">
+        <div class="mockup-dot r"></div><div class="mockup-dot y"></div><div class="mockup-dot g"></div>
+        <div class="mockup-url">localhost:8001/review</div>
+      </div>
+      <div class="mockup-body">
+        <div class="mock-nav">
+          <span class="mock-nav-brand">호반건설</span><span class="mock-nav-badge">FDS</span>
+          <span class="mock-nav-link">대시보드</span><span class="mock-nav-link active">전표 검토</span>
+          <span class="mock-nav-link">룰 관리</span><span class="mock-nav-link">전표 생성</span>
+        </div>
+        <div class="mock-content" style="padding-left:172px;">
+          <!-- Sidebar -->
+          <div class="mock-sidebar">
+            <div class="mock-sidebar-label">위험등급</div>
+            <div class="mock-sidebar-btn active">전체 (1,247)</div>
+            <div class="mock-sidebar-btn" style="color:var(--high);">고위험 (23)</div>
+            <div class="mock-sidebar-btn" style="color:var(--medium);">주의 (156)</div>
+            <div class="mock-sidebar-btn" style="color:var(--low);">참고 (89)</div>
+            <div class="mock-sidebar-btn" style="color:var(--normal);">정상 (979)</div>
+            <div style="margin-top:12px;"></div>
+            <div class="mock-sidebar-label">이상사유</div>
+            <div class="mock-sidebar-btn">E001 차대변 불일치</div>
+            <div class="mock-sidebar-btn">E002 계정 착오</div>
+            <div class="mock-sidebar-btn">E005 주말 기표</div>
+          </div>
+
+          <!-- Top stats -->
+          <div style="display:flex; gap:8px; margin-bottom:10px;">
+            <div class="mock-stat" style="flex:1; padding:8px;"><div class="mock-stat-val" style="font-size:16px; color:var(--high)">23</div><div class="mock-stat-label">고위험</div></div>
+            <div class="mock-stat" style="flex:1; padding:8px;"><div class="mock-stat-val" style="font-size:16px; color:var(--medium)">156</div><div class="mock-stat-label">주의</div></div>
+            <div class="mock-stat" style="flex:1; padding:8px;"><div class="mock-stat-val" style="font-size:16px; color:var(--low)">89</div><div class="mock-stat-label">참고</div></div>
+          </div>
+
+          <!-- Filter bar -->
+          <div style="display:flex; gap:6px; margin-bottom:10px; flex-wrap:wrap; align-items:center;">
+            <div class="mock-field" style="flex:0 0 auto; padding:4px 8px;"><div class="mock-field-val" style="font-size:10px;">전체 ▾</div></div>
+            <input style="flex:1; border:1px solid #ddd; border-radius:6px; padding:5px 8px; font-size:10px;" placeholder="검색어 입력..." readonly>
+            <span class="mock-btn orange" style="font-size:10px;">검색</span>
+            <span class="mock-btn outline" style="font-size:9px;">차/대변 불일치 검토</span>
+            <span class="mock-btn outline" style="font-size:9px;">OCR 점검</span>
+          </div>
+
+          <!-- Table -->
+          <table class="mock-table">
+            <thead><tr><th>위험</th><th>전표번호</th><th>일자</th><th>유형</th><th>적요</th><th>차변합계</th><th>상태</th></tr></thead>
+            <tbody>
+              <tr style="cursor:pointer"><td><span class="mock-badge high">High</span></td><td style="font-size:10px;">20260301AA01</td><td>03-01</td><td>대체</td><td>월세지원금</td><td>2,500,000</td><td>미검토</td></tr>
+              <tr style="cursor:pointer"><td><span class="mock-badge medium">Med</span></td><td style="font-size:10px;">20260301AA05</td><td>03-01</td><td>법인카드</td><td>사무용품</td><td>890,000</td><td>미검토</td></tr>
+              <tr style="cursor:pointer"><td><span class="mock-badge low">Low</span></td><td style="font-size:10px;">20260315AA12</td><td>03-15</td><td>일반</td><td>교통비</td><td>45,000</td><td>검토완료</td></tr>
+            </tbody>
+          </table>
+
+          <!-- Hotspots -->
+          <div class="hotspot" style="top:70px; left:14px;" onclick="showGuide(2,0)">1</div>
+          <div class="hotspot" style="top:178px; left:14px;" onclick="showGuide(2,1)">2</div>
+          <div class="hotspot" style="top:148px; left:250px;" onclick="showGuide(2,2)">3</div>
+          <div class="hotspot" style="top:148px; right:30px;" onclick="showGuide(2,3)">4</div>
+          <div class="hotspot" style="top:210px; left:210px;" onclick="showGuide(2,4)">5</div>
+          <div class="hotspot" style="bottom:40px; left:210px;" onclick="showGuide(2,5)">6</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="feature-grid">
+      <div class="feature-card"><h4><span class="feature-icon red">🔴</span> 위험등급 필터</h4><p>좌측 사이드바에서 위험등급별로 필터링합니다. 고위험 전표를 우선 검토할 수 있습니다.</p></div>
+      <div class="feature-card"><h4><span class="feature-icon orange">🏷️</span> 이상사유 필터</h4><p>E001~E018 이상사유 코드로 필터링합니다. 여러 코드를 동시 선택하면 AND 조건으로 필터됩니다.</p></div>
+      <div class="feature-card"><h4><span class="feature-icon blue">🔍</span> 다차원 검색</h4><p>전표번호, 일자, 적요, 입력자, 현장, 거래처, 계정과목 등 다양한 필드로 검색할 수 있습니다.</p></div>
+      <div class="feature-card"><h4><span class="feature-icon green">🤖</span> AI 검토 제안</h4><p>전표 상세 팝업에서 Gemini AI가 각 위반 항목별 점검 포인트, 수정 방법, 검토 절차를 안내합니다.</p></div>
+    </div>
+
+    <table class="btn-table">
+      <thead><tr><th>버튼</th><th>위치</th><th>기능 설명</th></tr></thead>
+      <tbody>
+        <tr><td><span class="btn-tag">위험등급 버튼</span></td><td>좌측 사이드바</td><td>High/Medium/Low/정상별 전표를 필터링합니다.</td></tr>
+        <tr><td><span class="btn-tag">이상사유 코드</span></td><td>좌측 사이드바</td><td>특정 위반 유형으로 필터링합니다. 복수 선택 시 AND 조건입니다.</td></tr>
+        <tr><td><span class="btn-tag">검색</span></td><td>상단 필터 바</td><td>입력한 검색어로 전표를 검색합니다. 필드를 선택하여 정밀 검색이 가능합니다.</td></tr>
+        <tr><td><span class="btn-tag">차/대변 불일치 검토</span></td><td>상단 필터 바</td><td>차변/대변 방향이 의심스러운 전표를 순차적으로 검토하는 전용 모달을 엽니다.</td></tr>
+        <tr><td><span class="btn-tag">OCR 값 일치 점검</span></td><td>상단 필터 바</td><td>영수증 OCR 분석값과 입력값을 비교 검토하는 전용 모달을 엽니다.</td></tr>
+        <tr><td><span class="btn-tag">전표 행 클릭</span></td><td>테이블 본문</td><td>전표 상세 팝업이 열립니다. AI 분석, 증빙자료, 연결문서, AI 검토 제안을 확인합니다.</td></tr>
+        <tr><td><span class="btn-tag">검토 승인</span></td><td>상세 팝업 하단</td><td>'제출' 상태의 전표를 '검토완료'로 승인합니다.</td></tr>
+        <tr><td><span class="btn-tag">반려</span></td><td>상세 팝업 하단</td><td>전표를 '반려' 상태로 변경합니다.</td></tr>
+      </tbody>
+    </table>
+
+    <div class="flow-section">
+      <h3>사용자 플로우</h3>
+      <div class="flow-diagram">
+        <div class="flow-row">
+          <div class="flow-node action">① 위험등급/이상사유로 필터링</div>
+        </div>
+        <div class="flow-connector">↓</div>
+        <div class="flow-row">
+          <div class="flow-node action">② 전표 행 클릭 → 상세 팝업</div>
+        </div>
+        <div class="flow-connector">↓</div>
+        <div class="flow-row">
+          <div class="flow-node system">AI 검토 제안 자동 생성</div>
+        </div>
+        <div class="flow-connector">↓</div>
+        <div class="flow-row">
+          <div class="flow-node action">③ AI 제안에 따라 점검</div>
+        </div>
+        <div class="flow-connector">↓</div>
+        <div class="flow-row">
+          <div class="flow-node action">④ 증빙/연결문서 확인</div>
+        </div>
+        <div class="flow-connector">↓</div>
+        <div class="flow-row">
+          <div class="flow-node decision">정상 전표? 이상 전표?</div>
+        </div>
+        <div class="flow-connector">↓</div>
+        <div class="flow-row">
+          <div class="flow-node result">⑤ 승인 또는 반려</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- SCREEN 4: RULES -->
+  <!-- ═══════════════════════════════════════════ -->
+  <div class="screen-section" id="screen3">
+    <div class="screen-header">
+      <div class="screen-number">4</div>
+      <div>
+        <h2>룰 관리</h2>
+        <p>이상탐지 룰을 생성, 수정, 분석하는 관리 화면</p>
+      </div>
+    </div>
+
+    <button class="tour-btn" onclick="startTour(3)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+      화면 가이드 시작
+    </button>
+
+    <!-- Mockup -->
+    <div class="mockup-wrapper">
+      <div class="mockup-toolbar">
+        <div class="mockup-dot r"></div><div class="mockup-dot y"></div><div class="mockup-dot g"></div>
+        <div class="mockup-url">localhost:8001/rules</div>
+      </div>
+      <div class="mockup-body">
+        <div class="mock-nav">
+          <span class="mock-nav-brand">호반건설</span><span class="mock-nav-badge">FDS</span>
+          <span class="mock-nav-link">대시보드</span><span class="mock-nav-link">전표 검토</span>
+          <span class="mock-nav-link active">룰 관리</span><span class="mock-nav-link">전표 생성</span>
+        </div>
+        <div class="mock-content">
+          <!-- AI Builder -->
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:12px;">
+            <div class="mock-card">
+              <div style="font-size:11px; font-weight:700; margin-bottom:8px;">AI 룰 생성기</div>
+              <div class="mock-chat" style="height:110px;">
+                <div class="mock-chat-msg user">금액 3억 이상 전표 탐지</div>
+                <div class="mock-chat-msg ai">고액 전표 탐지 룰을 생성했습니다. 우측에서 확인해주세요.</div>
+                <div class="mock-chat-input">
+                  <input placeholder="탐지 룰을 설명해주세요..." readonly>
+                  <div class="send">전송</div>
+                </div>
+              </div>
+              <div style="display:flex; gap:4px; margin-top:6px; flex-wrap:wrap;">
+                <span class="mock-btn outline" style="font-size:9px;">금액 3억 이상</span>
+                <span class="mock-btn outline" style="font-size:9px;">주말 기표</span>
+                <span class="mock-btn outline" style="font-size:9px;">적요 키워드</span>
+              </div>
+            </div>
+            <div class="mock-card">
+              <div style="font-size:11px; font-weight:700; margin-bottom:8px;">조건 편집기</div>
+              <div class="mock-form-row">
+                <div class="mock-field"><div class="mock-field-label">룰 이름</div><div class="mock-field-val">고액 전표 탐지</div></div>
+                <div class="mock-field"><div class="mock-field-label">심각도</div><div class="mock-field-val"><span class="mock-badge high">High</span></div></div>
+              </div>
+              <div style="background:#F8F8F8; border-radius:6px; padding:8px; font-size:10px; margin-bottom:8px;">
+                <div style="display:flex; gap:6px; align-items:center; margin-bottom:4px;">
+                  <span style="background:var(--orange-light); padding:2px 6px; border-radius:4px; font-size:9px; font-weight:700; color:var(--orange);">조건 1</span>
+                  total_debit  >=  300,000,000
+                </div>
+              </div>
+              <div style="text-align:right;">
+                <span class="mock-btn gray">초기화</span>
+                <span class="mock-btn outline">룰 저장</span>
+                <span class="mock-btn orange">저장 + 재분석</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Header -->
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <div style="font-size:12px; font-weight:700;">활성 룰 목록 <span style="color:var(--orange)">18개</span></div>
+            <div>
+              <span class="mock-btn outline" style="font-size:9px;">+ 수동 추가</span>
+              <span class="mock-btn orange" style="font-size:9px;">전체 재분석</span>
+            </div>
+          </div>
+
+          <!-- Rule cards -->
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
+            <div class="mock-card" style="padding:10px 14px; border-left:3px solid var(--high);">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <div style="font-size:11px; font-weight:700;">E001 차대변 불일치</div>
+                <div style="display:flex; gap:4px; align-items:center;">
+                  <span class="mock-badge high">High</span>
+                  <span style="font-size:9px; color:var(--gray);">수정 | 삭제</span>
+                </div>
+              </div>
+              <div style="font-size:10px; color:var(--gray); margin-top:4px;">차변합계와 대변합계가 일치하지 않는 전표</div>
+            </div>
+            <div class="mock-card" style="padding:10px 14px; border-left:3px solid var(--medium);">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <div style="font-size:11px; font-weight:700;">E002 계정과목 착오</div>
+                <div style="display:flex; gap:4px; align-items:center;">
+                  <span class="mock-badge medium">Med</span>
+                  <span style="font-size:9px; color:var(--gray);">수정 | 삭제</span>
+                </div>
+              </div>
+              <div style="font-size:10px; color:var(--gray); margin-top:4px;">적요 내용과 계정과목이 불일치하는 전표</div>
+            </div>
+            <div class="mock-card" style="padding:10px 14px; border-left:3px solid var(--medium);">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <div style="font-size:11px; font-weight:700;">E005 주말/공휴일 기표</div>
+                <div style="display:flex; gap:4px; align-items:center;">
+                  <span class="mock-badge medium">Med</span>
+                  <span style="font-size:9px; color:var(--gray);">수정 | 삭제</span>
+                </div>
+              </div>
+              <div style="font-size:10px; color:var(--gray); margin-top:4px;">주말 또는 공휴일에 기표된 전표</div>
+            </div>
+            <div class="mock-card" style="padding:10px 14px; border-left:3px solid var(--low);">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <div style="font-size:11px; font-weight:700;">E009 고액 전표</div>
+                <div style="display:flex; gap:4px; align-items:center;">
+                  <span class="mock-badge low">Low</span>
+                  <span style="font-size:9px; color:var(--gray);">수정 | 삭제</span>
+                </div>
+              </div>
+              <div style="font-size:10px; color:var(--gray); margin-top:4px;">금액이 3억원 이상인 전표</div>
+            </div>
+          </div>
+
+          <!-- Hotspots -->
+          <div class="hotspot" style="top:80px; left:50px;" onclick="showGuide(3,0)">1</div>
+          <div class="hotspot" style="top:80px; right:50px;" onclick="showGuide(3,1)">2</div>
+          <div class="hotspot" style="top:210px; right:50px;" onclick="showGuide(3,2)">3</div>
+          <div class="hotspot" style="bottom:20px; left:50px;" onclick="showGuide(3,3)">4</div>
+          <div class="hotspot" style="bottom:20px; right:50px;" onclick="showGuide(3,4)">5</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="feature-grid">
+      <div class="feature-card"><h4><span class="feature-icon orange">🤖</span> AI 룰 생성기</h4><p>자연어로 탐지 룰을 설명하면 AI가 조건을 파싱하여 자동 생성합니다.</p></div>
+      <div class="feature-card"><h4><span class="feature-icon blue">🔧</span> 조건 편집기</h4><p>필드, 연산자, 값을 조합하여 세밀한 탐지 조건을 설정합니다. AND/OR 논리를 지원합니다.</p></div>
+      <div class="feature-card"><h4><span class="feature-icon green">🔄</span> 전체 재분석</h4><p>룰 변경 후 전체 전표를 재분석합니다. 진행 상황이 실시간으로 표시됩니다.</p></div>
+      <div class="feature-card"><h4><span class="feature-icon red">🎚️</span> 활성/비활성</h4><p>각 룰의 토글 스위치로 즉시 활성화/비활성화할 수 있습니다.</p></div>
+    </div>
+
+    <table class="btn-table">
+      <thead><tr><th>버튼</th><th>위치</th><th>기능 설명</th></tr></thead>
+      <tbody>
+        <tr><td><span class="btn-tag">전송</span></td><td>AI 룰 생성기</td><td>자연어 설명을 AI에게 전송하여 탐지 룰 조건을 자동 생성합니다.</td></tr>
+        <tr><td><span class="btn-tag">예시 버튼</span></td><td>AI 룰 생성기 하단</td><td>클릭하면 해당 예시가 채팅창에 자동 입력됩니다.</td></tr>
+        <tr><td><span class="btn-tag">+ 조건 추가</span></td><td>조건 편집기</td><td>AND/OR 조건을 추가로 설정합니다.</td></tr>
+        <tr><td><span class="btn-tag">룰 저장</span></td><td>조건 편집기 하단</td><td>룰을 저장합니다. 기존 전표에는 즉시 적용되지 않습니다.</td></tr>
+        <tr><td><span class="btn-tag">저장 + 재분석</span></td><td>조건 편집기 하단</td><td>룰을 저장하고 즉시 전체 전표를 재분석합니다.</td></tr>
+        <tr><td><span class="btn-tag">+ 수동 추가</span></td><td>룰 목록 상단</td><td>빈 편집 모달을 열어 수동으로 룰을 추가합니다.</td></tr>
+        <tr><td><span class="btn-tag">전체 재분석</span></td><td>룰 목록 상단</td><td>현재 활성화된 모든 룰로 전체 전표를 재분석합니다.</td></tr>
+        <tr><td><span class="btn-tag">수정</span></td><td>룰 카드 우측</td><td>해당 룰의 조건을 편집 모달에서 수정합니다.</td></tr>
+        <tr><td><span class="btn-tag">삭제</span></td><td>룰 카드 우측</td><td>해당 룰을 삭제합니다. 삭제 전 확인을 요청합니다.</td></tr>
+      </tbody>
+    </table>
+
+    <div class="flow-section">
+      <h3>사용자 플로우</h3>
+      <div class="flow-diagram">
+        <div class="flow-row">
+          <div class="flow-node action">① AI에 자연어로 룰 설명</div>
+          <div class="flow-node action">또는 수동 추가</div>
+        </div>
+        <div class="flow-connector">↓</div>
+        <div class="flow-row">
+          <div class="flow-node system">AI가 조건을 파싱하여 편집기에 표시</div>
+        </div>
+        <div class="flow-connector">↓</div>
+        <div class="flow-row">
+          <div class="flow-node action">② 조건, 심각도, 점수 확인/조정</div>
+        </div>
+        <div class="flow-connector">↓</div>
+        <div class="flow-row">
+          <div class="flow-node action">③ '저장 + 재분석' 클릭</div>
+        </div>
+        <div class="flow-connector">↓</div>
+        <div class="flow-row">
+          <div class="flow-node system">전체 전표 재분석 진행 (프로그레스 바)</div>
+        </div>
+        <div class="flow-connector">↓</div>
+        <div class="flow-row">
+          <div class="flow-node result">분석 완료 → 대시보드/검토에 반영</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+<!-- ═══════ GUIDE POPUP OVERLAY ═══════ -->
+<div class="guide-overlay" id="guideOverlay">
+  <div class="guide-popup" id="guidePopup">
+    <button class="guide-btn close-btn" onclick="closeGuide()">✕</button>
+    <div class="tour-progress" id="tourProgress"></div>
+    <div class="guide-popup-step" id="guideStep">1</div>
+    <h3 id="guideTitle"></h3>
+    <p id="guideDesc"></p>
+    <div class="tip" id="guideTip"></div>
+    <div class="guide-popup-nav">
+      <button class="guide-btn secondary" id="guidePrev" onclick="prevGuideStep()">이전</button>
+      <button class="guide-btn primary" id="guideNext" onclick="nextGuideStep()">다음</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════ GUIDE DATA ═══════
+var GUIDES = {
+  0: [ // Dashboard
+    { title: '월별 데이터 필터', desc: '상단의 월 버튼을 클릭하면 해당 월의 전표 데이터만 표시됩니다. "전체"를 선택하면 모든 기간의 데이터를 볼 수 있습니다. 각 버튼에는 해당 월의 전표 건수가 표시됩니다.', tip: '데이터를 업로드할 때마다 새로운 월 버튼이 자동으로 추가됩니다.' },
+    { title: '데이터 업로드', desc: '"+ 데이터 업로드" 버튼을 클릭하면 CSV 파일 업로드 모달이 열립니다. ERP에서 추출한 전표 데이터를 드래그&드롭 또는 파일 선택으로 업로드합니다.', tip: '업로드 즉시 18개 이상탐지 룰이 자동으로 적용되어 분석이 시작됩니다. 진행률이 실시간으로 표시됩니다.' },
+    { title: '위험등급 통계 카드', desc: '5개 카드가 위험등급별 전표 수를 보여줍니다. 고위험(빨강), 주의(주황), 참고(청록), 정상(초록)으로 분류되며, 숫자를 클릭하면 해당 등급의 전표 목록으로 이동합니다.', tip: '고위험 전표가 있을 경우 빨간색 숫자가 눈에 띄게 표시됩니다. 이 전표들을 우선 검토하세요.' },
+    { title: '프로젝트별 현황 테이블', desc: '현장(프로젝트)별로 전표 수, 고위험 건수, 총 금액을 한눈에 볼 수 있습니다. 상위 15개 현장이 표시됩니다.', tip: '각 행의 "검토" 버튼을 클릭하면 해당 현장의 전표만 필터링된 검토 화면으로 바로 이동합니다.' },
+    { title: '검토 바로가기', desc: '프로젝트 행의 "검토" 버튼을 클릭하면 전표 검토 화면으로 이동하며, 해당 프로젝트의 전표만 자동으로 필터링되어 표시됩니다.', tip: '고위험 건수가 높은 프로젝트부터 우선 검토하는 것을 권장합니다.' },
+    { title: '빠른 접근 카드', desc: '"전표 생성"은 새 전표 작성 화면으로, "긴급 검토"는 고위험(High) 전표만 필터링된 검토 화면으로 바로 이동합니다.', tip: '"긴급 검토" 카드에는 현재 고위험 전표 수가 표시됩니다.' },
+  ],
+  1: [ // Create
+    { title: '증빙자료 업로드', desc: '세금계산서, 영수증, 거래명세서 등 증빙 이미지를 업로드합니다. 증빙유형을 먼저 선택한 후 파일을 첨부하세요.', tip: '이미지를 업로드하면 Gemini AI가 자동으로 OCR 분석을 수행하여 금액, 거래처, 날짜, 부가세를 인식하고 전표 양식에 자동 입력합니다.' },
+    { title: 'AI 챗 어시스턴트', desc: '자연어로 전표 생성을 요청할 수 있습니다. "자재 구매 500만원", "외주비 1000만원 부가세 포함" 등으로 입력하면 AI가 적절한 계정과목과 금액을 배분하여 전표를 생성합니다.', tip: '빠른 입력 버튼("자재 500만원", "외주비 1000만원", "부가세 분리")을 클릭하면 예시 메시지가 자동 입력됩니다.' },
+    { title: '프로젝트/거래처 검색', desc: '프로젝트(현장)와 거래처는 검색 가능한 드롭다운입니다. 이름의 일부만 입력해도 자동완성 목록이 표시됩니다.', tip: 'AI 챗이나 OCR로 거래처가 인식되면 자동으로 매칭됩니다. 매칭되지 않은 경우 직접 검색하여 선택하세요.' },
+    { title: '전표 라인 항목', desc: '차변/대변 각 행에 계정과목, 금액, 적요를 입력합니다. "+ 항목 추가"로 행을 추가하고, 우측 X 버튼으로 삭제합니다.', tip: '하단에 차변합계, 대변합계, 차액이 실시간으로 표시됩니다. 차대변이 일치해야 저장이 가능합니다.' },
+    { title: '전표 저장', desc: '"전표 저장" 버튼을 클릭하면 시스템이 3단계 검증을 수행합니다: ① 필수값 확인 ② OCR 값과 입력값 비교 ③ 차대변 방향 적정성 확인.', tip: '검증에서 불일치가 발견되면 비교 팝업이 표시됩니다. 확인 후 "확인 후 저장"을 누르면 저장됩니다. 저장 즉시 이상탐지 분석이 수행됩니다.' },
+  ],
+  2: [ // Review
+    { title: '위험등급 필터', desc: '좌측 사이드바 상단에서 전체/고위험/주의/참고/정상을 선택하여 해당 등급의 전표만 표시합니다. 각 버튼 옆에 건수가 표시됩니다.', tip: '고위험(High) 전표부터 순서대로 검토하는 것을 권장합니다.' },
+    { title: '이상사유 코드 필터', desc: '좌측 사이드바 하단에서 E001~E018 이상사유 코드를 선택하여 필터링합니다. 여러 코드를 동시에 선택하면 AND 조건으로 모든 코드에 해당하는 전표만 표시됩니다.', tip: '선택된 코드를 다시 클릭하면 해제됩니다. 특정 위반 유형을 집중 검토할 때 유용합니다.' },
+    { title: '검색 기능', desc: '검색 필드를 선택한 후 키워드를 입력하고 "검색" 버튼을 클릭합니다. 전표번호, 일자, 적요, 입력자, 현장, 거래처, 계정과목 등으로 검색할 수 있습니다.', tip: '"전체" 필드를 선택하면 모든 항목에서 통합 검색합니다.' },
+    { title: '특수 검토 기능', desc: '"차/대변 불일치 검토"는 차변/대변 방향이 의심스러운 전표를 순차적으로 검토하는 전용 모달을 엽니다. "OCR 값 일치 점검"은 영수증 이미지와 입력값을 비교합니다.', tip: '이 두 기능은 대량의 전표를 효율적으로 순차 검토할 때 사용합니다. 이전/다음 버튼으로 빠르게 이동합니다.' },
+    { title: '전표 상세 팝업', desc: '테이블의 전표 행을 클릭하면 상세 팝업이 열립니다. AI 분석 결과(위험등급, 이상사유), AI 검토 제안, 증빙자료, 연결문서, 라인 항목을 모두 확인할 수 있습니다.', tip: '팝업이 열리면 Gemini AI가 자동으로 해당 전표의 위반 항목별 검토 제안을 생성합니다. 각 위반에 대한 점검 포인트, 수정 방법, 검토 절차를 안내합니다.' },
+    { title: '승인/반려', desc: '"제출" 상태의 전표는 하단의 "검토 승인" 또는 "반려" 버튼으로 처리합니다. 승인 시 "검토완료"로, 반려 시 "반려" 상태로 변경됩니다.', tip: '승인/반려 후 목록이 자동으로 새로고침됩니다. 테이블 뷰와 카드 뷰를 전환하여 선호하는 형태로 검토할 수 있습니다.' },
+  ],
+  3: [ // Rules
+    { title: 'AI 룰 생성기', desc: '좌측 채팅 패널에서 자연어로 탐지 룰을 설명합니다. "금액 3억 이상 전표 탐지", "주말에 기표된 전표", "적요에 개인 키워드 포함" 등으로 입력하면 AI가 조건을 파싱하여 우측 편집기에 자동 입력합니다.', tip: '하단의 예시 버튼을 클릭하면 미리 준비된 룰 설명이 자동 입력됩니다.' },
+    { title: '조건 편집기', desc: '우측 패널에서 룰의 세부 조건을 확인하고 조정합니다. 필드(total_debit, doc_date 등), 연산자(>=, contains 등), 값을 조합합니다. AND/OR 토글로 복합 조건을 설정할 수 있습니다.', tip: '심각도(High/Medium/Low)와 점수(0~1)를 설정하여 위험등급 산정에 반영합니다. 점수가 높을수록 위험등급에 큰 영향을 줍니다.' },
+    { title: '저장 및 재분석', desc: '"룰 저장"은 룰만 저장하고, "저장 + 재분석"은 저장 후 즉시 전체 전표를 재분석합니다. "전체 재분석" 버튼은 모든 활성 룰로 전체 전표를 재분석합니다.', tip: '재분석은 모든 전표를 대상으로 수행되므로 데이터량에 따라 시간이 소요될 수 있습니다. 진행률이 상단에 실시간 표시됩니다.' },
+    { title: '룰 카드 목록', desc: '현재 등록된 모든 룰이 카테고리별로 그룹화되어 표시됩니다. 각 카드에는 룰 ID, 이름, 심각도, 탐지 건수, 설명, 조건이 표시됩니다.', tip: '룰 카드 좌측 색상 바는 심각도를 나타냅니다. 빨강=High, 주황=Medium, 청록=Low.' },
+    { title: '수정 및 삭제', desc: '각 룰 카드의 "수정" 버튼을 클릭하면 편집 모달이 열립니다. "삭제" 버튼은 확인 후 룰을 제거합니다. 토글 스위치로 룰을 비활성화하면 분석에서 제외됩니다.', tip: '룰을 삭제하면 해당 룰로 탐지된 기존 결과도 재분석 시 사라집니다. 일시적으로 제외하려면 토글 비활성화를 사용하세요.' },
+  ],
+};
+
+// ═══════ TAB SWITCHING ═══════
+var currentTab = 0;
+function switchTab(idx) {
+  currentTab = idx;
+  document.querySelectorAll('.screen-section').forEach(function(s, i) {
+    s.classList.toggle('active', i === idx);
+  });
+  document.querySelectorAll('.section-tab').forEach(function(t, i) {
+    t.classList.toggle('active', i === idx);
+  });
+  document.querySelectorAll('.top-bar-nav a').forEach(function(a, i) {
+    a.classList.toggle('active', i === idx + 1);
+  });
+  document.getElementById('sectionTabs').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function scrollToTop() {
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  document.querySelectorAll('.top-bar-nav a').forEach(function(a, i) {
+    a.classList.toggle('active', i === 0);
+  });
+}
+
+// ═══════ GUIDE POPUP ═══════
+var currentScreen = 0, currentStep = 0, tourMode = false;
+function showGuide(screen, step) {
+  currentScreen = screen;
+  currentStep = step;
+  var g = GUIDES[screen][step];
+  document.getElementById('guideStep').textContent = step + 1;
+  document.getElementById('guideTitle').textContent = g.title;
+  document.getElementById('guideDesc').textContent = g.desc;
+  document.getElementById('guideTip').textContent = '💡 ' + g.tip;
+  document.getElementById('guideOverlay').classList.add('active');
+  document.getElementById('guidePrev').style.display = step === 0 ? 'none' : '';
+  var isLast = step === GUIDES[screen].length - 1;
+  document.getElementById('guideNext').textContent = isLast ? (tourMode ? '가이드 완료' : '닫기') : '다음';
+  // Mark hotspot visited
+  var hotspots = document.querySelectorAll('#screen' + screen + ' .hotspot');
+  if (hotspots[step]) hotspots[step].classList.add('visited');
+  // Update progress dots
+  renderProgress(screen, step);
+}
+function closeGuide() {
+  document.getElementById('guideOverlay').classList.remove('active');
+  tourMode = false;
+}
+function nextGuideStep() {
+  if (currentStep < GUIDES[currentScreen].length - 1) {
+    showGuide(currentScreen, currentStep + 1);
+  } else {
+    closeGuide();
+  }
+}
+function prevGuideStep() {
+  if (currentStep > 0) showGuide(currentScreen, currentStep - 1);
+}
+function renderProgress(screen, step) {
+  var total = GUIDES[screen].length;
+  var html = '';
+  for (var i = 0; i < total; i++) {
+    var cls = 'tour-dot';
+    if (i < step) cls += ' done';
+    if (i === step) cls += ' current';
+    html += '<div class="' + cls + '"></div>';
+  }
+  document.getElementById('tourProgress').innerHTML = html;
+}
+function startTour(screen) {
+  tourMode = true;
+  // Reset visited
+  document.querySelectorAll('#screen' + screen + ' .hotspot').forEach(function(h) {
+    h.classList.remove('visited');
+  });
+  showGuide(screen, 0);
+}
+
+// Close on overlay click
+document.getElementById('guideOverlay').addEventListener('click', function(e) {
+  if (e.target === this) closeGuide();
+});
+
+// Keyboard navigation
+document.addEventListener('keydown', function(e) {
+  if (!document.getElementById('guideOverlay').classList.contains('active')) return;
+  if (e.key === 'Escape') closeGuide();
+  if (e.key === 'ArrowRight' || e.key === 'Enter') nextGuideStep();
+  if (e.key === 'ArrowLeft') prevGuideStep();
+});
+</script>
+</body>
+</html>

@@ -1341,8 +1341,40 @@ def reanalyze_with_rules():
             med = sum(1 for j in journals if j.ai_risk_level == "Medium")
             low = sum(1 for j in journals if j.ai_risk_level == "Low")
             ok = sum(1 for j in journals if j.ai_risk_level == "정상")
+
+            medium_journals = [j for j in journals if j.ai_risk_level == "Medium" and j.ai_error_codes]
+            if medium_journals:
+                from rule_engine import generate_ai_review_suggestion
+                reanalyze_status["ai_suggest_total"] = len(medium_journals)
+                reanalyze_status["ai_suggest_progress"] = 0
+                for idx, journal in enumerate(medium_journals):
+                    lines_text = ""
+                    for line in journal.lines:
+                        side = line.side or ("차변" if line.debit_amount else "대변")
+                        amt = line.debit_amount or line.credit_amount or 0
+                        lines_text += f"- {side} | {line.account_code} {line.account_name} | {amt:,}원 | 거래처: {line.vendor_name or '-'}\n"
+                    journal_info = {
+                        "doc_no": journal.doc_no,
+                        "doc_date": str(journal.doc_date) if journal.doc_date else "",
+                        "description": journal.description or "",
+                        "doc_type": journal.doc_type or "",
+                        "total_debit": journal.total_debit or 0,
+                        "total_credit": journal.total_credit or 0,
+                        "risk_level": journal.ai_risk_level or "",
+                        "lines_text": lines_text,
+                        "reasons": journal.ai_reason or "",
+                    }
+                    suggestion = generate_ai_review_suggestion(journal_info)
+                    if suggestion:
+                        journal.ai_recommendation = suggestion
+                    reanalyze_status["ai_suggest_progress"] = idx + 1
+                    if (idx + 1) % 10 == 0:
+                        db.commit()
+                db.commit()
+
             reanalyze_status.update({"running": False, "done": True, "rules_changed": False,
-                "result": {"total": len(journals), "high": high, "medium": med, "low": low, "normal": ok}})
+                "result": {"total": len(journals), "high": high, "medium": med, "low": low, "normal": ok,
+                           "ai_suggestions_generated": len(medium_journals) if medium_journals else 0}})
         except Exception as e:
             reanalyze_status.update({"running": False, "done": True, "result": {"error": str(e)}})
         finally:
@@ -1356,6 +1388,8 @@ def reanalyze_with_rules():
 def reanalyze_progress():
     """재분석 진행률 조회"""
     pct = int(reanalyze_status["progress"] / max(reanalyze_status["total"], 1) * 100) if reanalyze_status["total"] > 0 else 0
+    ai_total = reanalyze_status.get("ai_suggest_total", 0)
+    ai_prog = reanalyze_status.get("ai_suggest_progress", 0)
     return {
         "running": reanalyze_status["running"],
         "progress": reanalyze_status["progress"],
@@ -1364,6 +1398,8 @@ def reanalyze_progress():
         "done": reanalyze_status["done"],
         "result": reanalyze_status["result"],
         "rules_changed": reanalyze_status["rules_changed"],
+        "ai_suggest_total": ai_total,
+        "ai_suggest_progress": ai_prog,
     }
 
 

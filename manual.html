@@ -503,7 +503,7 @@ li::marker { color: var(--text-caption); }
       <span class="logo-text">호반건설</span>
       <span class="badge">FDS</span>
     </div>
-    <div class="sub">사용자 매뉴얼 v1.0</div>
+    <div class="sub">사용자 매뉴얼 v1.1</div>
   </div>
 
   <nav>
@@ -528,6 +528,7 @@ li::marker { color: var(--text-caption); }
       <a href="#review-filter" class="nav-link sub">필터 및 검색</a>
       <a href="#review-table" class="nav-link sub">테이블/카드 뷰</a>
       <a href="#review-detail" class="nav-link sub">전표 상세</a>
+      <a href="#review-ai-suggest" class="nav-link sub">AI 검토 제안</a>
       <a href="#review-approve" class="nav-link sub">승인/반려</a>
       <a href="#review-ocr" class="nav-link sub">OCR 점검</a>
       <a href="#review-side" class="nav-link sub">차대변 불일치 검토</a>
@@ -541,7 +542,12 @@ li::marker { color: var(--text-caption); }
       <div class="nav-group-title">AI 기능</div>
       <a href="#ai-ocr" class="nav-link">Gemini Vision OCR</a>
       <a href="#ai-chat" class="nav-link">대화형 전표 생성</a>
+      <a href="#ai-review-suggest" class="nav-link">AI 검토 제안</a>
       <a href="#ai-nlrule" class="nav-link">자연어 룰 생성</a>
+    </div>
+    <div class="nav-group">
+      <div class="nav-group-title">설정</div>
+      <a href="#settings-apikey" class="nav-link">API 키 설정</a>
     </div>
     <div class="nav-group">
       <div class="nav-group-title">부록</div>
@@ -895,7 +901,13 @@ li::marker { color: var(--text-caption); }
     <div class="step">
       <div class="step-body">
         <div class="step-title">AI 분석 결과</div>
-        <div class="step-desc">위험등급 배지, 위험 점수(%), 탐지된 이상사유 코드 태그, 탐지 사유 상세, 권고 사항</div>
+        <div class="step-desc">위험등급 배지, 위험 점수(%), 탐지된 이상사유 코드 태그, 탐지 사유 상세</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-body">
+        <div class="step-title">AI 검토 제안</div>
+        <div class="step-desc">팝업이 열리면 Gemini AI가 각 위반 항목별로 <strong>점검 포인트</strong>, <strong>수정 방법</strong>, <strong>검토 절차</strong>를 자동 생성합니다. 마크다운 형식으로 표시됩니다.</div>
       </div>
     </div>
     <div class="step">
@@ -922,6 +934,26 @@ li::marker { color: var(--text-caption); }
         <div class="step-desc">차대변별 계정코드, 계정과목, 금액, 거래처 정보. 하단에 차대변 합계와 일치 여부 표시</div>
       </div>
     </div>
+  </div>
+
+  <h3 id="review-ai-suggest">AI 검토 제안</h3>
+  <p>전표 상세 팝업이 열릴 때, 해당 전표에 이상탐지 위반이 있으면 Gemini AI가 자동으로 검토 제안을 생성합니다. 별도 버튼 클릭 없이 팝업 오픈 시점에 자동 실행됩니다.</p>
+
+  <h4>제공 내용 (위반 항목별)</h4>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>항목</th><th>설명</th></tr></thead>
+      <tbody>
+        <tr><td><strong>점검 포인트</strong></td><td>해당 위반에 대해 어떤 부분을 확인해야 하는지 안내</td></tr>
+        <tr><td><strong>수정 방법</strong></td><td>오류인 경우 어떻게 수정하면 되는지 구체적 방법 제시</td></tr>
+        <tr><td><strong>검토 절차</strong></td><td>담당자가 밟아야 할 확인 단계를 순서대로 안내</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout tip">
+    <span class="callout-icon">&#x1F4A1;</span>
+    <div><strong>참고:</strong> AI 검토 제안은 Gemini API 키가 설정된 상태에서만 동작합니다. API 키가 없으면 "검토 제안을 생성할 수 없습니다" 메시지가 표시됩니다. 생성된 제안은 DB에 저장되어 이후 재조회 시 즉시 표시됩니다.</div>
   </div>
 
   <h3 id="review-approve">승인 / 반려</h3>
@@ -1083,6 +1115,46 @@ li::marker { color: var(--text-caption); }
   </ul>
 </div>
 
+<div class="section" id="ai-review-suggest">
+  <h2>AI 검토 제안</h2>
+  <p>전표 검토 화면에서 전표 상세 팝업을 열면, Gemini 3.1 Pro LLM이 해당 전표의 이상탐지 결과를 분석하여 실무적인 검토 제안을 자동 생성합니다.</p>
+
+  <h3>동작 방식</h3>
+  <div class="steps">
+    <div class="step">
+      <div class="step-body">
+        <div class="step-title">전표 팝업 오픈</div>
+        <div class="step-desc">전표 검토 목록에서 전표 행을 클릭하여 상세 팝업을 엽니다.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-body">
+        <div class="step-title">AI 검토 제안 자동 생성</div>
+        <div class="step-desc">위반 사항이 있는 전표인 경우, 팝업이 열리는 즉시 Gemini AI에게 검토 제안 생성을 요청합니다. 로딩 스피너가 표시됩니다.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-body">
+        <div class="step-title">제안 내용 표시</div>
+        <div class="step-desc">각 위반 항목별로 점검 포인트, 수정 방법, 검토 절차가 마크다운 형식으로 표시됩니다. 생성된 제안은 DB에 저장됩니다.</div>
+      </div>
+    </div>
+  </div>
+
+  <h3>LLM 프롬프트 구성</h3>
+  <p>AI 검토 제안 생성 시 다음 정보가 LLM에 전달됩니다:</p>
+  <ul>
+    <li><strong>전표 기본 정보:</strong> 전표번호, 일자, 적요, 유형, 차변/대변 합계, 위험등급</li>
+    <li><strong>전표 라인 항목:</strong> 각 라인의 차/대변, 계정과목, 금액, 거래처</li>
+    <li><strong>감지된 위반 사항:</strong> 이상탐지 룰에 의해 감지된 모든 위반 코드 및 사유</li>
+  </ul>
+
+  <div class="callout info">
+    <span class="callout-icon">&#x2139;</span>
+    <div><strong>안내:</strong> AI 검토 제안은 참고용 가이드입니다. 최종 판단은 반드시 감사 담당자가 전표 원본과 증빙자료를 직접 확인한 후 내려야 합니다.</div>
+  </div>
+</div>
+
 <div class="section" id="ai-nlrule">
   <h2>자연어 룰 생성</h2>
   <p>룰 관리 화면에서 자연어 설명을 구조화된 탐지 룰로 자동 변환합니다. Gemini LLM이 우선 사용되며, API 접근이 불가할 경우 로컬 패턴 매칭 엔진이 대체합니다.</p>
@@ -1095,6 +1167,58 @@ li::marker { color: var(--text-caption); }
     <li><strong>구조 조건:</strong> "차대변 불일치", "중복", "역분개"</li>
     <li><strong>복합 조건:</strong> "A이면서 B인" (AND), "A이거나 B인" (OR)</li>
   </ul>
+</div>
+
+<div class="divider"></div>
+
+<!-- ════════════════════════════════════════════ -->
+<!-- 설정 -->
+<!-- ════════════════════════════════════════════ -->
+<div class="section" id="settings-apikey">
+  <span class="section-id">설정</span>
+  <h2>API 키 설정</h2>
+  <p>AI 기능(OCR 분석, 대화형 전표 생성, AI 검토 제안, 자연어 룰 생성)을 사용하려면 PwC Workspace Gemini API 키를 설정해야 합니다.</p>
+
+  <h3>설정 방법</h3>
+  <div class="steps">
+    <div class="step">
+      <div class="step-body">
+        <div class="step-title">설정 모달 열기</div>
+        <div class="step-desc">화면 우측 상단의 <strong>설정</strong>(⚙️) 아이콘을 클릭합니다.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-body">
+        <div class="step-title">Gemini API 키 입력</div>
+        <div class="step-desc">PwC Workspace에서 발급받은 API 키를 입력란에 붙여넣습니다. 키는 <code>alpha-</code>로 시작합니다.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-body">
+        <div class="step-title">저장</div>
+        <div class="step-desc"><strong>저장</strong> 버튼을 클릭합니다. API 키는 브라우저의 localStorage에 저장되어 서버로 전송되지 않습니다.</div>
+      </div>
+    </div>
+  </div>
+
+  <h3>API 키 동작 범위</h3>
+  <p>하나의 Gemini API 키로 모든 AI 기능이 통합 동작합니다:</p>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>기능</th><th>사용 화면</th><th>설명</th></tr></thead>
+      <tbody>
+        <tr><td>Gemini Vision OCR</td><td>전표 생성</td><td>영수증/세금계산서 이미지에서 금액, 거래처, 일자 자동 추출</td></tr>
+        <tr><td>대화형 챗 어시스턴트</td><td>전표 생성</td><td>자연어로 전표 생성/수정 요청</td></tr>
+        <tr><td>AI 검토 제안</td><td>전표 검토</td><td>위반 전표의 점검 포인트, 수정 방법, 검토 절차 자동 생성</td></tr>
+        <tr><td>자연어 룰 생성</td><td>룰 관리</td><td>자연어 설명을 구조화된 탐지 룰 조건으로 변환</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout warn">
+    <span class="callout-icon">&#x26A0;</span>
+    <div><strong>보안 안내:</strong> API 키는 브라우저 localStorage에만 저장되며 서버에 저장되지 않습니다. 다른 브라우저나 시크릿 모드에서는 API 키를 다시 입력해야 합니다. API 키를 타인과 공유하지 마세요.</div>
+  </div>
 </div>
 
 <div class="divider"></div>
@@ -1167,14 +1291,24 @@ li::marker { color: var(--text-caption); }
 
   <div class="card">
     <h4>Q. AI 챗이 응답하지 않습니다.</h4>
-    <p style="margin-bottom:0">A. API 키가 설정되지 않은 경우 로컬 패턴 매칭 모드로 동작합니다. 복잡한 요청은 처리되지 않을 수 있으며, 이 경우 수동으로 전표를 입력해 주세요.</p>
+    <p style="margin-bottom:0">A. 설정에서 Gemini API 키가 올바르게 입력되었는지 확인하세요. API 키 없이는 로컬 패턴 매칭 모드로 동작하여 복잡한 요청이 처리되지 않을 수 있습니다.</p>
+  </div>
+
+  <div class="card">
+    <h4>Q. AI 검토 제안이 "검토 제안을 생성할 수 없습니다"라고 표시됩니다.</h4>
+    <p style="margin-bottom:0">A. Gemini API 키가 설정되지 않았거나 네트워크 연결이 불안정한 경우 발생합니다. 우측 상단 설정(⚙️)에서 API 키를 확인하고, 사내 네트워크에 연결되어 있는지 확인하세요.</p>
+  </div>
+
+  <div class="card">
+    <h4>Q. 다른 브라우저에서 접속하면 AI 기능이 동작하지 않습니다.</h4>
+    <p style="margin-bottom:0">A. API 키는 브라우저의 localStorage에 저장됩니다. 다른 브라우저나 시크릿 모드에서는 설정(⚙️)에서 API 키를 다시 입력해야 합니다.</p>
   </div>
 </div>
 
 <!-- version -->
 <div class="version-stamp">
-  호반건설 전표 이상탐지 시스템 (FDS) 사용자 매뉴얼 v1.0<br>
-  최종 업데이트: 2026년 7월 10일
+  호반건설 전표 이상탐지 시스템 (FDS) 사용자 매뉴얼 v1.1<br>
+  최종 업데이트: 2026년 7월 15일
 </div>
 
 </main>

@@ -408,13 +408,23 @@
                 const d = await res.json();
                 fill.style.width = d.percent + '%';
                 if(d.running) {
-                    if(d.total > 0) status.textContent = `${d.progress}/${d.total} (${d.percent}%)`;
-                    else status.textContent = '데이터 로딩중...';
+                    if(d.ai_suggest_total > 0 && d.progress >= d.total) {
+                        status.textContent = `AI 검토 제안 생성 ${d.ai_suggest_progress}/${d.ai_suggest_total}`;
+                        fill.style.width = (50 + Math.round(d.ai_suggest_progress / d.ai_suggest_total * 50)) + '%';
+                    } else if(d.total > 0) {
+                        status.textContent = `룰 분석 ${d.progress}/${d.total} (${d.percent}%)`;
+                        fill.style.width = Math.round(d.percent / 2) + '%';
+                    } else {
+                        status.textContent = '데이터 로딩중...';
+                    }
                     setTimeout(poll, 400);
                 } else if(d.done) {
                     fill.style.width = '100%'; bar.classList.add('done');
-                    if(d.result && !d.result.error) status.innerHTML = `<span class="done-icon">✓</span> 완료! High:${d.result.high} Medium:${d.result.medium} Low:${d.result.low} 정상:${d.result.normal}`;
-                    else status.textContent = '오류: ' + (d.result?.error || '');
+                    if(d.result && !d.result.error) {
+                        var msg = `<span class="done-icon">✓</span> 완료! High:${d.result.high} Medium:${d.result.medium} Low:${d.result.low} 정상:${d.result.normal}`;
+                        if(d.result.ai_suggestions_generated > 0) msg += ` | AI제안:${d.result.ai_suggestions_generated}건`;
+                        status.innerHTML = msg;
+                    } else status.textContent = '오류: ' + (d.result?.error || '');
                     setTimeout(() => location.reload(), 3000);
                 } else {
                     setTimeout(poll, 400);
