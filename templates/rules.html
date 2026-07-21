@@ -99,6 +99,7 @@
             <a href="/review">전표 검토</a>
             <a href="/rules" class="active">룰 관리</a>
             <a href="/create">전표 생성</a>
+            <a href="/data">데이터 관리</a>
         </nav>
     </header>
 
@@ -409,11 +410,11 @@
                 fill.style.width = d.percent + '%';
                 if(d.running) {
                     if(d.ai_suggest_total > 0 && d.progress >= d.total) {
-                        status.textContent = `AI 검토 제안 생성 ${d.ai_suggest_progress}/${d.ai_suggest_total}`;
-                        fill.style.width = (50 + Math.round(d.ai_suggest_progress / d.ai_suggest_total * 50)) + '%';
+                        status.textContent = `AI 검토 제안 생성 ${d.ai_suggest_progress}/${d.ai_suggest_total} (변경분만)`;
+                        fill.style.width = (80 + Math.round(d.ai_suggest_progress / Math.max(d.ai_suggest_total,1) * 20)) + '%';
                     } else if(d.total > 0) {
                         status.textContent = `룰 분석 ${d.progress}/${d.total} (${d.percent}%)`;
-                        fill.style.width = Math.round(d.percent / 2) + '%';
+                        fill.style.width = Math.round(d.percent * 0.8) + '%';
                     } else {
                         status.textContent = '데이터 로딩중...';
                     }
@@ -422,7 +423,8 @@
                     fill.style.width = '100%'; bar.classList.add('done');
                     if(d.result && !d.result.error) {
                         var msg = `<span class="done-icon">✓</span> 완료! High:${d.result.high} Medium:${d.result.medium} Low:${d.result.low} 정상:${d.result.normal}`;
-                        if(d.result.ai_suggestions_generated > 0) msg += ` | AI제안:${d.result.ai_suggestions_generated}건`;
+                        if(d.result.ai_suggestions_generated > 0) msg += ` | AI제안:${d.result.ai_suggestions_generated}건 생성`;
+                        if(d.result.ai_suggestions_skipped > 0) msg += ` (${d.result.ai_suggestions_skipped}건 캐시)`;
                         status.innerHTML = msg;
                     } else status.textContent = '오류: ' + (d.result?.error || '');
                     setTimeout(() => location.reload(), 3000);

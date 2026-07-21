@@ -182,6 +182,23 @@ def home(request: Request, month: str = None, db: Session = Depends(get_db)):
 
 
 # ──────────────────────────────────
+# 데이터 관리
+# ──────────────────────────────────
+@app.get("/data", response_class=HTMLResponse)
+def data_page(request: Request, db: Session = Depends(get_db)):
+    rows = db.query(
+        JournalEntry.data_month,
+        func.count(JournalEntry.id),
+    ).filter(JournalEntry.data_month.isnot(None)).group_by(JournalEntry.data_month).order_by(JournalEntry.data_month.desc()).all()
+    available_months = [{"month": m, "count": c} for m, c in rows if m]
+    total_count = sum(m["count"] for m in available_months)
+    return templates.TemplateResponse(request, "data.html", {
+        "available_months": available_months,
+        "total_count": total_count,
+    })
+
+
+# ──────────────────────────────────
 # 전표 생성
 # ──────────────────────────────────
 @app.get("/create", response_class=HTMLResponse)
@@ -1323,6 +1340,14 @@ def reanalyze_with_rules():
                 dup_key_map[key].append(j.doc_no)
             dup_map = {k: v for k, v in dup_key_map.items() if len(v) >= 2}
 
+            old_error_codes_map = {j.doc_no: (j.ai_error_codes or "") for j in journals}
+            old_recommendation_map = {}
+            for j in journals:
+                rec = j.ai_recommendation or ""
+                is_llm = len(rec) > 200 and "해당 전표를 검토하세요" not in rec
+                if is_llm:
+                    old_recommendation_map[j.doc_no] = rec
+
             for i, journal in enumerate(journals):
                 journal._vendor_account_map = vendor_account_map
                 journal._duplicate_map = dup_map
@@ -1343,39 +1368,42 @@ def reanalyze_with_rules():
             ok = sum(1 for j in journals if j.ai_risk_level == "정상")
 
             medium_journals = [j for j in journals if j.ai_risk_level == "Medium" and j.ai_error_codes]
+            changed_journals = []
+            skipped_count = 0
             if medium_journals:
-                from rule_engine import generate_ai_review_suggestion
-                reanalyze_status["ai_suggest_total"] = len(medium_journals)
+                from rule_engine import generate_ai_review_suggestion, generate_template_suggestion
+                for journal in medium_journals:
+                    old_codes = old_error_codes_map.get(journal.doc_no, "")
+                    new_codes = journal.ai_error_codes or ""
+                    old_llm_rec = old_recommendation_map.get(journal.doc_no)
+                    if old_codes == new_codes and old_llm_rec:
+                        journal.ai_recommendation = old_llm_rec
+                        skipped_count += 1
+                    else:
+                        changed_journals.append(journal)
+
+                reanalyze_status["ai_suggest_total"] = len(changed_journals)
                 reanalyze_status["ai_suggest_progress"] = 0
-                for idx, journal in enumerate(medium_journals):
-                    lines_text = ""
-                    for line in journal.lines:
-                        side = line.side or ("차변" if line.debit_amount else "대변")
-                        amt = line.debit_amount or line.credit_amount or 0
-                        lines_text += f"- {side} | {line.account_code} {line.account_name} | {amt:,}원 | 거래처: {line.vendor_name or '-'}\n"
-                    journal_info = {
-                        "doc_no": journal.doc_no,
-                        "doc_date": str(journal.doc_date) if journal.doc_date else "",
-                        "description": journal.description or "",
-                        "doc_type": journal.doc_type or "",
-                        "total_debit": journal.total_debit or 0,
-                        "total_credit": journal.total_credit or 0,
-                        "risk_level": journal.ai_risk_level or "",
-                        "lines_text": lines_text,
-                        "reasons": journal.ai_reason or "",
-                    }
-                    suggestion = generate_ai_review_suggestion(journal_info)
+                print(f"[재분석] Medium 전표 {len(medium_journals)}건 중 변경분 {len(changed_journals)}건만 AI 제안 재생성 (스킵: {skipped_count}건)")
+
+                for idx, journal in enumerate(changed_journals):
+                    error_codes = [c.strip() for c in (journal.ai_error_codes or "").split(",") if c.strip()]
+
+                    suggestion = generate_template_suggestion(error_codes, {"doc_no": journal.doc_no})
                     if suggestion:
                         journal.ai_recommendation = suggestion
+
                     reanalyze_status["ai_suggest_progress"] = idx + 1
-                    if (idx + 1) % 10 == 0:
+                    if (idx + 1) % 200 == 0:
                         db.commit()
                 db.commit()
 
+            ai_generated = len(changed_journals) if medium_journals else 0
             reanalyze_status.update({"running": False, "done": True, "rules_changed": False,
                 "result": {"total": len(journals), "high": high, "medium": med, "low": low, "normal": ok,
-                           "ai_suggestions_generated": len(medium_journals) if medium_journals else 0}})
+                           "ai_suggestions_generated": ai_generated, "ai_suggestions_skipped": skipped_count}})
         except Exception as e:
+            print(f"[재분석] 오류 발생: {e}")
             reanalyze_status.update({"running": False, "done": True, "result": {"error": str(e)}})
         finally:
             db.close()

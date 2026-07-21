@@ -1,0 +1,804 @@
+<title>AI 기술 적용 방안 — 호반건설 전표 이상탐지 시스템</title>
+<style>
+  :root {
+    --orange: #EE7500;
+    --orange-light: #FFF3E6;
+    --orange-dim: rgba(238, 117, 0, 0.08);
+    --blue: #1E3A5F;
+    --blue-light: #E8EEF4;
+    --green: #1B6B4A;
+    --green-light: #E6F4ED;
+    --bg: #FAF9F7;
+    --card: #FFFFFF;
+    --text: #1C1917;
+    --text2: #57534E;
+    --text3: #A8A29E;
+    --border: #E7E5E4;
+    --tag-ai: #7C3AED;
+    --tag-ai-bg: #F3EEFF;
+    --tag-llm: #0369A1;
+    --tag-llm-bg: #E0F2FE;
+    --tag-vision: #B45309;
+    --tag-vision-bg: #FEF3C7;
+    --tag-rule: #047857;
+    --tag-rule-bg: #ECFDF5;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #181614;
+      --card: #231F1D;
+      --text: #F5F0EB;
+      --text2: #A8A29E;
+      --text3: #6B6560;
+      --border: #3D3733;
+      --orange-light: rgba(238, 117, 0, 0.12);
+      --orange-dim: rgba(238, 117, 0, 0.06);
+      --blue-light: rgba(30, 58, 95, 0.25);
+      --green-light: rgba(27, 107, 74, 0.15);
+      --tag-ai-bg: rgba(124, 58, 237, 0.15);
+      --tag-llm-bg: rgba(3, 105, 161, 0.15);
+      --tag-vision-bg: rgba(180, 83, 9, 0.15);
+      --tag-rule-bg: rgba(4, 120, 87, 0.15);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #181614;
+    --card: #231F1D;
+    --text: #F5F0EB;
+    --text2: #A8A29E;
+    --text3: #6B6560;
+    --border: #3D3733;
+    --orange-light: rgba(238, 117, 0, 0.12);
+    --orange-dim: rgba(238, 117, 0, 0.06);
+    --blue-light: rgba(30, 58, 95, 0.25);
+    --green-light: rgba(27, 107, 74, 0.15);
+    --tag-ai-bg: rgba(124, 58, 237, 0.15);
+    --tag-llm-bg: rgba(3, 105, 161, 0.15);
+    --tag-vision-bg: rgba(180, 83, 9, 0.15);
+    --tag-rule-bg: rgba(4, 120, 87, 0.15);
+  }
+  :root[data-theme="light"] {
+    --bg: #FAF9F7;
+    --card: #FFFFFF;
+    --text: #1C1917;
+    --text2: #57534E;
+    --text3: #A8A29E;
+    --border: #E7E5E4;
+    --orange-light: #FFF3E6;
+    --orange-dim: rgba(238, 117, 0, 0.08);
+    --blue-light: #E8EEF4;
+    --green-light: #E6F4ED;
+    --tag-ai-bg: #F3EEFF;
+    --tag-llm-bg: #E0F2FE;
+    --tag-vision-bg: #FEF3C7;
+    --tag-rule-bg: #ECFDF5;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.75;
+    font-size: 15px;
+  }
+  .page { max-width: 920px; margin: 0 auto; padding: 40px 24px 80px; }
+
+  .header { margin-bottom: 48px; }
+  .header-label {
+    font-size: 12px; font-weight: 700; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--orange); margin-bottom: 8px;
+  }
+  .header h1 {
+    font-size: clamp(24px, 4vw, 32px); font-weight: 800;
+    line-height: 1.3; color: var(--text); margin-bottom: 12px;
+  }
+  .header p { font-size: 16px; color: var(--text2); max-width: 640px; line-height: 1.7; }
+
+  .overview {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 12px; margin-bottom: 56px;
+  }
+  .ov-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 18px 16px; text-align: center;
+  }
+  .ov-num { font-size: 26px; font-weight: 800; color: var(--orange); line-height: 1.2; }
+  .ov-label { font-size: 11px; color: var(--text2); margin-top: 4px; font-weight: 500; }
+
+  .ai-section {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 14px; padding: 36px 32px; margin-bottom: 28px; position: relative;
+  }
+  .ai-section::before {
+    content: attr(data-num); position: absolute; top: -14px; left: 28px;
+    background: var(--orange); color: #fff; font-size: 12px; font-weight: 800;
+    width: 28px; height: 28px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; line-height: 1;
+  }
+  .section-head {
+    display: flex; align-items: flex-start; gap: 16px;
+    margin-bottom: 20px; flex-wrap: wrap;
+  }
+  .section-title { font-size: 20px; font-weight: 700; line-height: 1.3; flex: 1; min-width: 200px; }
+  .section-subtitle { font-size: 13px; color: var(--text2); margin-top: 2px; }
+
+  .tags { display: flex; gap: 6px; flex-wrap: wrap; }
+  .tag {
+    font-size: 11px; font-weight: 600; padding: 3px 10px;
+    border-radius: 20px; white-space: nowrap;
+  }
+  .tag-ai { background: var(--tag-ai-bg); color: var(--tag-ai); }
+  .tag-llm { background: var(--tag-llm-bg); color: var(--tag-llm); }
+  .tag-vision { background: var(--tag-vision-bg); color: var(--tag-vision); }
+  .tag-rule { background: var(--tag-rule-bg); color: var(--tag-rule); }
+
+  .flow {
+    display: flex; align-items: stretch; gap: 0;
+    margin: 20px 0; border-radius: 10px; overflow: hidden; font-size: 13px;
+  }
+  .flow-before, .flow-after { flex: 1; padding: 14px 18px; }
+  .flow-before { background: var(--blue-light); }
+  .flow-arrow {
+    display: flex; align-items: center; justify-content: center;
+    width: 48px; min-width: 48px; background: var(--orange); color: #fff;
+    font-size: 11px; font-weight: 700; letter-spacing: 0.05em;
+    writing-mode: vertical-rl; text-orientation: mixed;
+  }
+  .flow-after { background: var(--green-light); }
+  .flow-label {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.05em;
+    text-transform: uppercase; margin-bottom: 6px; opacity: 0.6;
+  }
+  .flow-text { font-size: 13px; line-height: 1.6; color: var(--text); }
+
+  .detail-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 16px; margin-top: 20px;
+  }
+  @media (max-width: 600px) {
+    .detail-grid { grid-template-columns: 1fr; }
+    .flow { flex-direction: column; }
+    .flow-arrow { writing-mode: horizontal-tb; width: auto; min-width: auto; height: 28px; }
+    .ai-section { padding: 28px 20px; }
+  }
+  .detail-box {
+    padding: 16px 18px; border-radius: 8px; background: var(--orange-dim);
+  }
+  .detail-box h4 {
+    font-size: 12px; font-weight: 700; color: var(--orange);
+    letter-spacing: 0.04em; margin-bottom: 6px;
+  }
+  .detail-box p, .detail-box ul { font-size: 13px; color: var(--text2); line-height: 1.65; }
+  .detail-box ul { padding-left: 16px; }
+  .detail-box li { margin-bottom: 3px; }
+
+  .desc { font-size: 15px; color: var(--text2); line-height: 1.8; margin-top: 16px; }
+  .desc strong { color: var(--text); font-weight: 600; }
+
+  .arch {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 14px; padding: 32px; margin-bottom: 48px;
+  }
+  .arch h2 { font-size: 18px; font-weight: 700; margin-bottom: 24px; color: var(--text); }
+  .arch-flow {
+    display: flex; align-items: center; gap: 8px;
+    overflow-x: auto; padding-bottom: 8px; justify-content: center; flex-wrap: wrap;
+  }
+  .arch-node {
+    border: 2px solid var(--border); border-radius: 10px;
+    padding: 12px 16px; text-align: center; min-width: 110px;
+    background: var(--card); flex-shrink: 0;
+  }
+  .arch-node.ai { border-color: var(--orange); background: var(--orange-light); }
+  .arch-node .node-icon { font-size: 20px; margin-bottom: 4px; }
+  .arch-node .node-title { font-size: 11px; font-weight: 700; color: var(--text); }
+  .arch-node .node-sub { font-size: 10px; color: var(--text3); margin-top: 2px; }
+  .arch-connector { font-size: 18px; color: var(--text3); flex-shrink: 0; }
+  .arch-label {
+    font-size: 11px; font-weight: 600; color: var(--text3);
+    margin-top: 20px; margin-bottom: 10px; letter-spacing: 0.04em;
+  }
+
+  .prompt-box {
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 8px; padding: 14px 18px; margin-top: 14px;
+    font-size: 13px; font-family: "D2Coding", "Consolas", monospace;
+    color: var(--text2); line-height: 1.6; overflow-x: auto;
+    white-space: pre-wrap; word-break: break-all;
+  }
+  .prompt-label {
+    font-size: 11px; font-weight: 700; color: var(--text3);
+    letter-spacing: 0.06em; margin-bottom: 4px;
+    font-family: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  }
+
+  .summary-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 20px; }
+  .summary-table th, .summary-table td {
+    padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--border);
+  }
+  .summary-table th {
+    font-weight: 700; font-size: 11px; letter-spacing: 0.04em;
+    color: var(--text3); text-transform: uppercase; background: var(--bg);
+  }
+  .summary-table td { color: var(--text2); }
+  .summary-table tr:last-child td { border-bottom: none; }
+
+  .footer-note {
+    margin-top: 48px; padding-top: 24px; border-top: 1px solid var(--border);
+    font-size: 12px; color: var(--text3); text-align: center;
+  }
+</style>
+
+<div class="page">
+
+  <div class="header">
+    <div class="header-label">호반건설 FDS &middot; AI 기술 적용 방안</div>
+    <h1>전표 이상탐지 시스템의<br>업무 영역별 AI 적용 전략</h1>
+    <p>기존 수작업 중심의 전표 감사 업무에 AI 기술을 7개 업무 영역에 걸쳐 다각도로 적용하여, 탐지 정확도 향상·감사 효율 극대화·비용 절감을 실현한 적용 방안을 정리합니다.</p>
+  </div>
+
+  <div class="overview">
+    <div class="ov-card"><div class="ov-num">7</div><div class="ov-label">AI 적용 영역</div></div>
+    <div class="ov-card"><div class="ov-num">18+</div><div class="ov-label">자동 탐지 룰</div></div>
+    <div class="ov-card"><div class="ov-num">LLM</div><div class="ov-label">Gemini 3.1 Pro</div></div>
+    <div class="ov-card"><div class="ov-num">Vision</div><div class="ov-label">멀티모달 OCR</div></div>
+    <div class="ov-card"><div class="ov-num">NLU</div><div class="ov-label">자연어 처리</div></div>
+  </div>
+
+  <!-- Architecture -->
+  <div class="arch">
+    <h2>시스템 AI 적용 아키텍처</h2>
+    <div class="arch-label">감사 분석 파이프라인</div>
+    <div class="arch-flow">
+      <div class="arch-node">
+        <div class="node-icon">📄</div>
+        <div class="node-title">ERP 전표 데이터</div>
+        <div class="node-sub">CSV 임포트</div>
+      </div>
+      <div class="arch-connector">→</div>
+      <div class="arch-node ai">
+        <div class="node-icon">🔍</div>
+        <div class="node-title">① 룰 엔진</div>
+        <div class="node-sub">18개 탐지 룰</div>
+      </div>
+      <div class="arch-connector">→</div>
+      <div class="arch-node ai">
+        <div class="node-icon">⚖️</div>
+        <div class="node-title">② 위험등급</div>
+        <div class="node-sub">가중 점수 산정</div>
+      </div>
+      <div class="arch-connector">→</div>
+      <div class="arch-node ai">
+        <div class="node-icon">💡</div>
+        <div class="node-title">③ 검토 제안</div>
+        <div class="node-sub">LLM + 템플릿</div>
+      </div>
+      <div class="arch-connector">→</div>
+      <div class="arch-node ai">
+        <div class="node-icon">🔗</div>
+        <div class="node-title">⑥ 교차 검증</div>
+        <div class="node-sub">증빙 ↔ 전표</div>
+      </div>
+      <div class="arch-connector">→</div>
+      <div class="arch-node">
+        <div class="node-icon">📊</div>
+        <div class="node-title">검토/승인</div>
+        <div class="node-sub">웹 UI</div>
+      </div>
+    </div>
+    <div class="arch-label">전표 생성 파이프라인</div>
+    <div class="arch-flow">
+      <div class="arch-node">
+        <div class="node-icon">🧾</div>
+        <div class="node-title">영수증/증빙</div>
+        <div class="node-sub">이미지 업로드</div>
+      </div>
+      <div class="arch-connector">→</div>
+      <div class="arch-node ai">
+        <div class="node-icon">👁️</div>
+        <div class="node-title">⑤ Vision OCR</div>
+        <div class="node-sub">Gemini Vision</div>
+      </div>
+      <div class="arch-connector">→</div>
+      <div class="arch-node ai">
+        <div class="node-icon">💬</div>
+        <div class="node-title">⑦ 챗 어시스턴트</div>
+        <div class="node-sub">대화형 전표 생성</div>
+      </div>
+      <div class="arch-connector">→</div>
+      <div class="arch-node">
+        <div class="node-icon">✅</div>
+        <div class="node-title">전표 등록</div>
+        <div class="node-sub">ERP 연동</div>
+      </div>
+    </div>
+    <div class="arch-label">룰 관리 파이프라인</div>
+    <div class="arch-flow">
+      <div class="arch-node">
+        <div class="node-icon">🗣️</div>
+        <div class="node-title">감사자 자연어 입력</div>
+        <div class="node-sub">"주말 기표 10만원 이상"</div>
+      </div>
+      <div class="arch-connector">→</div>
+      <div class="arch-node ai">
+        <div class="node-icon">🤖</div>
+        <div class="node-title">④ AI 룰 빌더</div>
+        <div class="node-sub">자연어 → JSON 룰</div>
+      </div>
+      <div class="arch-connector">→</div>
+      <div class="arch-node">
+        <div class="node-icon">⚙️</div>
+        <div class="node-title">룰 등록/관리</div>
+        <div class="node-sub">웹 UI</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 1: Rule Engine -->
+  <div class="ai-section" data-num="1">
+    <div class="section-head">
+      <div>
+        <div class="section-title">룰 기반 자동 이상탐지 엔진</div>
+        <div class="section-subtitle">Rule-based Anomaly Detection Engine</div>
+      </div>
+      <div class="tags">
+        <span class="tag tag-rule">패턴 매칭</span>
+        <span class="tag tag-ai">규칙 엔진</span>
+      </div>
+    </div>
+
+    <div class="flow">
+      <div class="flow-before">
+        <div class="flow-label">As-Is (기존)</div>
+        <div class="flow-text">감사 담당자가 수천 건의 전표를 <strong>육안으로 하나씩 검토</strong>하여 이상 여부를 판단. 전수 검사 불가능, 표본 추출 방식으로 탐지율 한계.</div>
+      </div>
+      <div class="flow-arrow">AI</div>
+      <div class="flow-after">
+        <div class="flow-label">To-Be (AI 적용)</div>
+        <div class="flow-text">18개 탐지 룰이 전표를 <strong>자동 전수 검사</strong>. 차대변 불일치, 중복 전표, 계정 착오, 고액 거래, 주말 기표, 증빙 누락 등 패턴을 실시간 감지.</div>
+      </div>
+    </div>
+
+    <p class="desc">
+      JSON 기반 룰 정의 파일에 18개 이상의 탐지 규칙을 선언적으로 구성합니다. 각 룰은 <strong>조건식(필드·연산자·임계값)</strong>과 위험 가중치를 가지며, 룰 엔진이 전표 데이터에 순차 적용하여 위반 여부를 판정합니다. 30개 이상의 분석 필드를 지원하며, 잔액·금액·시간·계정·거래처·증빙·구조 등 <strong>7개 카테고리</strong>를 다차원으로 분석합니다. 신규 룰 추가 시 코드 변경 없이 웹 UI에서 즉시 반영할 수 있어 <strong>비개발자도 룰 관리가 가능</strong>합니다.
+    </p>
+
+    <div class="detail-grid">
+      <div class="detail-box">
+        <h4>적용된 AI 기술</h4>
+        <ul>
+          <li><strong>패턴 매칭 엔진</strong> — 30+ 분석 필드에 대한 조건 자동 평가</li>
+          <li><strong>거래처별 최빈 계정 분석</strong> — 과거 거래 빈도 기반 이상 패턴 탐지</li>
+          <li><strong>중복 키 해시 맵</strong> — 동일 일자/금액/계정/거래처 조합으로 중복 전표 감지</li>
+          <li><strong>시간대·요일 분석</strong> — 기표 시각/요일 기반 비정상 입력 탐지</li>
+          <li><strong>수익/비용 차대변 방향 검증</strong> — 757개 계정코드별 정상 방향 대조</li>
+        </ul>
+      </div>
+      <div class="detail-box">
+        <h4>탐지 룰 분류 (7개 카테고리)</h4>
+        <ul>
+          <li><strong>정합성</strong> — 차대변 불일치, 차대변 방향 오류</li>
+          <li><strong>계정</strong> — 계정과목 착오, 반복거래 패턴 이탈</li>
+          <li><strong>중복</strong> — 동일 조건 중복 전표, 역분개 패턴</li>
+          <li><strong>금액</strong> — 고액 전표, 라운드 금액, 개인거래처 고액</li>
+          <li><strong>시점</strong> — 주말/공휴일, 월말 집중, 근무시간 외</li>
+          <li><strong>증빙</strong> — 증빙 누락, 연결문서 미첨부</li>
+          <li><strong>내용</strong> — 적요 미입력, 다건 분개</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 2: Risk Classification -->
+  <div class="ai-section" data-num="2">
+    <div class="section-head">
+      <div>
+        <div class="section-title">AI 위험등급 자동 분류</div>
+        <div class="section-subtitle">AI-based Risk Level Classification</div>
+      </div>
+      <div class="tags">
+        <span class="tag tag-ai">가중 점수 알고리즘</span>
+        <span class="tag tag-rule">다차원 평가</span>
+      </div>
+    </div>
+
+    <div class="flow">
+      <div class="flow-before">
+        <div class="flow-label">As-Is (기존)</div>
+        <div class="flow-text">감사 담당자의 <strong>주관적 경험</strong>에 의존하여 위험도를 판단. 담당자별 판단 기준 상이, 일관성 부족.</div>
+      </div>
+      <div class="flow-arrow">AI</div>
+      <div class="flow-after">
+        <div class="flow-label">To-Be (AI 적용)</div>
+        <div class="flow-text">룰 위반 유형·금액·빈도를 종합한 <strong>가중 점수 알고리즘</strong>이 4단계 위험등급을 자동 산정. 일관되고 객관적인 분류.</div>
+      </div>
+    </div>
+
+    <p class="desc">
+      각 탐지 룰에는 <strong>위험 가중치(score)</strong>가 설정되어 있으며, 전표에 해당하는 룰이 위반될 때마다 가중치가 누적됩니다(최대 1.0). 최종 합산 점수를 기준으로 <strong>위험(High, ≥0.8) → 주의(Medium, 0.3~0.8) → 관심(Low, &lt;0.3) → 정상</strong>의 4단계로 자동 분류합니다. 동일 필드에 복수 룰이 적용되면 가장 심각한 것만 유지하는 <strong>중복 방지 로직</strong>으로 과도한 위험 산정을 방지합니다.
+    </p>
+
+    <div class="detail-grid">
+      <div class="detail-box">
+        <h4>적용된 AI 기술</h4>
+        <ul>
+          <li><strong>가중합 스코어링</strong> — 룰별 위험도 가중치 누적 합산 (cap: 1.0)</li>
+          <li><strong>임계값 기반 분류</strong> — 0.8/0.3 컷오프로 High/Medium/Low 자동 판정</li>
+          <li><strong>중복 제거 로직</strong> — 동일 필드 복수 룰 중 최고 심각도만 반영</li>
+          <li><strong>프로젝트별 위험 집계</strong> — 현장/프로젝트 단위 위험 분포 분석</li>
+        </ul>
+      </div>
+      <div class="detail-box">
+        <h4>업무 적용 효과</h4>
+        <ul>
+          <li>위험 등급 기반으로 <strong>감사 우선순위 자동 배정</strong></li>
+          <li>High 등급 전표부터 집중 검토 — 제한된 리소스의 <strong>효율적 배분</strong></li>
+          <li>대시보드에서 등급별·프로젝트별 현황 한눈에 파악</li>
+          <li>객관적 기준으로 <strong>감사인 간 판단 일관성</strong> 확보</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 3: AI Review Suggestions -->
+  <div class="ai-section" data-num="3">
+    <div class="section-head">
+      <div>
+        <div class="section-title">LLM 기반 AI 검토 제안 생성</div>
+        <div class="section-subtitle">LLM-powered Review Suggestion Generation</div>
+      </div>
+      <div class="tags">
+        <span class="tag tag-llm">Gemini 3.1 Pro</span>
+        <span class="tag tag-ai">프롬프트 엔지니어링</span>
+        <span class="tag tag-rule">템플릿 하이브리드</span>
+      </div>
+    </div>
+
+    <div class="flow">
+      <div class="flow-before">
+        <div class="flow-label">As-Is (기존)</div>
+        <div class="flow-text">이상 전표 발견 후 <strong>검토 방법을 담당자가 직접 판단</strong>. 전문 지식 필요, 신규 감사인은 검토 포인트를 놓칠 위험.</div>
+      </div>
+      <div class="flow-arrow">AI</div>
+      <div class="flow-after">
+        <div class="flow-label">To-Be (AI 적용)</div>
+        <div class="flow-text">LLM이 위반 전표의 맥락을 분석하여 <strong>점검 포인트·수정 방법·검토 절차</strong>를 구체적으로 자동 생성. 전문가 수준의 가이드 제공.</div>
+      </div>
+    </div>
+
+    <p class="desc">
+      <strong>두 가지 방식의 하이브리드 구조</strong>로 운영됩니다. 첫째, 18개 룰 코드별로 사전 정의된 <strong>검토 제안 템플릿</strong>이 있어, 배치 재분석 시 수천 건의 전표에 대해 LLM 호출 없이 즉시 제안을 생성합니다. 둘째, 개별 전표의 상세 검토 시 <strong>Gemini 3.1 Pro LLM</strong>이 해당 전표의 전체 정보(전표번호, 일자, 적요, 라인 항목, 위반 사유)를 분석하여 맥락에 맞는 맞춤형 검토 제안을 생성합니다. <strong>델타 감지 캐싱</strong>으로 위반 내용이 변경되지 않은 전표는 재생성 없이 기존 제안을 유지합니다.
+    </p>
+
+    <div class="detail-grid">
+      <div class="detail-box">
+        <h4>적용된 AI 기술</h4>
+        <ul>
+          <li><strong>LLM (Gemini 3.1 Pro)</strong> — 전표 맥락 기반 맞춤형 검토 가이드 생성</li>
+          <li><strong>프롬프트 엔지니어링</strong> — 점검·수정·절차 3단계 형식으로 응답 유도</li>
+          <li><strong>룰별 템플릿 엔진</strong> — E001~E015 사전 정의 검토 방법 즉시 조합</li>
+          <li><strong>델타 감지 캐싱</strong> — 위반 변경분만 재생성, 미변경분은 유지</li>
+        </ul>
+      </div>
+      <div class="detail-box">
+        <h4>업무 적용 효과</h4>
+        <ul>
+          <li>비전문 감사인도 <strong>전문가 수준의 검토 수행</strong> 가능</li>
+          <li>위반 유형별 구체적 <strong>수정 방법과 검토 절차</strong> 즉시 안내</li>
+          <li>템플릿 + 캐싱으로 <strong>LLM 토큰 비용 99% 절감</strong></li>
+          <li>DB 캐싱으로 동일 전표 반복 조회 시 <strong>즉시 응답</strong></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="prompt-label" style="margin-top: 20px;">LLM 프롬프트 구조 예시</div>
+    <div class="prompt-box">당신은 호반건설의 내부감사 전문가입니다.
+아래 전표에서 이상탐지 룰에 의해 위반이 감지되었습니다.
+
+## 전표 정보
+- 전표번호: 20260301AA0000000001
+- 전표일자: 2026-03-01  /  적요: 3월 사무용품 구입
+
+## 감지된 위반 사항
+- [E002] 계정과목 착오 의심
+- [E005] 주말/공휴일 기표
+
+## 요청: 각 위반 항목별로 답변:
+1. 점검 포인트  2. 수정 방법  3. 검토 절차</div>
+  </div>
+
+  <!-- Section 4: NL Rule Builder -->
+  <div class="ai-section" data-num="4">
+    <div class="section-head">
+      <div>
+        <div class="section-title">자연어 AI 룰 빌더</div>
+        <div class="section-subtitle">Natural Language Rule Generation with LLM</div>
+      </div>
+      <div class="tags">
+        <span class="tag tag-llm">Gemini 3.1 Pro</span>
+        <span class="tag tag-ai">자연어 이해(NLU)</span>
+        <span class="tag tag-rule">로컬 폴백</span>
+      </div>
+    </div>
+
+    <div class="flow">
+      <div class="flow-before">
+        <div class="flow-label">As-Is (기존)</div>
+        <div class="flow-text">새로운 탐지 규칙을 만들려면 <strong>개발자가 직접 코드를 수정</strong>하거나 복잡한 JSON 스키마를 이해하고 작성해야 함. 감사 담당자 독립 운영 불가.</div>
+      </div>
+      <div class="flow-arrow">AI</div>
+      <div class="flow-after">
+        <div class="flow-label">To-Be (AI 적용)</div>
+        <div class="flow-text">감사 담당자가 <strong>"교육훈련비 계정이면서 연결문서 없는 전표"</strong>처럼 한국어로 입력하면, LLM이 구조화된 JSON 룰로 자동 변환.</div>
+      </div>
+    </div>
+
+    <p class="desc">
+      룰 관리 화면의 <strong>AI 룰 빌더</strong>에서 감사 담당자가 자연어로 탐지 규칙을 설명하면, <strong>Gemini 3.1 Pro</strong>가 시스템의 전체 룰 스키마(30+ 필드, 연산자, 심각도, 카테고리)를 참조하여 구조화된 JSON 룰을 생성합니다. AND/OR 복합 조건, 다중 필드 검사, 임계값 설정 등 복잡한 룰도 자연어만으로 생성 가능합니다. LLM 응답이 실패하거나 알 수 없는 필드를 반환하면 <strong>12개 정규식 패턴 기반 로컬 파서</strong>가 폴백으로 동작합니다.
+    </p>
+
+    <div class="detail-grid">
+      <div class="detail-box">
+        <h4>적용된 AI 기술</h4>
+        <ul>
+          <li><strong>LLM 기반 구조화 변환</strong> — 자연어 → JSON 룰 스키마 자동 변환</li>
+          <li><strong>스키마 인식 프롬프트</strong> — 30+ 필드/연산자/카테고리 전체 명세를 LLM에 제공</li>
+          <li><strong>필드 유효성 검증</strong> — LLM 출력의 필드명을 known-set 대비 자동 검증</li>
+          <li><strong>정규식 로컬 폴백</strong> — 12개 패턴(금액, 주말, 월말, 키워드 등)으로 LLM 없이 파싱</li>
+        </ul>
+      </div>
+      <div class="detail-box">
+        <h4>업무 적용 효과</h4>
+        <ul>
+          <li>감사 담당자가 <strong>개발자 없이 직접 룰 생성</strong></li>
+          <li>복잡한 JSON 스키마 학습 <strong>불필요</strong></li>
+          <li>새로운 부정 패턴 발견 시 <strong>즉시 룰 반영</strong> 가능</li>
+          <li>LLM 장애 시에도 <strong>로컬 폴백으로 안정적 운영</strong></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="prompt-label" style="margin-top: 20px;">자연어 룰 생성 예시</div>
+    <div class="prompt-box">사용자 입력: "주말에 기표된 전표 중 금액이 1000만원 이상인 것"
+
+→ AI가 생성한 룰 JSON:
+{
+  "name": "주말 고액 전표",
+  "conditions": [
+    {"field": "is_weekend", "operator": "==", "value": true},
+    {"field": "total_amount", "operator": ">", "value": 10000000}
+  ],
+  "logic": "AND",
+  "score": 0.6,
+  "severity": "high",
+  "category": "시점"
+}</div>
+  </div>
+
+  <!-- Section 5: Vision OCR -->
+  <div class="ai-section" data-num="5">
+    <div class="section-head">
+      <div>
+        <div class="section-title">Vision AI 증빙 문서 OCR 분석</div>
+        <div class="section-subtitle">Multimodal Vision AI for Document Analysis</div>
+      </div>
+      <div class="tags">
+        <span class="tag tag-vision">Gemini Vision API</span>
+        <span class="tag tag-ai">멀티모달 LLM</span>
+        <span class="tag tag-rule">Tesseract 폴백</span>
+      </div>
+    </div>
+
+    <div class="flow">
+      <div class="flow-before">
+        <div class="flow-label">As-Is (기존)</div>
+        <div class="flow-text">영수증·세금계산서·계약서·기안서를 <strong>사람이 직접 읽고</strong> 핵심 정보를 확인한 뒤 수작업으로 입력. 문서 유형별 포맷이 달라 오타·누락 빈발.</div>
+      </div>
+      <div class="flow-arrow">AI</div>
+      <div class="flow-after">
+        <div class="flow-label">To-Be (AI 적용)</div>
+        <div class="flow-text">증빙 이미지 업로드 시 <strong>Vision AI가 문서 유형을 자동 인식</strong>하고, 유형별 전용 프롬프트로 핵심 필드(금액·거래처·일자·부가세 등)를 정확 추출.</div>
+      </div>
+    </div>
+
+    <p class="desc">
+      <strong>Gemini Vision API</strong>를 활용하여 4종류의 증빙 문서를 분석합니다. <strong>① 영수증/세금계산서</strong>에서는 공급가액·부가세·합계·거래처·사업자번호·일자 9개 필드를 추출하여 전표 입력 필드에 자동 매핑합니다. <strong>② 계약서</strong>에서는 계약명·계약 기간·계약 금액·보증금·월세 등을 추출합니다. <strong>③ 공과금 고지서</strong>에서는 납부 기간·공급가액·부가세·당월 요금을 추출합니다. <strong>④ 연결문서(기안서·품의서·검수확인서·도급기성 청구보고)</strong>에서는 기안일·작성자·공급가액·부가세를 추출합니다. 업로드 이미지는 <strong>자동 리사이즈(LANCZOS, 최대 2000px)</strong>되며, PDF는 PyMuPDF로 2배 해상도 PNG 변환 후 분석합니다. Gemini API 불가 시 <strong>Tesseract OCR 로컬 폴백</strong>이 작동합니다.
+    </p>
+
+    <div class="detail-grid">
+      <div class="detail-box">
+        <h4>적용된 AI 기술</h4>
+        <ul>
+          <li><strong>멀티모달 LLM (Vision)</strong> — 이미지 입력을 직접 해석하는 Gemini Vision API</li>
+          <li><strong>문서 유형별 전용 프롬프트</strong> — 영수증/계약서/고지서/기안서 각각 최적화</li>
+          <li><strong>이미지 전처리</strong> — 자동 리사이즈, JPEG 품질 단계적 압축, PDF→PNG 변환</li>
+          <li><strong>건설업 계정 매핑</strong> — 추출 키워드로 자재비·임차료·복리후생비 등 자동 매핑</li>
+          <li><strong>Tesseract OCR 폴백</strong> — 한국어+영어 OCR, 정규식 기반 금액·일자 추출</li>
+        </ul>
+      </div>
+      <div class="detail-box">
+        <h4>지원 문서 유형 및 추출 필드</h4>
+        <ul>
+          <li><strong>영수증/세금계산서</strong> — 일자, 거래처, 사업자번호, 공급가, 부가세, 합계 등 9개</li>
+          <li><strong>계약서</strong> — 계약명, 기간, 금액, 보증금, 월세 등 7개+α</li>
+          <li><strong>공과금 고지서</strong> — 유형, 기간, 공급가, 부가세, 당월 요금 등 10개+α</li>
+          <li><strong>연결문서</strong> — 기안일, 작성자, 부서, 현장, 공급가, 부가세 등 9개+α</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 6: Cross-Validation -->
+  <div class="ai-section" data-num="6">
+    <div class="section-head">
+      <div>
+        <div class="section-title">AI 증빙-전표 교차 검증</div>
+        <div class="section-subtitle">AI-powered Evidence Cross-Validation</div>
+      </div>
+      <div class="tags">
+        <span class="tag tag-vision">Vision OCR</span>
+        <span class="tag tag-rule">룰 엔진 연동</span>
+        <span class="tag tag-ai">자동 대사</span>
+      </div>
+    </div>
+
+    <div class="flow">
+      <div class="flow-before">
+        <div class="flow-label">As-Is (기존)</div>
+        <div class="flow-text">감사인이 전표와 증빙서류를 <strong>수작업으로 대조</strong>하여 금액 일치, 계약 기간 포함 여부, 거래처 일치 등을 확인. 대량 건에는 물리적 한계.</div>
+      </div>
+      <div class="flow-arrow">AI</div>
+      <div class="flow-after">
+        <div class="flow-label">To-Be (AI 적용)</div>
+        <div class="flow-text">Vision OCR로 추출된 증빙 데이터와 전표 정보를 <strong>룰 엔진이 자동 교차 검증</strong>. 금액 불일치·기간 미포함·거래처 불일치를 즉시 탐지.</div>
+      </div>
+    </div>
+
+    <p class="desc">
+      Vision OCR이 증빙 문서에서 추출한 구조화 데이터(<strong>parsed_data</strong>)를 DB에 저장하고, 룰 엔진의 <strong>17개 증빙 관련 분석 필드</strong>가 전표 데이터와 자동 대조합니다. 텍스트 유사도 비교(<strong>토큰 기반 공통 단어 분석</strong>), 금액 정확 일치/차이 비교, 날짜 범위 포함 여부 등 다양한 연산자를 지원합니다. 계약서의 월세와 임차료 전표의 금액, 도급기성 청구보고의 금회기성과 전표 차변금액, 고지서의 당월요금과 수도광열비 전표의 대변금액 등 <strong>건설업 특화 대사 규칙</strong>이 사전 구성되어 있습니다.
+    </p>
+
+    <div class="detail-grid">
+      <div class="detail-box">
+        <h4>적용된 AI 기술</h4>
+        <ul>
+          <li><strong>Vision → 룰 파이프라인</strong> — OCR 추출 데이터를 룰 엔진 입력으로 자동 연결</li>
+          <li><strong>토큰 기반 텍스트 유사도</strong> — 계약서 주제/거래처와 전표 적요 간 연관성 분석</li>
+          <li><strong>날짜 범위 검증</strong> — 전표 일자가 계약 기간 내 포함 여부 자동 확인</li>
+          <li><strong>금액 정밀 대조</strong> — 증빙 금액(공급가·부가세·합계)과 전표 차/대변 금액 비교</li>
+        </ul>
+      </div>
+      <div class="detail-box">
+        <h4>건설업 특화 교차 검증 룰</h4>
+        <ul>
+          <li><strong>임차료-계약서</strong> — 월세·보증금 금액 일치 여부</li>
+          <li><strong>수도광열비-고지서</strong> — 당월 요금과 전표 대변 금액 대조</li>
+          <li><strong>도급기성-청구보고</strong> — 금회기성 금액과 전표 차변 금액 대조</li>
+          <li><strong>전표-증빙 부가세</strong> — 증빙의 부가세액과 전표 부가세 라인 대조</li>
+          <li><strong>전표-계약 연관성</strong> — 적요와 계약 주제/거래처 공통 단어 분석</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 7: Chat Assistant -->
+  <div class="ai-section" data-num="7">
+    <div class="section-head">
+      <div>
+        <div class="section-title">대화형 AI 전표 생성 어시스턴트</div>
+        <div class="section-subtitle">Conversational AI Journal Entry Assistant</div>
+      </div>
+      <div class="tags">
+        <span class="tag tag-llm">Gemini 3.1 Pro</span>
+        <span class="tag tag-ai">대화형 인터페이스</span>
+        <span class="tag tag-rule">로컬 폴백</span>
+      </div>
+    </div>
+
+    <div class="flow">
+      <div class="flow-before">
+        <div class="flow-label">As-Is (기존)</div>
+        <div class="flow-text">ERP 시스템에서 계정과목 코드를 조회하고, 차변·대변 방향을 직접 판단하여 <strong>복잡한 입력 양식에 수작업 입력</strong>. 회계 지식 필수.</div>
+      </div>
+      <div class="flow-arrow">AI</div>
+      <div class="flow-after">
+        <div class="flow-label">To-Be (AI 적용)</div>
+        <div class="flow-text">자연어로 <strong>"자재 구매 500만원"</strong>이라고 입력하면, AI가 적정 계정과목·차대변 방향·금액을 자동 판단하여 전표 초안을 생성.</div>
+      </div>
+    </div>
+
+    <p class="desc">
+      전표 생성 화면의 <strong>챗 인터페이스</strong>에서 사용자가 자연어로 거래를 설명하면, <strong>Gemini 3.1 Pro</strong>가 161개 계정과목 마스터를 참조하여 적절한 차변/대변 분개를 자동 생성합니다. <strong>멀티턴 대화</strong>로 금액 수정("총액 1,155만원으로 변경"), 계정과목 변경, 부가세 자동 분리(공급가/세액 라인 분리) 등을 자연어 명령으로 처리합니다. LLM 사용 불가 시 <strong>10개 건설업 거래 패턴 템플릿</strong>(자재/외주/노무/장비/공사대금/선수금/출장/접대/보험/안전관리)과 <strong>정규식 기반 로컬 파서</strong>가 폴백으로 동작합니다.
+    </p>
+
+    <div class="detail-grid">
+      <div class="detail-box">
+        <h4>적용된 AI 기술</h4>
+        <ul>
+          <li><strong>대화형 LLM</strong> — 멀티턴 대화 컨텍스트 유지, 이전 지시 참조</li>
+          <li><strong>계정과목 매핑</strong> — 161개 마스터를 참조하여 적정 계정 자동 선택</li>
+          <li><strong>회계 분개 추론</strong> — 거래 성격에 따른 차변/대변 방향 자동 판단</li>
+          <li><strong>부가세 자동 분리</strong> — 합계 금액에서 공급가/세액 라인 자동 분리</li>
+          <li><strong>로컬 폴백 엔진</strong> — 정규식 파서 + 10개 건설업 거래 패턴 템플릿</li>
+        </ul>
+      </div>
+      <div class="detail-box">
+        <h4>업무 적용 효과</h4>
+        <ul>
+          <li>회계 비전문가도 <strong>정확한 전표 생성 가능</strong></li>
+          <li>ERP 전표 입력 <strong>소요 시간 대폭 단축</strong></li>
+          <li>계정과목 코드 암기 불필요 — <strong>자연어만으로 조작</strong></li>
+          <li>수정 작업도 대화형으로 — 재입력 없이 <strong>즉시 반영</strong></li>
+          <li>LLM 장애 시에도 <strong>로컬 폴백으로 기본 기능 유지</strong></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Summary -->
+  <div class="ai-section" style="border-left: 3px solid var(--orange);">
+    <div class="section-title" style="margin-bottom: 16px;">AI 적용 영역 종합 요약</div>
+    <div style="overflow-x: auto;">
+    <table class="summary-table">
+      <thead>
+        <tr>
+          <th>적용 영역</th>
+          <th>AI 핵심 기술</th>
+          <th>사용 모델</th>
+          <th>주요 자동화 업무</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>① 이상탐지</strong></td>
+          <td>패턴 매칭, 통계 분석</td>
+          <td>JSON 룰 엔진</td>
+          <td>18개 룰 기반 전표 전수 자동 검사</td>
+        </tr>
+        <tr>
+          <td><strong>② 위험등급 분류</strong></td>
+          <td>가중 점수 알고리즘</td>
+          <td>다차원 스코어링</td>
+          <td>4단계 위험등급 자동 산정 및 우선순위 배정</td>
+        </tr>
+        <tr>
+          <td><strong>③ 검토 제안 생성</strong></td>
+          <td>LLM + 템플릿 하이브리드</td>
+          <td>Gemini 3.1 Pro</td>
+          <td>위반별 점검·수정·검토 절차 자동 생성</td>
+        </tr>
+        <tr>
+          <td><strong>④ 자연어 룰 빌더</strong></td>
+          <td>LLM 구조화 변환, NLU</td>
+          <td>Gemini 3.1 Pro</td>
+          <td>한국어 설명 → JSON 탐지 룰 자동 변환</td>
+        </tr>
+        <tr>
+          <td><strong>⑤ 증빙 OCR</strong></td>
+          <td>멀티모달 Vision AI</td>
+          <td>Gemini Vision</td>
+          <td>4종 증빙 문서에서 핵심 필드 자동 추출</td>
+        </tr>
+        <tr>
+          <td><strong>⑥ 증빙-전표 교차 검증</strong></td>
+          <td>Vision + 룰 엔진 파이프라인</td>
+          <td>하이브리드</td>
+          <td>증빙 데이터와 전표 간 금액·기간·거래처 자동 대사</td>
+        </tr>
+        <tr>
+          <td><strong>⑦ 전표 생성 챗</strong></td>
+          <td>대화형 LLM, NLU</td>
+          <td>Gemini 3.1 Pro</td>
+          <td>자연어 입력으로 회계 분개 자동 생성·수정</td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+
+  <div class="footer-note">
+    호반건설 전표 이상탐지 시스템 (FDS) &middot; AI 기술 적용 방안 &middot; 하네스 v1.1
+  </div>
+
+</div>
